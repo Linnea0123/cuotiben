@@ -966,7 +966,10 @@
 <!-- 编辑模态框 -->
 <div id="editModal" class="modal-mask">
     <div class="modal-container">
-        <h4>编辑错题</h4>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h4 style="margin: 0;">编辑错题</h4>
+    <button type="button" id="modalSaveBtn" style="background: transparent; border: none; color: #007aff; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">保存</button>
+</div>
         <form id="editForm">
             <div class="form-group"><label>类别</label>
    <select id="editTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
@@ -1024,7 +1027,7 @@
             <div class="form-group"><label>错误原因</label><div id="reasonTagsContainer" class="reason-tags"></div></div>
             <!-- 三列布局：来源、所属单元、日期 -->
             <div class="three-input">
-    <div><label>来源</label><input type="text" id="editSource" placeholder="如：听写本、月考"></div>
+    <div><label>来源</label><input type="text" id="editSource" placeholder=""></div>
     <div><label>年级学期</label>
         <select id="editGrade" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
             <option value="一上">一上</option>
@@ -1042,7 +1045,8 @@
 
 
 
-            <div class="modal-actions"><button type="button" class="btn-cancel" id="cancelEditBtn">取消</button><button type="submit" class="btn-save">保存</button></div>
+            <div class="modal-actions"><button type="button" class="btn-cancel" id="cancelEditBtn">取消</button>
+                </div>
         </form>
     </div>
 </div>
@@ -2474,6 +2478,13 @@ function init() {
         return token;
     }
     
+    const modalSaveBtn = document.getElementById('modalSaveBtn');
+if (modalSaveBtn) {
+    modalSaveBtn.addEventListener('click', () => {
+        saveEdit();
+    });
+}
+
     const token = loadToken();
     if (token) {
         GITHUB_CONFIG.token = token;
