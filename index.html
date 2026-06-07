@@ -899,6 +899,14 @@
     max-height: 250px;
 }
 
+/* 禁用双击缩放 */
+body {
+    touch-action: manipulation;
+}
+
+button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-btn, .toggle-details-btn, .filter-btn, .close-review, .add-question-btn-header {
+    touch-action: manipulation;
+}
 
     </style>
 </head>
@@ -2097,14 +2105,14 @@ if (!hasQuestionText && !hasQuestionImages) {
     
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     
-    // 重复检测（新增模式时）
-    if (id === null) {
-        const isDuplicate = errorList.some(item => item.question === newQuestion);
-        if (isDuplicate) {
-            alert("⚠️ 这道题已经存在错题本中了！\n请勿重复添加。");
-            return;
-        }
+   // 重复检测（新增模式时）- 只有填写了原题文字才检测重复
+if (id === null && newQuestion && newQuestion.trim()) {
+    const isDuplicate = errorList.some(item => item.question === newQuestion);
+    if (isDuplicate) {
+        alert("⚠️ 这道题已经存在错题本中了！\n请勿重复添加。");
+        return;
     }
+}
     
     if (id === null) {
         // 新增模式
