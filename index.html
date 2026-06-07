@@ -92,51 +92,52 @@
             background: #007aff;
             border-radius: 2px;
         }
+/* 顶部分类栏 */
+.category-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 0.5px solid #e9e9ef;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+}
+.category-tabs::-webkit-scrollbar {
+    display: none;
+}
+.category-tab {
+    display: inline-block;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 30px;
+    background: #f2f2f6;
+    color: #3a3a3e;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.category-tab.active {
+    background: #007aff;
+    color: white;
+}
 
-        .two-columns {
-            display: flex;
-            flex: 1;
-            min-height: 0;
-            background: white;
-        }
-        .sidebar {
-            width: 160px;
-            flex-shrink: 0;
-            background: #ffffff;
-            border-right: 0.5px solid #f0f0f4;
-            padding-top: 20px;
-        }
-        .menu-item {
-            padding: 12px 20px;
-            font-size: 15px;
-            font-weight: 450;
-            color: #3a3a3e;
-            cursor: pointer;
-            background: white;
-            border-left: 3px solid transparent;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .menu-item.active {
-            background-color: #f2f2f6;
-            border-left-color: #007aff;
-            color: #007aff;
-            font-weight: 500;
-        }
-        .menu-review-icon {
-            font-size: 12px;
-            background: #e9e9ef;
-            padding: 2px 8px;
-            border-radius: 20px;
-            color: #007aff;
-            cursor: pointer;
-            font-weight: normal;
-        }
-        .menu-review-icon:hover {
-            background: #007aff;
-            color: white;
-        }
+.content-area {
+    flex: 1;
+    background: #ffffff;
+    padding: 20px 28px 28px 28px;
+    overflow-y: auto;
+}
+
+       .two-columns {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    background: white;
+    flex-direction: column;
+}
+      
         /* 修改后 - 正常显示 */
 .sidebar.math-mode {
     display: block;
@@ -896,36 +897,37 @@
 <body>
 <div class="app-wrapper">
     <div class="header">
-        <div>
-            <h1>毛语宸的错题本</h1>
-        
-        </div>
-        <button class="review-btn-header" id="openReviewBtn">复习模式</button>
+    <div>
+        <h1>毛语宸的错题本</h1>
     </div>
+    <button class="review-btn-header" id="openReviewBtn">复习模式</button>
+</div>
     <div class="subject-tabs">
         <button class="tab-btn active" data-subject="chinese">语文</button>
         <button class="tab-btn" data-subject="math">数学</button>
     </div>
     <div class="two-columns">
-        <div id="sidebarMenu" class="sidebar"></div>
-        <div class="content-area" id="contentArea"></div>
-    </div>
+    <div class="category-tabs" id="categoryTabs"></div>
+    <div class="content-area" id="contentArea"></div>
+</div>
 </div>
 
 <!-- 复习模式全屏界面 -->
 <div id="reviewModal" class="review-modal">
     <div class="review-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <h2>错题复习</h2>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-<div class="filter-group">
-    <button class="filter-btn" data-filter="today">今日</button>
-    <button class="filter-btn" data-filter="week">本周</button>
-    <button class="filter-btn" data-filter="month">本月</button>
-    <button id="selectUnitBtn" class="filter-btn" style="background: #e9e9ef; color: #3a3a3e;">📁 选择单元</button>
-</div>
-            <button class="close-review" id="closeReviewBtn">关闭复习</button>
+        <button class="close-review" id="closeReviewBtn">关闭复习</button>
+    </div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 12px;">
+        <div class="filter-group">
+            <button class="filter-btn" data-filter="today">今日</button>
+            <button class="filter-btn" data-filter="week">本周</button>
+            <button class="filter-btn" data-filter="month">本月</button>
+            <button id="selectUnitBtn" class="filter-btn" style="background: #e9e9ef; color: #3a3a3e;">📁 选择单元</button>
         </div>
     </div>
+</div>
     <div id="reviewListContainer" class="review-list"></div>
 </div>
 
@@ -1059,9 +1061,9 @@ let mathErrors = [
 
 
 
-// ========== GitHub 图床配置 ==========
+// 修改后（安全）
 const GITHUB_CONFIG = {
-    token: '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',   // 把你的Token填这里
+    token: '',  // 留空，从 localStorage 读取
     owner: 'Linnea0123',
     repo: 'cuotiben',
     branch: 'main'
@@ -1259,86 +1261,74 @@ function renderShengziContent(question, wrongAnswer, correctAnswer) {
 }
 
 function renderSidebar() {
+    const categoryTabs = document.getElementById('categoryTabs');
+    if (!categoryTabs) return;
+    
     if (currentSubject === "chinese") {
-        sidebarMenuDiv.classList.remove("math-mode");
         const categories = ["基础知识", "阅读理解", "作文表达", "文学常识"];
-        let html = `<div style="padding-top: 6px;">`;
+        let html = `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
         categories.forEach(cat => {
             const activeClass = (currentChineseTag === cat) ? "active" : "";
-            html += `<div class="menu-item ${activeClass}" data-tag="${cat}">
-                        <span>${cat}</span>
-                     </div>`;
+            html += `<div class="category-tab ${activeClass}" data-tag="${cat}">${cat}</div>`;
         });
         html += `</div>`;
-        sidebarMenuDiv.innerHTML = html;
+        categoryTabs.innerHTML = html;
         
-        document.querySelectorAll(".menu-item").forEach(el => {
-            const tagSpan = el.querySelector('span:first-child');
-            const tag = tagSpan?.innerText;
-            if (tag) {
-                el.addEventListener('click', (e) => {
+        document.querySelectorAll('.category-tab').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const tag = e.target.getAttribute('data-tag');
+                if (tag) {
                     currentChineseTag = tag;
                     currentChineseSubTag = "全部";
-                    renderSidebar(); 
+                    renderSidebar();
                     renderContent();
-                });
-            }
+                }
+            });
         });
-        
     } else {
-        // 数学科目侧边栏
-        sidebarMenuDiv.classList.add("math-mode");
-        // 移除 math-mode 的隐藏样式（如果CSS中有的话）
-        sidebarMenuDiv.style.display = "block";
-        
-        const mathCategories = ["计算", "应用题", "图形", "概念"];
-        let html = `<div style="padding-top: 6px;">`;
-        mathCategories.forEach(cat => {
-            // 需要为数学单独维护当前选中的分类变量
+        // 数学科目
+        const categories = ["计算", "应用题", "图形", "概念"];
+        let html = `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
+        categories.forEach(cat => {
             const activeClass = (currentMathTag === cat) ? "active" : "";
-            html += `<div class="menu-item ${activeClass}" data-math-tag="${cat}">
-                        <span>${cat}</span>
-                     </div>`;
+            html += `<div class="category-tab ${activeClass}" data-tag="${cat}">${cat}</div>`;
         });
         html += `</div>`;
-        sidebarMenuDiv.innerHTML = html;
+        categoryTabs.innerHTML = html;
         
-        document.querySelectorAll(".menu-item").forEach(el => {
-            const tagSpan = el.querySelector('span:first-child');
-            const tag = tagSpan?.innerText;
-            if (tag) {
-                el.addEventListener('click', (e) => {
+        document.querySelectorAll('.category-tab').forEach(el => {
+            el.addEventListener('click', (e) => {
+                const tag = e.target.getAttribute('data-tag');
+                if (tag) {
                     currentMathTag = tag;
-                    renderSidebar(); 
+                    renderSidebar();
                     renderContent();
-                });
-            }
+                }
+            });
         });
     }
 }
-
-
 
 function renderContent() {
     const list = getCurrentDisplayList();
     const subjectName = currentSubject === "chinese" ? "语文" : "数学";
     
     let subTabsHtml = "";
-    if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
-        const baseQuestions = chineseErrors.filter(item => item.tag === "基础知识");
-        const subTagsSet = new Set(baseQuestions.map(item => item.subTag).filter(Boolean));
-        const subTags = ["全部", ...Array.from(subTagsSet)];
-        subTabsHtml = `
-            <div class="sub-tab-bar">
-                ${subTags.map(st => `
-                    <button class="sub-tab-btn ${currentChineseSubTag === st ? 'active' : ''}" data-subtag="${st}">
-                        ${st}
-                    </button>
-                `).join('')}
-            </div>
-        `;
-    }
-    
+   if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
+    // 强制显示拼音和生字，不管有没有数据
+    const subTags = ["全部", "拼音", "生字"];
+    subTabsHtml = `
+        <div class="sub-tab-bar">
+            ${subTags.map(st => `
+                <button class="sub-tab-btn ${currentChineseSubTag === st ? 'active' : ''}" data-subtag="${st}">
+                    ${st}
+                </button>
+            `).join('')}
+        </div>
+    `;
+}
+
+
     let headerHtml = `<div class="category-bar">
     <div style="display: flex; align-items: center; gap: 12px;">
         <h3 style="margin: 0;">${subjectName} · ${currentSubject === "chinese" ? currentChineseTag : "全部错题"}</h3>
@@ -1774,18 +1764,16 @@ function openAddModal() {
     document.getElementById("editGrade").value = currentGradeFilter || "一下";
     document.getElementById("editDate").value = new Date().toISOString().slice(0, 10);
     
-    // 重要：清空临时图片数组
-    if (!window._tempImages) window._tempImages = { question: [], wrong: [], correct: [] };
-    window._tempImages.question = [];
-    window._tempImages.wrong = [];
-    window._tempImages.correct = [];
+    // ========== 关键修复：彻底清空临时图片 ==========
+    // 清空 tempImages 对象
+    tempImages = { question: [], wrong: [], correct: [] };
+    window._tempImages = tempImages;
     
-    // 刷新图片预览区域
-    if (typeof renderImagePreview === 'function') {
-        renderImagePreview('question');
-        renderImagePreview('wrong');
-        renderImagePreview('correct');
-    }
+    // 刷新三个图片预览区域（清空显示）
+    renderImagePreview('question');
+    renderImagePreview('wrong');
+    renderImagePreview('correct');
+    // ================================================
     
     // 动态生成类别选项
     let defaultTag = currentSubject === "chinese" ? currentChineseTag : "计算";
@@ -1824,7 +1812,6 @@ function openAddModal() {
         }
     };
 }
-
 function openEditModal(errorId, subject) {
     document.querySelector('#editModal .modal-container h4').innerText = "编辑错题";
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
@@ -1880,24 +1867,20 @@ function openEditModal(errorId, subject) {
         });
     });
     
-    // ========== 图片加载（关键部分） ==========
-    // 初始化临时图片存储对象
-    if (!window._tempImages) {
-        window._tempImages = { question: [], wrong: [], correct: [] };
-    }
+    // ========== 图片加载：从编辑项加载已有图片 ==========
+    // 重置临时图片为当前编辑项的图片
+    tempImages = {
+        question: editItem.questionImages ? [...editItem.questionImages] : [],
+        wrong: editItem.wrongImages ? [...editItem.wrongImages] : [],
+        correct: editItem.correctImages ? [...editItem.correctImages] : []
+    };
+    window._tempImages = tempImages;
     
-    // 从编辑项中加载已有图片到临时存储
-    window._tempImages.question = editItem.questionImages ? [...editItem.questionImages] : [];
-    window._tempImages.wrong = editItem.wrongImages ? [...editItem.wrongImages] : [];
-    window._tempImages.correct = editItem.correctImages ? [...editItem.correctImages] : [];
-    
-    // 刷新三个图片预览区域
-    if (typeof renderImagePreview === 'function') {
-        renderImagePreview('question');
-        renderImagePreview('wrong');
-        renderImagePreview('correct');
-    }
-    // ========================================
+    // 刷新图片预览区域
+    renderImagePreview('question');
+    renderImagePreview('wrong');
+    renderImagePreview('correct');
+    // ====================================================
     
     // 绑定类别切换事件
     tagSelect.onchange = function() {
@@ -1911,8 +1894,13 @@ function openEditModal(errorId, subject) {
     // 显示模态框
     editModal.classList.add('active');
 }
-
 function saveEdit() {
+
+    // 检查 Token 是否存在
+    if (!GITHUB_CONFIG.token) {
+        alert('⚠️ 未配置 GitHub Token，请刷新页面后重新输入 Token');
+        return;
+    }
     const { id, subject } = editingItem;
     const newQuestion = document.getElementById("editQuestion").value;
     const newWrong = document.getElementById("editWrong").value;
@@ -2393,29 +2381,102 @@ function loadAllDataFromLocalStorage() {
 
 
     function init() {
-         loadAllDataFromLocalStorage(); 
-         loadFromCloud();  // 启动时从云端加载
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchSubject(btn.getAttribute('data-subject'))));
-        cancelBtn.addEventListener('click', closeModal);
-        editForm.addEventListener('submit', (e) => { e.preventDefault(); saveEdit(); });
-        openReviewBtn.addEventListener('click', () => { 
-            reviewContextFilter = null;
-            openReviewWithCurrentFilter(); 
-        });
-        closeReviewBtn.addEventListener('click', () => reviewModal.classList.remove('active'));
-        reviewModal.addEventListener('click', (e) => { if (e.target === reviewModal) reviewModal.classList.remove('active'); });
-        historyOverlay.addEventListener('click', closeHistoryModal);
-        switchSubject('chinese');
-        initImageUpload();
-        // 单元选择按钮事件
-document.getElementById('selectUnitBtn').addEventListener('click', () => {
-    openUnitModal();
-});
-
-// 点击遮罩关闭弹窗
-document.getElementById('unitOverlay').addEventListener('click', closeUnitModal);
+    // ========== 安全加载 Token（不硬编码在代码中）==========
+    function loadToken() {
+        let token = localStorage.getItem('github_token');
+        if (!token) {
+            token = prompt(
+                '🔐 请输入您的 GitHub Token\n\n' +
+                '步骤：\n' +
+                '1. 访问 https://github.com/settings/tokens\n' +
+                '2. 点击 Generate new token → Generate new token (classic)\n' +
+                '3. Note 填写: cuoti-token\n' +
+                '4. 过期时间选择: No expiration\n' +
+                '5. 勾选权限: ✅ repo  ✅ gist\n' +
+                '6. 点击 Generate token，复制生成的 Token\n' +
+                '7. 粘贴到下面\n\n' +
+                '⚠️ Token 只会保存在您这台电脑的浏览器中'
+            );
+            if (token && token.trim()) {
+                localStorage.setItem('github_token', token.trim());
+            } else {
+                alert('❌ Token 不能为空！部分功能将无法使用。');
+                return null;
+            }
+        }
+        return token;
     }
-    init();
+    
+    const token = loadToken();
+    if (token) {
+        GITHUB_CONFIG.token = token;
+        GIST_CONFIG.token = token;
+        console.log('✅ GitHub Token 已加载');
+    } else {
+        console.warn('⚠️ 未配置 GitHub Token，图片上传和同步功能将不可用');
+    }
+    // ================================================
+    
+    // 加载本地存储的数据
+    loadAllDataFromLocalStorage();
+    
+    // 从云端加载数据
+    loadFromCloud();
+    
+    // 绑定学科切换按钮事件
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchSubject(btn.getAttribute('data-subject')));
+    });
+    
+    // 绑定取消按钮
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // 绑定表单提交
+    editForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        saveEdit();
+    });
+    
+    // 绑定复习模式按钮
+    openReviewBtn.addEventListener('click', () => {
+        reviewContextFilter = null;
+        openReviewWithCurrentFilter();
+    });
+    
+    // 绑定关闭复习按钮
+    closeReviewBtn.addEventListener('click', () => reviewModal.classList.remove('active'));
+    
+    // 点击遮罩关闭复习模态框
+    reviewModal.addEventListener('click', (e) => {
+        if (e.target === reviewModal) reviewModal.classList.remove('active');
+    });
+    
+    // 历史记录遮罩点击关闭
+    historyOverlay.addEventListener('click', closeHistoryModal);
+    
+    // 初始化当前学科（默认语文）
+    switchSubject('chinese');
+    
+    // 初始化图片上传按钮
+    initImageUpload();
+    
+    // 绑定单元选择按钮
+    const selectUnitBtn = document.getElementById('selectUnitBtn');
+    if (selectUnitBtn) {
+        selectUnitBtn.addEventListener('click', () => {
+            openUnitModal();
+        });
+    }
+    
+    // 绑定单元选择弹窗遮罩
+    const unitOverlay = document.getElementById('unitOverlay');
+    if (unitOverlay) {
+        unitOverlay.addEventListener('click', closeUnitModal);
+    }
+}
+   
+   
+   init();
 </script>
 </body>
 </html>
