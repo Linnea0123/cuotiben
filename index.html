@@ -301,15 +301,15 @@
     margin-top: 4px;
 }
         
-        /* 田字格样式 */
-        .tian-grid {
-            display: inline-block;
-            width: 80px;
-            height: 80px;
-            border: 1px solid #c6c6c8;
-            position: relative;
-            margin: 10px 0;
-        }
+       /* 田字格样式 */
+.tian-grid {
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    border: 1px solid #c6c6c8;
+    position: relative;
+    margin: 5px 0;
+}
         .tian-grid::before {
             content: '';
             position: absolute;
@@ -1275,9 +1275,13 @@ const GIST_CONFIG = {
     }
 
     function getCurrentDisplayList() { 
-        return currentSubject === "chinese" ? getFilteredChinese() : mathErrors; 
+    if (currentSubject === "chinese") {
+        return getFilteredChinese();
+    } else {
+        // 数学：根据 currentMathTag 筛选
+        return mathErrors.filter(item => item.tag === currentMathTag);
     }
-
+}
     function recordReview(itemId, subject, result) {
         const list = subject === "chinese" ? chineseErrors : mathErrors;
         const item = list.find(i => i.id === itemId);
@@ -1304,26 +1308,27 @@ const GIST_CONFIG = {
         }).replace(/\n/g, '<br>');
     }
     
+
 function renderPinyinContent(question, wrongAnswer, correctAnswer) {
     // 将每个汉字分开
     const chars = question.split('');
     
     let html = `
         <div class="special-content">
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
     `;
     
     chars.forEach(char => {
         html += `
             <div style="text-align: center;">
-                <div class="four-line-grid" style="width: 60px;">
+                <div class="four-line-grid" style="width: 50px;">
                     <div class="grid-line-1"></div>
                     <div class="grid-line-2"></div>
                     <div class="grid-line-3"></div>
                     <div class="grid-line-4"></div>
                     <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
                 </div>
-                <div style="font-size: 28px; font-weight: 500; margin-top: -26px; color: #1c1c1e;">
+                <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
                     ${escapeHtml(char)}
                 </div>
             </div>
@@ -1337,6 +1342,10 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
     
     return html;
 }
+
+
+
+
 function renderShengziContent(question, wrongAnswer, correctAnswer) {
     const pinyins = question.trim().split(/\s+/);
     
@@ -1418,30 +1427,30 @@ function renderSidebar() {
     }
 }
 
+
+
 function renderContent() {
     const list = getCurrentDisplayList();
     const subjectName = currentSubject === "chinese" ? "语文" : "数学";
     // 更新学科标签行右侧的题目数量
-const questionCountDisplay = document.getElementById('questionCountDisplay');
-if (questionCountDisplay) {
-    questionCountDisplay.textContent = `${list.length} 道题`;
-}
-   
-
-let subTabsHtml = "";
-if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
-    const subTags = ["全部", "拼音", "生字"];
-    subTabsHtml = `
-       <div class="category-tabs" style="margin-top: -8px; margin-left: -17px; padding-top: 0;">
-            ${subTags.map(st => `
-                <div class="category-tab ${currentChineseSubTag === st ? 'active' : ''}" data-subtag="${st}">
-                    ${st}
-                </div>
-            `).join('')}
-        </div>
-    `;
-}
-
+    const questionCountDisplay = document.getElementById('questionCountDisplay');
+    if (questionCountDisplay) {
+        questionCountDisplay.textContent = `${list.length} 道题`;
+    }
+    
+    let subTabsHtml = "";
+    if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
+        const subTags = ["全部", "拼音", "生字"];
+        subTabsHtml = `
+           <div class="category-tabs" style="margin-top: -8px; margin-left: -17px; padding-top: 0;">
+                ${subTags.map(st => `
+                    <div class="category-tab ${currentChineseSubTag === st ? 'active' : ''}" data-subtag="${st}">
+                        ${st}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
     
     if (list.length === 0) { 
         contentAreaDiv.innerHTML =  subTabsHtml + `<div class="empty-state">暂无错题记录</div>`; 
@@ -1465,50 +1474,104 @@ if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
         const reasonText = item.reasons?.length ? item.reasons.join("、") : "未分类";
         const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
         
-       let specialContent = "";
-// 基础知识：拼音和生字有特殊样式
-if (item.tag === "基础知识" && item.subTag === "拼音") {
-    specialContent = renderPinyinContent(item.question, item.wrongAnswer, item.correctAnswer);
-} else if (item.tag === "基础知识" && item.subTag === "生字") {
-    specialContent = renderShengziContent(item.question, item.wrongAnswer, item.correctAnswer);
-} else {
-    // 阅读理解、作文表达、文学常识等：普通文字显示
-    specialContent = `<div class="question-text" style="font-size: 16px; font-weight: 500; line-height: 1.5;">${escapeHtml(item.question)}</div>`;
-}
+        // ========== 生成原题特殊内容（拼音/生字有四线三格/田字格） ==========
+        let specialContent = "";
+        const hasTextContent = item.question && item.question.trim();
         
-  // 在 card-body 内部，specialContent 后面、meta-info 前面，添加图片显示
-const questionImagesHtml = renderImagesInCard(item.questionImages);
-const wrongImagesHtml = renderImagesInCard(item.wrongImages);
-const correctImagesHtml = renderImagesInCard(item.correctImages);
-
-cardsHtml += `
-    <div class="card">
-        <div class="card-header">
-            <div class="tag-group">
-                <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
-                <span class="error-tag">${escapeHtml(reasonText)}</span>
+        if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
+            const chars = item.question.split('');
+            let pinyinHtml = `
+                <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 16px;">
+                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
+            `;
+            chars.forEach(char => {
+                pinyinHtml += `
+                    <div style="text-align: center;">
+                        <div class="four-line-grid" style="width: 50px;">
+                            <div class="grid-line-1"></div>
+                            <div class="grid-line-2"></div>
+                            <div class="grid-line-3"></div>
+                            <div class="grid-line-4"></div>
+                            <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
+                        </div>
+                        <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
+                            ${escapeHtml(char)}
+                        </div>
+                    </div>
+                `;
+            });
+            pinyinHtml += `
+                    </div>
+                </div>
+            `;
+            specialContent = pinyinHtml;
+        } else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
+            const pinyins = item.question.trim().split(/\s+/);
+            let tianGridsHtml = '';
+            for (let i = 0; i < pinyins.length; i++) {
+                const pinyin = pinyins[i];
+                tianGridsHtml += `
+                    <div style="display: inline-block; margin: 0 8px; text-align: center;">
+                        <div style="font-size: 16px; color: #007aff; margin-bottom: 8px;">${escapeHtml(pinyin)}</div>
+                        <div class="tian-grid" style="margin: 0 auto;">
+                            <div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>
+                        </div>
+                    </div>
+                `;
+            }
+            specialContent = `
+                <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 16px;">
+                    <div style="text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;">
+                        ${tianGridsHtml}
+                    </div>
+                </div>
+            `;
+        } else if (hasTextContent) {
+            // 普通文字内容（只有有文字时才显示）
+            specialContent = `<div class="question-text" style="font-size: 16px; font-weight: 500; line-height: 1.5;">${escapeHtml(item.question)}</div>`;
+        } else {
+            specialContent = "";
+        }
+        
+        cardsHtml += `
+            <div class="card">
+                <div class="card-header">
+                    <div class="tag-group">
+                        <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
+                        <span class="error-tag">${escapeHtml(reasonText)}</span>
+                    </div>
+                    <button class="edit-btn" data-id="${item.id}">编辑</button>
+                </div>
+                <div class="card-body">
+                    ${(() => {
+                        const hasText = item.question && item.question.trim();
+                        const hasImages = item.questionImages && item.questionImages.length > 0;
+                        let topDisplay = '';
+                        if (hasText) {
+                            topDisplay = specialContent;
+                        } else if (hasImages) {
+                            topDisplay = '';  // 什么都不显示，只显示下面的图片
+                        } else {
+                            topDisplay = `<div style="color: #ff3b30; font-size: 13px; padding: 8px 0;">⚠️ 原题内容缺失</div>`;
+                        }
+                        return `
+                            <div class="question-container">
+                                ${topDisplay}
+                                ${renderImagesInCard(item.questionImages, '', 'full')}
+                            </div>
+                        `;
+                    })()}
+                    
+                    <div class="meta-info" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #8e8e93; margin-top: 16px; padding-top: 12px; border-top: 0.5px solid #f0f0f4;">
+                        <span>${escapeHtml(item.source || '未知来源')}</span>
+                        <span>${escapeHtml(item.unit || '未分类')}</span>
+                        <span>${item.date || '无日期'}</span>
+                        <span style="cursor: pointer; color: #007aff; background: #e9e9ef; padding: 4px 12px; border-radius: 20px;" onclick="showHistoryModal('${item.id}', '${currentSubject}')">复习 ${item.reviewCount || 0} 次</span>
+                    </div>
+                </div>
             </div>
-            <button class="edit-btn" data-id="${item.id}">编辑</button>
-        </div>
-        <div class="card-body">
-            <!-- 只显示原题内容：文字在上，大图在下 -->
-            <div class="question-container">
-                ${specialContent}
-                ${renderImagesInCard(item.questionImages, '', 'full')}
-            </div>
-            
-            <!-- 元信息行 -->
-            <div class="meta-info" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #8e8e93; margin-top: 16px; padding-top: 12px; border-top: 0.5px solid #f0f0f4;">
-                <span>${escapeHtml(item.source || '未知来源')}</span>
-                <span>${escapeHtml(item.unit || '未分类')}</span>
-                <span>${item.date || '无日期'}</span>
-                <span style="cursor: pointer; color: #007aff; background: #e9e9ef; padding: 4px 12px; border-radius: 20px;" onclick="showHistoryModal('${item.id}', '${currentSubject}')">复习 ${item.reviewCount || 0} 次</span>
-            </div>
-        </div>
-    </div>
-`;
-
-});
+        `;
+    });
     cardsHtml += `</div>`;
     contentAreaDiv.innerHTML = subTabsHtml + cardsHtml;
     
@@ -1670,24 +1733,36 @@ function openReviewWithCurrentFilter() {
             
             // ========== 生成原题特殊内容（拼音/生字有四线三格/田字格） ==========
             let specialContent = "";
-            if (item.tag === "基础知识" && item.subTag === "拼音") {
-                specialContent = `
+            const hasTextContent = item.question && item.question.trim();
+            
+            if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
+                const chars = item.question.split('');
+                let pinyinHtml = `
                     <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 16px;">
+                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
+                `;
+                chars.forEach(char => {
+                    pinyinHtml += `
                         <div style="text-align: center;">
-                            <div class="four-line-grid">
+                            <div class="four-line-grid" style="width: 50px;">
                                 <div class="grid-line-1"></div>
                                 <div class="grid-line-2"></div>
                                 <div class="grid-line-3"></div>
                                 <div class="grid-line-4"></div>
-                                <div class="pinyin-text" style="visibility: hidden; height: 24px;">&nbsp;</div>
+                                <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
                             </div>
-                            <div style="font-size: 28px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">
-                                ${escapeHtml(item.question)}
+                            <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
+                                ${escapeHtml(char)}
                             </div>
+                        </div>
+                    `;
+                });
+                pinyinHtml += `
                         </div>
                     </div>
                 `;
-            } else if (item.tag === "基础知识" && item.subTag === "生字") {
+                specialContent = pinyinHtml;
+            } else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
                 const pinyins = item.question.trim().split(/\s+/);
                 let tianGridsHtml = '';
                 for (let i = 0; i < pinyins.length; i++) {
@@ -1708,9 +1783,11 @@ function openReviewWithCurrentFilter() {
                         </div>
                     </div>
                 `;
-            } else {
+            } else if (hasTextContent) {
                 // 所有其他分类：阅读理解、作文表达、文学常识、数学等
                 specialContent = `<div class="review-question" style="font-size: 16px; font-weight: 500; line-height: 1.5; margin: 12px 0; background: #f8f9fc; padding: 16px; border-radius: 16px;">${escapeHtml(item.question)}</div>`;
+            } else {
+                specialContent = "";
             }
             
             // ========== 生成所有分类的图片（全宽大图） ==========
@@ -1729,11 +1806,13 @@ function openReviewWithCurrentFilter() {
                         <span>💡 原因: ${item.reasons?.join(',') || '未标注'}</span>
                     </div>
                     
-                    <!-- 原题区域：文字 + 图片 -->
+                    <!-- 原题区域：文字 + 图片（只有有内容时才显示这个区域） -->
+                    ${(specialContent || qImagesHtml) ? `
                     <div class="review-question-area" style="margin-bottom: 16px;">
                         ${specialContent}
                         ${qImagesHtml}
                     </div>
+                    ` : ''}
                     
                     <div class="review-stats">
                         <span class="review-count-badge" onclick="showHistoryModal('${item.id}', '${currentSubject}')">📊 复习次数: ${item.reviewCount || 0}</span>
@@ -2005,11 +2084,16 @@ function saveEdit() {
     const newWrongImages = (window._tempImages && window._tempImages.wrong) ? [...window._tempImages.wrong] : [];
     const newCorrectImages = (window._tempImages && window._tempImages.correct) ? [...window._tempImages.correct] : [];
     
-    // 原题不能为空
-    if (!newQuestion.trim()) {
-        alert("请填写原题内容！");
-        return;
-    }
+
+
+// 原题可以为空，但至少要有原题文字或图片中的一项
+const hasQuestionText = newQuestion && newQuestion.trim();
+const hasQuestionImages = newQuestionImages && newQuestionImages.length > 0;
+
+if (!hasQuestionText && !hasQuestionImages) {
+    alert("请填写原题内容或上传原题图片！");
+    return;
+}
     
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     
@@ -2434,15 +2518,19 @@ function loadAllDataFromLocalStorage() {
     if (saved) {
         try {
             const data = JSON.parse(saved);
+            console.log('从localStorage加载的原始数据:', data);
+            
             if (data.chineseErrors) {
                 chineseErrors.length = 0;
-                data.chineseErrors.forEach(item => {
-                    chineseErrors.push({
+                data.chineseErrors.forEach((item, idx) => {
+                    const newItem = {
                         ...item,
                         questionImages: item.questionImages || [],
                         wrongImages: item.wrongImages || [],
                         correctImages: item.correctImages || []
-                    });
+                    };
+                    chineseErrors.push(newItem);
+                    console.log(`第${idx}条错题图片:`, newItem.questionImages);
                 });
             }
             if (data.mathErrors) {
@@ -2456,7 +2544,8 @@ function loadAllDataFromLocalStorage() {
                     });
                 });
             }
-            console.log('✅ 已从本地加载数据');
+            console.log('✅ 已从本地加载数据，语文错题数量:', chineseErrors.length);
+            console.log('最后一条错题的图片:', chineseErrors[chineseErrors.length-1]?.questionImages);
             return true;
         } catch (e) {
             console.error('加载失败:', e);
@@ -2465,10 +2554,8 @@ function loadAllDataFromLocalStorage() {
     return false;
 }
 
-
-
 function init() {
-    // ========== 加载 Token（不再强制弹窗）==========
+    // ========== 加载 Token ==========
     function loadToken() {
         let token = localStorage.getItem('github_token');
         if (!token) {
@@ -2479,11 +2566,11 @@ function init() {
     }
     
     const modalSaveBtn = document.getElementById('modalSaveBtn');
-if (modalSaveBtn) {
-    modalSaveBtn.addEventListener('click', () => {
-        saveEdit();
-    });
-}
+    if (modalSaveBtn) {
+        modalSaveBtn.addEventListener('click', () => {
+            saveEdit();
+        });
+    }
 
     const token = loadToken();
     if (token) {
@@ -2500,11 +2587,25 @@ if (modalSaveBtn) {
         GIST_CONFIG.id = savedGistId;
     }
     
-    // 加载本地存储的数据
-    loadAllDataFromLocalStorage();
+    // 【关键修复】先加载本地存储的数据
+    const hasLocalData = loadAllDataFromLocalStorage();
+    console.log('本地数据加载完成，是否有数据:', hasLocalData);
+    console.log('当前 chineseErrors 数量:', chineseErrors.length);
+    console.log('最后一条错题图片:', chineseErrors[chineseErrors.length-1]?.questionImages);
     
-    // 从云端加载数据
-    loadFromCloud();
+    // 然后从云端加载（合并数据，不覆盖本地已有的图片）
+    loadFromCloud().then(() => {
+        // 云端加载完成后，保存合并后的数据到本地
+        saveAllDataToLocalStorage();
+        renderSidebar();
+        renderContent();
+        console.log('云端数据加载完成，图片已保留');
+        console.log('最后一条错题图片:', chineseErrors[chineseErrors.length-1]?.questionImages);
+    }).catch((err) => {
+        console.log('云端加载失败或无数据，使用本地数据', err);
+        renderSidebar();
+        renderContent();
+    });
     
     // 绑定学科切换按钮事件
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -2729,6 +2830,8 @@ if (modalSaveBtn) {
         };
     }
 }
+
+
 
    
    init();
