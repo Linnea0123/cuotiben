@@ -1301,22 +1301,37 @@ const GIST_CONFIG = {
     }
     
 function renderPinyinContent(question, wrongAnswer, correctAnswer) {
-    return `
+    // 将每个汉字分开
+    const chars = question.split('');
+    
+    let html = `
         <div class="special-content">
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+    `;
+    
+    chars.forEach(char => {
+        html += `
             <div style="text-align: center;">
-                <div class="four-line-grid">
+                <div class="four-line-grid" style="width: 60px;">
                     <div class="grid-line-1"></div>
                     <div class="grid-line-2"></div>
                     <div class="grid-line-3"></div>
                     <div class="grid-line-4"></div>
-                    <div class="pinyin-text" style="visibility: hidden; height: 24px;">&nbsp;</div>
+                    <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
                 </div>
-                <div style="font-size: 28px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">
-                    ${escapeHtml(question)}
+                <div style="font-size: 28px; font-weight: 500; margin-top: -26px; color: #1c1c1e;">
+                    ${escapeHtml(char)}
                 </div>
+            </div>
+        `;
+    });
+    
+    html += `
             </div>
         </div>
     `;
+    
+    return html;
 }
 function renderShengziContent(question, wrongAnswer, correctAnswer) {
     const pinyins = question.trim().split(/\s+/);
