@@ -523,12 +523,29 @@
             margin-right: 12px;
         }
         .details-container {
-            margin-top: 16px;
-            background: #f9f9fb;
-            border-radius: 18px;
-            padding: 14px 18px;
-            display: none;
-        }
+    margin-top: 16px;
+    background: #f9f9fb;
+    border-radius: 18px;
+    padding: 14px 18px;
+    display: none;
+    max-height: none;      /* 添加：移除高度限制 */
+    overflow: visible;     /* 添加：允许内容自动撑开 */
+}
+
+.detail-wrong, .detail-correct {
+    overflow: visible;
+    word-wrap: break-word;
+    max-width: 100%;
+}
+
+.detail-wrong img, .detail-correct img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin: 8px 0;
+}
+
+
         .details-container.show {
             display: block;
         }
@@ -797,6 +814,83 @@
     background: #007aff;
     color: white;
 }
+
+/* 图片上传相关样式 */
+.upload-img-btn {
+    background: #f2f2f6;
+    border: 0.5px solid #e9e9ef;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #007aff;
+    transition: 0.1s;
+}
+.upload-img-btn:hover {
+    background: #e9e9ef;
+}
+.img-preview-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+.img-preview-item {
+    position: relative;
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e9e9ef;
+}
+.img-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.img-preview-item .remove-img {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    text-align: center;
+    line-height: 18px;
+    cursor: pointer;
+}
+
+/* 图片全宽显示 */
+.question-container img, .review-question-area img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.detail-wrong img, .detail-correct img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 12px;
+    margin: 8px 0;
+}
+
+/* 卡片内图片容器 */
+.question-container {
+    width: 100%;
+}
+
+/* 复习模式图片 */
+.review-card .review-question-area img {
+    max-height: 250px;
+}
+
+
     </style>
 </head>
 <body>
@@ -856,9 +950,42 @@
         <option value="生字">生字</option>
     </select>
 </div>
-            <div class="form-group"><label>原题 / 拼音 / 汉字</label><textarea id="editQuestion" class="auto-height-textarea" placeholder="输入题目内容..."></textarea></div>
-            <div class="form-group"><label>错误答案 / 过程</label><textarea id="editWrong" class="auto-height-textarea" placeholder="学生写的错误答案..."></textarea></div>
-            <div class="form-group"><label>正确答案 / 解析</label><textarea id="editCorrect" class="auto-height-textarea" placeholder="正确答案和解析..."></textarea></div>
+            
+
+<!-- 原题区域 -->
+<div class="form-group">
+    <label>原题 / 拼音 / 汉字</label>
+    <textarea id="editQuestion" class="auto-height-textarea" placeholder="输入题目内容..."></textarea>
+    <div style="margin-top: 8px;">
+        <button type="button" class="upload-img-btn" data-target="question">📷 上传原题图片</button>
+        <input type="file" id="uploadQuestionImg" accept="image/*" style="display: none;">
+        <div id="questionImgPreview" class="img-preview-area"></div>
+    </div>
+</div>
+
+<!-- 错误答案区域 -->
+<div class="form-group">
+    <label>错误答案 / 过程</label>
+    <textarea id="editWrong" class="auto-height-textarea" placeholder="学生写的错误答案..."></textarea>
+    <div style="margin-top: 8px;">
+        <button type="button" class="upload-img-btn" data-target="wrong">📷 上传错误答案图片</button>
+        <input type="file" id="uploadWrongImg" accept="image/*" style="display: none;">
+        <div id="wrongImgPreview" class="img-preview-area"></div>
+    </div>
+</div>
+
+<!-- 正确答案区域 -->
+<div class="form-group">
+    <label>正确答案 / 解析</label>
+    <textarea id="editCorrect" class="auto-height-textarea" placeholder="正确答案和解析..."></textarea>
+    <div style="margin-top: 8px;">
+        <button type="button" class="upload-img-btn" data-target="correct">📷 上传正确答案图片</button>
+        <input type="file" id="uploadCorrectImg" accept="image/*" style="display: none;">
+        <div id="correctImgPreview" class="img-preview-area"></div>
+    </div>
+</div>
+
+
             <div class="form-group"><label>错误原因</label><div id="reasonTagsContainer" class="reason-tags"></div></div>
             <!-- 三列布局：来源、所属单元、日期 -->
             <div class="three-input">
@@ -905,25 +1032,77 @@
 
 <script>
     // ==================== 数据模型 ====================
-    let chineseErrors = [
+   
+
+let chineseErrors = [
     { id: "ch_1", tag: "基础知识", subTag: "拼音", grade: "一下", unit: "第一单元", question: "汗", wrongAnswer: "我写成了'汉'", correctAnswer: "汗", reasons: ["粗心大意"], source: "听写本", date: "2026-05-12", reviewCount: 2, reviewHistory: [
         { time: "2026-06-01 19:30:00", result: "correct" },
         { time: "2026-05-30 10:15:00", result: "wrong" }
-    ] },
-    { id: "ch_2", tag: "基础知识", subTag: "拼音", grade: "一下", unit: "第一单元", question: "晴", wrongAnswer: "我写成了'睛'", correctAnswer: "晴", reasons: ["粗心大意"], source: "听写本", date: "2026-05-15", reviewCount: 0, reviewHistory: [] },
+    ], questionImages: [], wrongImages: [], correctImages: [] },
+    
+    { id: "ch_2", tag: "基础知识", subTag: "拼音", grade: "一下", unit: "第一单元", question: "晴", wrongAnswer: "我写成了'睛'", correctAnswer: "晴", reasons: ["粗心大意"], source: "听写本", date: "2026-05-15", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
+    
     { id: "ch_3", tag: "基础知识", subTag: "生字", grade: "一下", unit: "第二单元", question: "shi", wrongAnswer: "我写成了'是'", correctAnswer: "诗", reasons: ["概念模糊"], source: "生字本", date: "2026-05-18", reviewCount: 1, reviewHistory: [
         { time: "2026-05-28 09:30:00", result: "wrong" }
-    ] },
-    { id: "ch_4", tag: "基础知识", subTag: "生字", grade: "一下", unit: "第二单元", question: "wang", wrongAnswer: "我写成了'忘'", correctAnswer: "望", reasons: ["思路错误"], source: "生字本", date: "2026-05-20", reviewCount: 0, reviewHistory: [] },
-    { id: "ch_5", tag: "阅读理解", grade: "一下", unit: "第二单元", question: "阅读短文《背影》片段：父亲爬过月台买橘子的动作描写，体现了什么情感？", wrongAnswer: "答：体现了父亲身体强壮，动作敏捷。", correctAnswer: "体现了父亲深沉的爱与关怀，尽管笨拙却充满父爱。", reasons: ["审题不清", "思路错误"], source: "月考", date: "2026-05-05", reviewCount: 0, reviewHistory: [] },
-    { id: "ch_6", tag: "作文表达", grade: "一下", unit: "第三单元", question: "请以“春天的早晨”写一个比喻句", wrongAnswer: "早晨非常新鲜", correctAnswer: "春天的早晨像一首轻快的钢琴曲", reasons: ["完全不会"], source: "课后练习", date: "2026-06-01", reviewCount: 0, reviewHistory: [] }
+    ], questionImages: [], wrongImages: [], correctImages: [] },
+    
+    { id: "ch_4", tag: "基础知识", subTag: "生字", grade: "一下", unit: "第二单元", question: "wang", wrongAnswer: "我写成了'忘'", correctAnswer: "望", reasons: ["思路错误"], source: "生字本", date: "2026-05-20", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
+    
+    { id: "ch_5", tag: "阅读理解", grade: "一下", unit: "第二单元", question: "阅读短文《背影》片段：父亲爬过月台买橘子的动作描写，体现了什么情感？", wrongAnswer: "答：体现了父亲身体强壮，动作敏捷。", correctAnswer: "体现了父亲深沉的爱与关怀，尽管笨拙却充满父爱。", reasons: ["审题不清", "思路错误"], source: "月考", date: "2026-05-05", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
+    
+    { id: "ch_6", tag: "作文表达", grade: "一下", unit: "第三单元", question: "请以\"春天的早晨\"写一个比喻句", wrongAnswer: "早晨非常新鲜", correctAnswer: "春天的早晨像一首轻快的钢琴曲", reasons: ["完全不会"], source: "课后练习", date: "2026-06-01", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] }
 ];
-    let mathErrors = [
-        { id: "math_1", tag: "计算", unit: "第一单元", question: "计算 25 × 4 ÷ 25 × 4 = ?", wrongAnswer: "1", correctAnswer: "16", reasons: ["粗心大意"], source: "口算练习", date: "2026-05-15", reviewCount: 1, reviewHistory: [{ time: "2026-05-30 14:20:00", result: "wrong" }] }
-    ];
+
+let mathErrors = [
+    { id: "math_1", tag: "计算", unit: "第一单元", question: "计算 25 × 4 ÷ 25 × 4 = ?", wrongAnswer: "1", correctAnswer: "16", reasons: ["粗心大意"], source: "口算练习", date: "2026-05-15", reviewCount: 1, reviewHistory: [{ time: "2026-05-30 14:20:00", result: "wrong" }], questionImages: [], wrongImages: [], correctImages: [] }
+];
+
+
+
+// ========== GitHub 图床配置 ==========
+const GITHUB_CONFIG = {
+    token: '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',   // 把你的Token填这里
+    owner: 'Linnea0123',
+    repo: 'cuotiben',
+    branch: 'main'
+};
+// 上传图片到 GitHub
+async function uploadToGitHub(base64Data, fileName) {
+    const base64Content = base64Data.split(',')[1];
+    
+    const response = await fetch(`https://api.github.com/repos/Linnea0123/cuotiben/contents/${fileName}`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `token ${GITHUB_CONFIG.token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            message: `Upload ${fileName}`,
+            content: base64Content,
+            branch: 'main'
+        })
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || '上传失败');
+    }
+    
+    const result = await response.json();
+    return `https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben/${fileName}`;
+}
+
+
 
     let currentSubject = "chinese";
     let currentChineseTag = "基础知识";
+
+
+
+
+
+
+
     let currentChineseSubTag = "全部";  
     let currentGradeFilter = "一下";
     let currentMathTag = "计算";
@@ -932,6 +1111,17 @@
     let currentFilter = "all";
 let customUnitKeyword = "";
     let reviewContextSubFilter = null;
+
+
+// ========== Gist 配置（存文字数据）==========
+const GIST_CONFIG = {
+    id: '9fb733b006f81daa05b09f021b60d43d',   // 你的 Gist ID
+    fileName: 'cuoti_data.json', 
+    token: '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' 
+};
+
+
+
 
     const chineseReasonOptions = ["粗心大意", "审题不清", "思路错误", "完全不会"];
     const mathReasonOptions = ["粗心大意", "审题不清", "计算错误", "概念模糊", "思路错误", "完全不会"];
@@ -1127,6 +1317,8 @@ function renderSidebar() {
     }
 }
 
+
+
 function renderContent() {
     const list = getCurrentDisplayList();
     const subjectName = currentSubject === "chinese" ? "语文" : "数学";
@@ -1197,39 +1389,50 @@ function renderContent() {
         const reasonText = item.reasons?.length ? item.reasons.join("、") : "未分类";
         const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
         
-        let specialContent = "";
-        if (item.tag === "基础知识" && item.subTag === "拼音") {
-            specialContent = renderPinyinContent(item.question, item.wrongAnswer, item.correctAnswer);
-        } else if (item.tag === "基础知识" && item.subTag === "生字") {
-            specialContent = renderShengziContent(item.question, item.wrongAnswer, item.correctAnswer);
-        } else {
-            specialContent = renderNormalContent(item.question, item.wrongAnswer, item.correctAnswer);
-        }
+       let specialContent = "";
+// 基础知识：拼音和生字有特殊样式
+if (item.tag === "基础知识" && item.subTag === "拼音") {
+    specialContent = renderPinyinContent(item.question, item.wrongAnswer, item.correctAnswer);
+} else if (item.tag === "基础知识" && item.subTag === "生字") {
+    specialContent = renderShengziContent(item.question, item.wrongAnswer, item.correctAnswer);
+} else {
+    // 阅读理解、作文表达、文学常识等：普通文字显示
+    specialContent = `<div class="question-text" style="font-size: 16px; font-weight: 500; line-height: 1.5;">${escapeHtml(item.question)}</div>`;
+}
         
-        cardsHtml += `
-            <div class="card">
-                <div class="card-header">
-                    <div class="tag-group">
-                        <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
-                        <span class="error-tag">${escapeHtml(reasonText)}</span>
-                    </div>
-                    <button class="edit-btn" data-id="${item.id}">编辑</button>
-                </div>
-                <div class="card-body">
-                    ${specialContent}
-                    <div class="meta-info" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #8e8e93; margin-top: 12px;">
-    <span>${escapeHtml(item.source || '未知来源')}</span>
-    <span>${escapeHtml(item.unit || '未分类')}</span>
-    <span>${item.date || '无日期'}</span>
-    <span style="cursor: pointer; color: #8e8e93;" onclick="showHistoryModal('${item.id}', '${currentSubject}')">复习 ${item.reviewCount || 0} 次</span>
-</div>
+  // 在 card-body 内部，specialContent 后面、meta-info 前面，添加图片显示
+const questionImagesHtml = renderImagesInCard(item.questionImages);
+const wrongImagesHtml = renderImagesInCard(item.wrongImages);
+const correctImagesHtml = renderImagesInCard(item.correctImages);
 
-
-
-                </div>
+cardsHtml += `
+    <div class="card">
+        <div class="card-header">
+            <div class="tag-group">
+                <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
+                <span class="error-tag">${escapeHtml(reasonText)}</span>
             </div>
-        `;
-    });
+            <button class="edit-btn" data-id="${item.id}">编辑</button>
+        </div>
+        <div class="card-body">
+            <!-- 只显示原题内容：文字在上，大图在下 -->
+            <div class="question-container">
+                ${specialContent}
+                ${renderImagesInCard(item.questionImages, '', 'full')}
+            </div>
+            
+            <!-- 元信息行 -->
+            <div class="meta-info" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #8e8e93; margin-top: 16px; padding-top: 12px; border-top: 0.5px solid #f0f0f4;">
+                <span>📁 ${escapeHtml(item.source || '未知来源')}</span>
+                <span>📚 ${escapeHtml(item.unit || '未分类')}</span>
+                <span>📅 ${item.date || '无日期'}</span>
+                <span style="cursor: pointer; color: #007aff; background: #e9e9ef; padding: 4px 12px; border-radius: 20px;" onclick="showHistoryModal('${item.id}', '${currentSubject}')">📊 复习 ${item.reviewCount || 0} 次</span>
+            </div>
+        </div>
+    </div>
+`;
+
+});
     cardsHtml += `</div>`;
     contentAreaDiv.innerHTML = headerHtml + subTabsHtml + cardsHtml;
     
@@ -1389,6 +1592,7 @@ function openReviewWithCurrentFilter() {
             const lastReviewText = lastReview ? `${lastReview.time} (${lastReview.result === 'correct' ? '✓ 做对' : '✗ 做错'})` : '从未';
             const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
             
+            // ========== 生成原题特殊内容（拼音/生字有四线三格/田字格） ==========
             let specialContent = "";
             if (item.tag === "基础知识" && item.subTag === "拼音") {
                 specialContent = `
@@ -1429,42 +1633,76 @@ function openReviewWithCurrentFilter() {
                     </div>
                 `;
             } else {
-                specialContent = `<div class="review-question" style="margin: 12px 0;">${escapeHtml(item.question)}</div>`;
+                // 所有其他分类：阅读理解、作文表达、文学常识、数学等
+                specialContent = `<div class="review-question" style="font-size: 16px; font-weight: 500; line-height: 1.5; margin: 12px 0; background: #f8f9fc; padding: 16px; border-radius: 16px;">${escapeHtml(item.question)}</div>`;
             }
             
+            // ========== 生成所有分类的图片（全宽大图） ==========
+            const qImagesHtml = renderImagesInCard(item.questionImages, '', 'full');
+            const wImagesHtml = renderImagesInCard(item.wrongImages, '错误答案图片', 'full');
+            const cImagesHtml = renderImagesInCard(item.correctImages, '正确答案图片', 'full');
+            
+            // ========== 构建复习卡片HTML ==========
             html += `
                 <div class="review-card">
-                    <div class="review-meta"><span>${item.tag}${subTagInfo}</span><span>${item.date || '无日期'}</span><span>来源: ${item.source || '未知'}</span><span>单元: ${item.unit || '未标注'}</span><span>原因: ${item.reasons?.join(',') || ''}</span></div>
-                    ${specialContent}
+                    <div class="review-meta">
+                        <span>📌 ${item.tag}${subTagInfo}</span>
+                        <span>📅 ${item.date || '无日期'}</span>
+                        <span>📁 ${item.source || '未知'}</span>
+                        <span>📚 ${item.unit || '未标注'}</span>
+                        <span>💡 原因: ${item.reasons?.join(',') || '未标注'}</span>
+                    </div>
+                    
+                    <!-- 原题区域：文字 + 图片 -->
+                    <div class="review-question-area" style="margin-bottom: 16px;">
+                        ${specialContent}
+                        ${qImagesHtml}
+                    </div>
+                    
                     <div class="review-stats">
-                        <span class="review-count-badge" onclick="showHistoryModal('${item.id}', '${currentSubject}')">复习次数: ${item.reviewCount || 0}</span>
-                        <span class="last-review">最近复习: ${lastReviewText}</span>
+                        <span class="review-count-badge" onclick="showHistoryModal('${item.id}', '${currentSubject}')">📊 复习次数: ${item.reviewCount || 0}</span>
+                        <span class="last-review">🕐 最近复习: ${lastReviewText}</span>
                         <div class="review-action-group">
                             <button class="review-correct-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="correct">✓ 做对了</button>
                             <button class="review-wrong-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="wrong">✗ 还是错了</button>
                         </div>
                     </div>
-                    <div><button class="toggle-details-btn" data-id="${item.id}">显示答案与解析</button></div>
+                    
+                    <div>
+                        <button class="toggle-details-btn" data-id="${item.id}">🔍 显示答案与解析</button>
+                    </div>
+                    
+                    <!-- 展开详情：错误答案和正确答案（含图片） -->
                     <div id="review-details-${item.id}" class="details-container">
-                        <div class="detail-wrong">错误过程：<br>${escapeHtml(item.wrongAnswer || '未记录')}</div>
-                        <div class="detail-correct">正确答案/解析：<br>${escapeHtml(item.correctAnswer || '未记录')}</div>
+                        <div class="detail-wrong">
+                            <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px;">❌ 错误答案 / 错误过程：</div>
+                            <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.5;">${escapeHtml(item.wrongAnswer || '未记录')}</div>
+                            ${wImagesHtml}
+                        </div>
+                        <div class="detail-correct">
+                            <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px;">✅ 正确答案 / 解析：</div>
+                            <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.5;">${escapeHtml(item.correctAnswer || '未记录')}</div>
+                            ${cImagesHtml}
+                        </div>
                     </div>
                 </div>
             `;
         });
         reviewListContainer.innerHTML = html;
         
+        // 绑定展开/收起按钮事件
         document.querySelectorAll('.toggle-details-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.getAttribute('data-id');
                 const detailsDiv = document.getElementById(`review-details-${id}`);
                 if (detailsDiv) { 
                     detailsDiv.classList.toggle('show'); 
-                    btn.textContent = detailsDiv.classList.contains('show') ? '隐藏答案与解析' : '显示答案与解析'; 
+                    btn.textContent = detailsDiv.classList.contains('show') ? '🔒 隐藏答案与解析' : '🔍 显示答案与解析'; 
                 }
             });
         });
         
+        // 绑定做对/做错按钮事件
         document.querySelectorAll('.review-correct-btn, .review-wrong-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.getAttribute('data-id');
@@ -1476,6 +1714,8 @@ function openReviewWithCurrentFilter() {
     }
     reviewModal.classList.add('active');
 }
+
+
 // 控制二级分类显示/隐藏
 function toggleSubTagGroup() {
     const tagSelect = document.getElementById('editTag');
@@ -1534,11 +1774,24 @@ function openAddModal() {
     document.getElementById("editGrade").value = currentGradeFilter || "一下";
     document.getElementById("editDate").value = new Date().toISOString().slice(0, 10);
     
-    // 动态生成类别选项（根据当前科目）
+    // 重要：清空临时图片数组
+    if (!window._tempImages) window._tempImages = { question: [], wrong: [], correct: [] };
+    window._tempImages.question = [];
+    window._tempImages.wrong = [];
+    window._tempImages.correct = [];
+    
+    // 刷新图片预览区域
+    if (typeof renderImagePreview === 'function') {
+        renderImagePreview('question');
+        renderImagePreview('wrong');
+        renderImagePreview('correct');
+    }
+    
+    // 动态生成类别选项
     let defaultTag = currentSubject === "chinese" ? currentChineseTag : "计算";
     refreshCategorySelect(currentSubject, defaultTag);
     
-    // 设置二级分类（仅语文基础知识需要）
+    // 设置二级分类
     const subTagGroup = document.getElementById('subTagGroup');
     const tagSelect = document.getElementById('editTag');
     if (currentSubject === "chinese" && tagSelect.value === "基础知识") {
@@ -1547,7 +1800,6 @@ function openAddModal() {
         subTagGroup.style.display = 'none';
     }
     
-    // 设置二级分类默认值
     const subTagSelect = document.getElementById('editSubTag');
     if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
         subTagSelect.value = currentChineseSubTag;
@@ -1555,15 +1807,15 @@ function openAddModal() {
         subTagSelect.value = "拼音";
     }
     
-    // 设置错误原因选项
+    // 错误原因选项
     const opts = currentSubject === "chinese" ? chineseReasonOptions : mathReasonOptions;
     let tagsHtml = "";
     opts.forEach(opt => { tagsHtml += `<div class="reason-tag" data-reason="${opt}">${opt}</div>`; });
     reasonTagsContainer.innerHTML = tagsHtml;
     document.querySelectorAll('.reason-tag').forEach(tag => tag.addEventListener('click', (e) => tag.classList.toggle('selected')));
+    
     editModal.classList.add('active');
     
-    // 绑定类别切换事件
     tagSelect.onchange = function() {
         if (currentSubject === "chinese" && tagSelect.value === "基础知识") {
             subTagGroup.style.display = 'block';
@@ -1573,15 +1825,17 @@ function openAddModal() {
     };
 }
 
-
-
 function openEditModal(errorId, subject) {
     document.querySelector('#editModal .modal-container h4').innerText = "编辑错题";
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     const editItem = errorList.find(err => err.id === errorId);
-    if (!editItem) return;
+    if (!editItem) {
+        alert("未找到该错题");
+        return;
+    }
     editingItem = { id: errorId, subject: subject };
     
+    // 填充表单字段
     document.getElementById("editQuestion").value = editItem.question || "";
     document.getElementById("editWrong").value = editItem.wrongAnswer || "";
     document.getElementById("editCorrect").value = editItem.correctAnswer || "";
@@ -1602,7 +1856,7 @@ function openEditModal(errorId, subject) {
         subTagGroup.style.display = 'none';
     }
     
-    // 设置二级分类
+    // 设置二级分类的值
     const subTagSelect = document.getElementById('editSubTag');
     if (editItem.subTag) {
         subTagSelect.value = editItem.subTag;
@@ -1610,13 +1864,40 @@ function openEditModal(errorId, subject) {
         subTagSelect.value = "拼音";
     }
     
+    // 设置错误原因选项
     const opts = subject === "chinese" ? chineseReasonOptions : mathReasonOptions;
     const selectedReasons = editItem.reasons || [];
     let tagsHtml = "";
-    opts.forEach(opt => { tagsHtml += `<div class="reason-tag ${selectedReasons.includes(opt) ? 'selected' : ''}" data-reason="${opt}">${opt}</div>`; });
+    opts.forEach(opt => {
+        tagsHtml += `<div class="reason-tag ${selectedReasons.includes(opt) ? 'selected' : ''}" data-reason="${opt}">${opt}</div>`;
+    });
     reasonTagsContainer.innerHTML = tagsHtml;
-    document.querySelectorAll('.reason-tag').forEach(tag => tag.addEventListener('click', (e) => tag.classList.toggle('selected')));
-    editModal.classList.add('active');
+    
+    // 绑定错误原因点击事件
+    document.querySelectorAll('.reason-tag').forEach(tag => {
+        tag.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('selected');
+        });
+    });
+    
+    // ========== 图片加载（关键部分） ==========
+    // 初始化临时图片存储对象
+    if (!window._tempImages) {
+        window._tempImages = { question: [], wrong: [], correct: [] };
+    }
+    
+    // 从编辑项中加载已有图片到临时存储
+    window._tempImages.question = editItem.questionImages ? [...editItem.questionImages] : [];
+    window._tempImages.wrong = editItem.wrongImages ? [...editItem.wrongImages] : [];
+    window._tempImages.correct = editItem.correctImages ? [...editItem.correctImages] : [];
+    
+    // 刷新三个图片预览区域
+    if (typeof renderImagePreview === 'function') {
+        renderImagePreview('question');
+        renderImagePreview('wrong');
+        renderImagePreview('correct');
+    }
+    // ========================================
     
     // 绑定类别切换事件
     tagSelect.onchange = function() {
@@ -1626,10 +1907,10 @@ function openEditModal(errorId, subject) {
             subTagGroup.style.display = 'none';
         }
     };
+    
+    // 显示模态框
+    editModal.classList.add('active');
 }
-
-
-
 
 function saveEdit() {
     const { id, subject } = editingItem;
@@ -1645,6 +1926,11 @@ function saveEdit() {
     const selected = document.querySelectorAll('#reasonTagsContainer .reason-tag.selected');
     const newReasons = Array.from(selected).map(div => div.getAttribute("data-reason"));
     
+    // 获取图片数据（关键修复点）
+    const newQuestionImages = (window._tempImages && window._tempImages.question) ? [...window._tempImages.question] : [];
+    const newWrongImages = (window._tempImages && window._tempImages.wrong) ? [...window._tempImages.wrong] : [];
+    const newCorrectImages = (window._tempImages && window._tempImages.correct) ? [...window._tempImages.correct] : [];
+    
     // 原题不能为空
     if (!newQuestion.trim()) {
         alert("请填写原题内容！");
@@ -1653,19 +1939,17 @@ function saveEdit() {
     
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     
-    // ========== 重复检测（新增模式时） ==========
+    // 重复检测（新增模式时）
     if (id === null) {
-        // 检查是否有完全相同的原题
         const isDuplicate = errorList.some(item => item.question === newQuestion);
         if (isDuplicate) {
             alert("⚠️ 这道题已经存在错题本中了！\n请勿重复添加。");
             return;
         }
     }
-    // =========================================
     
     if (id === null) {
-        // 新增模式：生成新ID
+        // 新增模式
         const newId = subject === "chinese" ? `ch_${Date.now()}` : `math_${Date.now()}`;
         const newItem = {
             id: newId,
@@ -1680,12 +1964,15 @@ function saveEdit() {
             source: newSource,
             date: newDate,
             reviewCount: 0,
-            reviewHistory: []
+            reviewHistory: [],
+            questionImages: newQuestionImages,
+            wrongImages: newWrongImages,
+            correctImages: newCorrectImages
         };
         errorList.push(newItem);
         alert("✅ 新增错题成功！");
     } else {
-        // 编辑模式：更新已有数据（编辑时允许相同内容，因为可能是修改其他字段）
+        // 编辑模式
         const idx = errorList.findIndex(e => e.id === id);
         if (idx !== -1) {
             errorList[idx] = { 
@@ -1699,27 +1986,37 @@ function saveEdit() {
                 reasons: newReasons,
                 tag: newTag,
                 subTag: (newTag === "基础知识") ? newSubTag : undefined,
-                grade: newGrade
+                grade: newGrade,
+                questionImages: newQuestionImages,
+                wrongImages: newWrongImages,
+                correctImages: newCorrectImages
             };
             alert("✅ 编辑成功！");
+        } else {
+            alert("❌ 未找到要编辑的题目");
+            return;
         }
     }
-    
+    saveAllDataToLocalStorage();  // 保存后自动存到本地
     closeModal(); 
     renderSidebar(); 
     renderContent();
+    saveToCloud();  // 保存后自动同步到云端
     
     // 如果复习模式打开，刷新复习列表
-    if (reviewModal.classList.contains('active')) {
+    if (reviewModal && reviewModal.classList && reviewModal.classList.contains('active')) {
         openReviewWithCurrentFilter();
     }
 }
 
-
 function closeModal() { 
-        editModal.classList.remove('active'); 
-        editingItem = { id: null, subject: null }; 
+    editModal.classList.remove('active'); 
+    editingItem = { id: null, subject: null };
+    // 可选：关闭时清空临时图片（避免下次打开残留）
+    if (window._tempImages) {
+        window._tempImages = { question: [], wrong: [], correct: [] };
     }
+}
 
     function switchSubject(subject) {
         currentSubject = subject;
@@ -1736,7 +2033,368 @@ function closeModal() {
         renderContent();
     }
 
+
+
+// ========== 图片上传功能 ==========
+let tempImages = { question: [], wrong: [], correct: [] };
+window._tempImages = tempImages;
+
+// 初始化图片上传按钮
+function initImageUpload() {
+    const targets = ['question', 'wrong', 'correct'];
+    targets.forEach(target => {
+        const btn = document.querySelector(`.upload-img-btn[data-target="${target}"]`);
+        const fileInput = document.getElementById(`upload${capitalize(target)}Img`);
+        if (btn && fileInput) {
+            btn.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => handleImageUpload(e, target);
+        }
+    });
+}
+
+// 首字母大写
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// 图片压缩函数（压缩到200KB以内）
+function compressImageTo200KB(file, callback) {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            let quality = 0.7;
+            let width = img.width;
+            let height = img.height;
+            
+            // 限制最大宽度为800px
+            const maxWidth = 800;
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            function tryCompress(q) {
+                const dataUrl = canvas.toDataURL('image/jpeg', q);
+                // 估算大小（Base64长度 * 0.75 ≈ 字节数）
+                const estimatedSize = dataUrl.length * 0.75;
+                if (estimatedSize > 200000 && q > 0.3) {
+                    tryCompress(q - 0.1);
+                } else {
+                    callback(dataUrl);
+                }
+            }
+            tryCompress(quality);
+        };
+        img.src = e.target.result;
+    };
+}
+
+
+
+
+
+
+function dataURItoBlob(dataURI) {
+    const byteString = atob(dataURI.split(',')[1]);
+    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+}
+
+
+
+// 处理图片上传 - 压缩后上传到 GitHub
+async function handleImageUpload(event, target) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件');
+        return;
+    }
+    
+    const btn = document.querySelector(`.upload-img-btn[data-target="${target}"]`);
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ 压缩上传中...';
+    btn.disabled = true;
+    
+    try {
+        compressImageTo200KB(file, async (compressedBase64) => {
+            try {
+                // 生成唯一文件名
+                const ext = file.name.split('.').pop() || 'jpg';
+                const fileName = `images/${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
+                
+                // 上传到 GitHub
+                const imageUrl = await uploadToGitHub(compressedBase64, fileName);
+                
+                if (!tempImages[target]) tempImages[target] = [];
+                tempImages[target].push(imageUrl);
+                renderImagePreview(target);
+                
+                alert('✅ 图片已上传到 GitHub 云端！');
+            } catch (err) {
+                console.error('上传错误:', err);
+                alert('❌ 上传失败：' + err.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+                event.target.value = '';
+            }
+        });
+    } catch (err) {
+        alert('❌ 压缩失败');
+        btn.textContent = originalText;
+        btn.disabled = false;
+        event.target.value = '';
+    }
+}
+
+
+// 渲染图片预览
+function renderImagePreview(target) {
+    const container = document.getElementById(`${target}ImgPreview`);
+    if (!container) return;
+    
+    const images = tempImages[target] || [];
+    if (images.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    images.forEach((img, idx) => {
+        html += `
+            <div class="img-preview-item">
+                <img src="${img}" alt="预览图">
+                <div class="remove-img" data-target="${target}" data-index="${idx}">×</div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    
+    // 绑定删除事件
+    container.querySelectorAll('.remove-img').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            const t = el.getAttribute('data-target');
+            const idx = parseInt(el.getAttribute('data-index'));
+            if (tempImages[t] && tempImages[t][idx]) {
+                tempImages[t].splice(idx, 1);
+                renderImagePreview(t);
+            }
+        };
+    });
+}
+
+// 显示已有的图片（编辑时）
+function displayExistingImages(target, imageUrls) {
+    if (!tempImages[target]) tempImages[target] = [];
+    tempImages[target] = [...imageUrls];
+    renderImagePreview(target);
+}
+
+function renderImagesInCard(images, title = '', size = 'normal') {
+    if (!images || images.length === 0) return '';
+    
+    let html = `<div style="margin-top: 12px; width: 100%;">`;
+    if (title) {
+        html += `<div style="font-size: 13px; color: #8e8e93; margin-bottom: 8px; font-weight: 500;">📷 ${title}：</div>`;
+    }
+    
+    // 全宽大图模式：图片占满卡片宽度
+    if (size === 'full') {
+        html += `<div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">`;
+        images.forEach((img, idx) => {
+            html += `
+                <div style="width: 100%; border-radius: 12px; overflow: hidden; background: #f8f9fc; border: 0.5px solid #e9e9ef; cursor: pointer;" onclick="window.open('${img}')">
+                    <img src="${img}" style="width: 100%; max-height: 300px; object-fit: contain; display: block;" alt="图片${idx+1}">
+                </div>
+            `;
+        });
+        html += `</div>`;
+    } 
+    // 正常模式：网格排列
+    else {
+        html += `<div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
+        images.forEach((img, idx) => {
+            html += `
+                <div style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; border: 0.5px solid #e9e9ef; cursor: pointer;" onclick="window.open('${img}')">
+                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" alt="图片${idx+1}">
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    
+    html += `</div>`;
+    return html;
+}
+
+
+// 保存文字数据到 Gist
+async function saveToCloud() {
+    if (!GIST_CONFIG.id) {
+        console.log('请先配置 GIST_CONFIG.id');
+        return;
+    }
+    
+    const data = {
+        chineseErrors: chineseErrors,
+        mathErrors: mathErrors,
+        lastUpdate: new Date().toISOString(),
+        version: '1.0'
+    };
+    
+    const content = JSON.stringify(data, null, 2);
+    
+    let sha = '';
+    try {
+        const getResponse = await fetch(`https://api.github.com/gists/${GIST_CONFIG.id}`);
+        if (getResponse.ok) {
+            const gist = await getResponse.json();
+            sha = gist.files[GIST_CONFIG.fileName]?.sha || '';
+        }
+    } catch (e) {
+        console.log('获取 Gist 信息失败', e);
+    }
+    
+    const response = await fetch(`https://api.github.com/gists/${GIST_CONFIG.id}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `token ${GITHUB_CONFIG.token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            files: {
+                [GIST_CONFIG.fileName]: {
+                    content: content,
+                    sha: sha
+                }
+            }
+        })
+    });
+    
+    if (response.ok) {
+        console.log('✅ 文字数据已同步到 Gist');
+    } else {
+        const error = await response.json();
+        console.error('同步失败:', error);
+    }
+}
+
+// 从 Gist 加载文字数据
+async function loadFromCloud() {
+    if (!GIST_CONFIG.id) {
+        console.log('请先配置 GIST_CONFIG.id');
+        return false;
+    }
+    
+    try {
+        const rawUrl = `https://gist.githubusercontent.com/Linnea0123/${GIST_CONFIG.id}/raw/${GIST_CONFIG.fileName}`;
+        const response = await fetch(rawUrl);
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.chineseErrors) {
+                chineseErrors.length = 0;
+                data.chineseErrors.forEach(item => {
+                    chineseErrors.push({
+                        ...item,
+                        questionImages: item.questionImages || [],
+                        wrongImages: item.wrongImages || [],
+                        correctImages: item.correctImages || []
+                    });
+                });
+            }
+            if (data.mathErrors) {
+                mathErrors.length = 0;
+                data.mathErrors.forEach(item => mathErrors.push(item));
+            }
+            renderSidebar();
+            renderContent();
+            console.log('✅ 已从 Gist 加载文字数据');
+            return true;
+        }
+    } catch (err) {
+        console.error('加载失败:', err);
+    }
+    return false;
+}
+
+
+// ========== 数据持久化到 localStorage ==========
+function saveAllDataToLocalStorage() {
+    try {
+        const dataToSave = {
+            chineseErrors: chineseErrors,
+            mathErrors: mathErrors,
+            version: '1.0',
+            lastSaved: new Date().toISOString()
+        };
+        localStorage.setItem('cuoti_data', JSON.stringify(dataToSave));
+        console.log('✅ 数据已保存到本地');
+    } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+            alert('存储空间不足！图片太多，请删除一些旧错题。');
+        } else {
+            console.error('保存失败:', e);
+        }
+    }
+}
+
+function loadAllDataFromLocalStorage() {
+    const saved = localStorage.getItem('cuoti_data');
+    if (saved) {
+        try {
+            const data = JSON.parse(saved);
+            if (data.chineseErrors) {
+                chineseErrors.length = 0;
+                data.chineseErrors.forEach(item => {
+                    chineseErrors.push({
+                        ...item,
+                        questionImages: item.questionImages || [],
+                        wrongImages: item.wrongImages || [],
+                        correctImages: item.correctImages || []
+                    });
+                });
+            }
+            if (data.mathErrors) {
+                mathErrors.length = 0;
+                data.mathErrors.forEach(item => {
+                    mathErrors.push({
+                        ...item,
+                        questionImages: item.questionImages || [],
+                        wrongImages: item.wrongImages || [],
+                        correctImages: item.correctImages || []
+                    });
+                });
+            }
+            console.log('✅ 已从本地加载数据');
+            return true;
+        } catch (e) {
+            console.error('加载失败:', e);
+        }
+    }
+    return false;
+}
+
+
     function init() {
+         loadAllDataFromLocalStorage(); 
+         loadFromCloud();  // 启动时从云端加载
         document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchSubject(btn.getAttribute('data-subject'))));
         cancelBtn.addEventListener('click', closeModal);
         editForm.addEventListener('submit', (e) => { e.preventDefault(); saveEdit(); });
@@ -1748,6 +2406,7 @@ function closeModal() {
         reviewModal.addEventListener('click', (e) => { if (e.target === reviewModal) reviewModal.classList.remove('active'); });
         historyOverlay.addEventListener('click', closeHistoryModal);
         switchSubject('chinese');
+        initImageUpload();
         // 单元选择按钮事件
 document.getElementById('selectUnitBtn').addEventListener('click', () => {
     openUnitModal();
