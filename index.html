@@ -531,14 +531,14 @@
             margin-top: 6px;
             margin-right: 12px;
         }
-        .details-container {
-    margin-top: 16px;
+   .details-container {
+    margin-top: 12px;
     background: #f9f9fb;
-    border-radius: 18px;
-    padding: 14px 18px;
+    border-radius: 16px;
+    padding: 10px 14px;
     display: none;
-    max-height: none;      /* 添加：移除高度限制 */
-    overflow: visible;     /* 添加：允许内容自动撑开 */
+    max-height: none;
+    overflow: visible;
 }
 
 .detail-wrong, .detail-correct {
@@ -558,25 +558,31 @@
         .details-container.show {
             display: block;
         }
-        .detail-wrong {
-            background: #fef2f2;
-            padding: 12px 14px;
-            border-radius: 14px;
-            margin-bottom: 12px;
-            font-size: 14px;
-            white-space: pre-wrap;
-            border-left: 3px solid #ff3b30;
-            line-height: 1.6;
-        }
-        .detail-correct {
-            background: #ecf7ec;
-            padding: 12px 14px;
-            border-radius: 14px;
-            font-size: 14px;
-            white-space: pre-wrap;
-            border-left: 3px solid #34c759;
-            line-height: 1.6;
-        }
+       .detail-wrong {
+    background: #fef2f2;
+    padding: 10px 12px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    white-space: normal;
+    word-wrap: break-word;
+    border-left: 3px solid #ff3b30;
+    line-height: 1.4;
+    max-height: none;
+    overflow: auto;
+}
+.detail-correct {
+    background: #ecf7ec;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    white-space: normal;
+    word-wrap: break-word;
+    border-left: 3px solid #34c759;
+    line-height: 1.4;
+    max-height: none;
+    overflow: auto;
+}
         .review-empty {
             text-align: center;
             padding: 80px 20px;
@@ -1084,11 +1090,16 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
         
         <div class="form-group">
             <label>🗄️ 数据管理</label>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
-                <button type="button" id="syncNowBtn" style="background: #007aff; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">☁️ 手动同步到云端</button>
-                <button type="button" id="exportDataBtn" style="background: #34c759; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📥 导出数据</button>
-                <button type="button" id="importDataBtn" style="background: #ff9500; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📤 导入数据</button>
-            </div>
+           
+
+<div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+    <button type="button" id="syncNowBtn" style="background: #007aff; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">☁️ 同步到云端</button>
+    <button type="button" id="restoreFromCloudBtn" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">☁️ 从云端恢复</button>
+    <button type="button" id="exportDataBtn" style="background: #34c759; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📥 导出数据</button>
+    <button type="button" id="importDataBtn" style="background: #ff9500; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📤 导入数据</button>
+</div>
+
+
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                 <button type="button" id="clearAllDataBtn" style="background: #ff3b30; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">🗑️ 清除所有错题</button>
                 <button type="button" id="resetToSampleBtn" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📋 恢复示例数据</button>
@@ -2685,6 +2696,60 @@ async function loadFromCloud() {
     return false;
 }
 
+
+// 强制从云端加载并覆盖本地数据
+async function loadFromCloudForce() {
+    if (!GIST_CONFIG.id) {
+        alert('请先配置 Gist ID');
+        return false;
+    }
+    
+    try {
+        const rawUrl = `https://gist.githubusercontent.com/Linnea0123/${GIST_CONFIG.id}/raw/${GIST_CONFIG.fileName}`;
+        const response = await fetch(rawUrl);
+        
+        if (response.ok) {
+            const data = await response.json();
+            // 强制覆盖本地数据
+            if (data.chineseErrors) {
+                chineseErrors.length = 0;
+                data.chineseErrors.forEach(item => {
+                    chineseErrors.push({
+                        ...item,
+                        questionImages: item.questionImages || [],
+                        wrongImages: item.wrongImages || [],
+                        correctImages: item.correctImages || []
+                    });
+                });
+            }
+            if (data.mathErrors) {
+                mathErrors.length = 0;
+                data.mathErrors.forEach(item => {
+                    mathErrors.push({
+                        ...item,
+                        questionImages: item.questionImages || [],
+                        wrongImages: item.wrongImages || [],
+                        correctImages: item.correctImages || []
+                    });
+                });
+            }
+            saveAllDataToLocalStorage();
+            renderSidebar();
+            renderContent();
+            if (reviewModal.classList.contains('active')) {
+                openReviewWithCurrentFilter();
+            }
+            console.log('✅ 已从云端强制恢复数据');
+            return true;
+        } else {
+            throw new Error('云端无数据或获取失败');
+        }
+    } catch (err) {
+        console.error('恢复失败:', err);
+        throw err;
+    }
+}
+
 // ========== 数据持久化到 localStorage ==========
 function saveAllDataToLocalStorage() {
     try {
@@ -2948,6 +3013,30 @@ filterBtns.forEach(btn => {
             }
         };
     }
+
+// 从云端恢复数据
+const restoreFromCloudBtn = document.getElementById('restoreFromCloudBtn');
+if (restoreFromCloudBtn) {
+    restoreFromCloudBtn.onclick = async () => {
+        if (!GITHUB_CONFIG.token) {
+            alert('⚠️ 请先在设置中填写 GitHub Token');
+            return;
+        }
+        if (confirm('从云端恢复会覆盖当前所有本地数据，确定继续吗？')) {
+            restoreFromCloudBtn.textContent = '⏳ 恢复中...';
+            restoreFromCloudBtn.disabled = true;
+            try {
+                await loadFromCloudForce();  // 强制从云端加载并覆盖本地
+                alert('✅ 从云端恢复成功！');
+            } catch (err) {
+                alert('❌ 恢复失败：' + err.message);
+            } finally {
+                restoreFromCloudBtn.textContent = '☁️ 从云端恢复';
+                restoreFromCloudBtn.disabled = false;
+            }
+        }
+    };
+}
 
     // 导出数据
     if (exportDataBtn) {
