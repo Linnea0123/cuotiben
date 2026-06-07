@@ -2274,7 +2274,7 @@ async function saveToCloud() {
     const response = await fetch(`https://api.github.com/gists/${GIST_CONFIG.id}`, {
         method: 'PATCH',
         headers: {
-            'Authorization': `token ${GITHUB_CONFIG.token}`,
+            'Authorization': `token ${GIST_CONFIG.token}`,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
