@@ -975,93 +975,95 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
 <div id="editModal" class="modal-mask">
     <div class="modal-container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h4 style="margin: 0;">编辑错题</h4>
-    <button type="button" id="modalSaveBtn" style="background: transparent; border: none; color: #007aff; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">保存</button>
-</div>
+            <h4 style="margin: 0;" id="modalTitle">编辑错题</h4>
+            <div style="display: flex; gap: 12px;">
+                <button type="button" id="deleteInModalBtn" style="background: transparent; border: none; color: #ff3b30; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">🗑️</button>
+                <button type="button" id="modalSaveBtn" style="background: transparent; border: none; color: #007aff; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">保存</button>
+            </div>
+        </div>
         <form id="editForm">
-            <div class="form-group"><label>类别</label>
-   <select id="editTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
-    <!-- 选项会动态生成 -->
-</select>
+            <div class="form-group">
+                <label>类别</label>
+                <select id="editTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
+                    <!-- 选项会动态生成 -->
+                </select>
+            </div>
+            <div class="form-group" id="subTagGroup" style="display: none;">
+                <label>二级分类（基础知识专用）</label>
+                <select id="editSubTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
+                    <option value="拼音">拼音</option>
+                    <option value="生字">生字</option>
+                </select>
+            </div>
 
+            <!-- 原题区域 -->
+            <div class="form-group">
+                <label>原题 / 拼音 / 汉字</label>
+                <textarea id="editQuestion" class="auto-height-textarea" placeholder="输入题目内容..."></textarea>
+                <div style="margin-top: 8px;">
+                    <button type="button" class="upload-img-btn" data-target="question">📷 上传原题图片</button>
+                    <input type="file" id="uploadQuestionImg" accept="image/*" style="display: none;">
+                    <div id="questionImgPreview" class="img-preview-area"></div>
+                </div>
+            </div>
 
+            <!-- 错误答案区域 -->
+            <div class="form-group">
+                <label>错误答案 / 过程</label>
+                <textarea id="editWrong" class="auto-height-textarea" placeholder="学生写的错误答案..."></textarea>
+                <div style="margin-top: 8px;">
+                    <button type="button" class="upload-img-btn" data-target="wrong">📷 上传错误答案图片</button>
+                    <input type="file" id="uploadWrongImg" accept="image/*" style="display: none;">
+                    <div id="wrongImgPreview" class="img-preview-area"></div>
+                </div>
+            </div>
 
+            <!-- 正确答案区域 -->
+            <div class="form-group">
+                <label>正确答案 / 解析</label>
+                <textarea id="editCorrect" class="auto-height-textarea" placeholder="正确答案和解析..."></textarea>
+                <div style="margin-top: 8px;">
+                    <button type="button" class="upload-img-btn" data-target="correct">📷 上传正确答案图片</button>
+                    <input type="file" id="uploadCorrectImg" accept="image/*" style="display: none;">
+                    <div id="correctImgPreview" class="img-preview-area"></div>
+                </div>
+            </div>
 
+            <div class="form-group">
+                <label>错误原因</label>
+                <div id="reasonTagsContainer" class="reason-tags"></div>
+            </div>
 
-</div>
-<div class="form-group" id="subTagGroup" style="display: none;">
-    <label>二级分类（基础知识专用）</label>
-    <select id="editSubTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
-        <option value="拼音">拼音</option>
-        <option value="生字">生字</option>
-    </select>
-</div>
-            
-
-<!-- 原题区域 -->
-<div class="form-group">
-    <label>原题 / 拼音 / 汉字</label>
-    <textarea id="editQuestion" class="auto-height-textarea" placeholder="输入题目内容..."></textarea>
-    <div style="margin-top: 8px;">
-        <button type="button" class="upload-img-btn" data-target="question">📷 上传原题图片</button>
-        <input type="file" id="uploadQuestionImg" accept="image/*" style="display: none;">
-        <div id="questionImgPreview" class="img-preview-area"></div>
-    </div>
-</div>
-
-<!-- 错误答案区域 -->
-<div class="form-group">
-    <label>错误答案 / 过程</label>
-    <textarea id="editWrong" class="auto-height-textarea" placeholder="学生写的错误答案..."></textarea>
-    <div style="margin-top: 8px;">
-        <button type="button" class="upload-img-btn" data-target="wrong">📷 上传错误答案图片</button>
-        <input type="file" id="uploadWrongImg" accept="image/*" style="display: none;">
-        <div id="wrongImgPreview" class="img-preview-area"></div>
-    </div>
-</div>
-
-<!-- 正确答案区域 -->
-<div class="form-group">
-    <label>正确答案 / 解析</label>
-    <textarea id="editCorrect" class="auto-height-textarea" placeholder="正确答案和解析..."></textarea>
-    <div style="margin-top: 8px;">
-        <button type="button" class="upload-img-btn" data-target="correct">📷 上传正确答案图片</button>
-        <input type="file" id="uploadCorrectImg" accept="image/*" style="display: none;">
-        <div id="correctImgPreview" class="img-preview-area"></div>
-    </div>
-</div>
-
-
-            <div class="form-group"><label>错误原因</label><div id="reasonTagsContainer" class="reason-tags"></div></div>
             <!-- 三列布局：来源、所属单元、日期 -->
             <div class="three-input">
-    <div><label>来源</label><input type="text" id="editSource" placeholder=""></div>
-    <div><label>年级学期</label>
-        <select id="editGrade" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
-            <option value="一上">一上</option>
-            <option value="一下">一下</option>
-            <option value="二上">二上</option>
-            <option value="二下">二下</option>
-            <option value="三上">三上</option>
-            <option value="三下">三下</option>
-            <option value="全部">全部（所有年级）</option>
-        </select>
-    </div>
-    <div><label>所属单元</label><input type="text" id="editUnit" placeholder="如：第一单元"></div>
-    <div><label>日期</label><input type="date" id="editDate"></div>
-</div>
-
-
-
-            <div class="modal-actions"><button type="button" class="btn-cancel" id="cancelEditBtn">取消</button>
+                <div><label>来源</label><input type="text" id="editSource" placeholder=""></div>
+                <div><label>年级学期</label>
+                    <select id="editGrade" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
+                        <option value="一上">一上</option>
+                        <option value="一下">一下</option>
+                        <option value="二上">二上</option>
+                        <option value="二下">二下</option>
+                        <option value="三上">三上</option>
+                        <option value="三下">三下</option>
+                        <option value="全部">全部（所有年级）</option>
+                    </select>
                 </div>
+                <div><label>所属单元</label><input type="text" id="editUnit" placeholder="如：第一单元"></div>
+                <div><label>日期</label><input type="date" id="editDate"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" id="cancelEditBtn">取消</button>
+            </div>
         </form>
     </div>
 </div>
 
 <!-- 全局设置弹窗 -->
 <div id="settingsModal" class="modal-mask">
-    <div class="modal-container" style="max-width: 480px;">
+    <div class="modal-container" style="max-width: 480px;"
+    
+
         <h4>⚙️ 系统设置</h4>
         
         <div class="form-group">
@@ -1318,14 +1320,40 @@ const GIST_CONFIG = {
     
 
 function renderPinyinContent(question, wrongAnswer, correctAnswer) {
-    // 将每个汉字分开
-    const chars = question.split('');
+    // 提取括号前的汉字和括号内的注释（去掉括号）
+    let mainHanzi = question;
+    let noteText = '';
+    const bracketIndex = question.indexOf('（');
+    if (bracketIndex > 0) {
+        mainHanzi = question.substring(0, bracketIndex);
+        let tempNote = question.substring(bracketIndex + 1);
+        if (tempNote.endsWith('）')) {
+            tempNote = tempNote.slice(0, -1);
+        }
+        noteText = tempNote;
+    }
+    // 也处理英文括号
+    const englishBracketIndex = question.indexOf('(');
+    if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
+        mainHanzi = question.substring(0, englishBracketIndex);
+        let tempNote = question.substring(englishBracketIndex + 1);
+        if (tempNote.endsWith(')')) {
+            tempNote = tempNote.slice(0, -1);
+        }
+        noteText = tempNote;
+    }
+    
+    // 将主体汉字分开
+    const chars = mainHanzi.split('');
+    // 将注释文字也分开
+    const noteChars = noteText ? noteText.split('') : [];
     
     let html = `
         <div class="special-content">
             <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
     `;
     
+    // 主体汉字：正常显示拼音线
     chars.forEach(char => {
         html += `
             <div style="text-align: center;">
@@ -1343,6 +1371,24 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
         `;
     });
     
+    // 注释文字：文字黑色，拼音线透明
+    noteChars.forEach(char => {
+        html += `
+            <div style="text-align: center;">
+                <div class="four-line-grid" style="width: 50px;">
+                    <div class="grid-line-1" style="border-top: 1px solid transparent;"></div>
+                    <div class="grid-line-2" style="border-top: 1px solid transparent;"></div>
+                    <div class="grid-line-3" style="border-top: 1px solid transparent;"></div>
+                    <div class="grid-line-4" style="border-top: 1px solid transparent;"></div>
+                    <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
+                </div>
+                <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
+                    ${escapeHtml(char)}
+                </div>
+            </div>
+        `;
+    });
+    
     html += `
             </div>
         </div>
@@ -1350,7 +1396,6 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
     
     return html;
 }
-
 
 
 
@@ -1486,34 +1531,84 @@ function renderContent() {
         let specialContent = "";
         const hasTextContent = item.question && item.question.trim();
         
-        if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
-            const chars = item.question.split('');
-            let pinyinHtml = `
-                <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 16px;">
-                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
-            `;
-            chars.forEach(char => {
-                pinyinHtml += `
-                    <div style="text-align: center;">
-                        <div class="four-line-grid" style="width: 50px;">
-                            <div class="grid-line-1"></div>
-                            <div class="grid-line-2"></div>
-                            <div class="grid-line-3"></div>
-                            <div class="grid-line-4"></div>
-                            <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
-                        </div>
-                        <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
-                            ${escapeHtml(char)}
-                        </div>
-                    </div>
-                `;
-            });
-            pinyinHtml += `
-                    </div>
+        
+
+
+
+
+if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
+    let mainHanzi = item.question;
+    let noteText = '';
+    const bracketIndex = item.question.indexOf('（');
+    if (bracketIndex > 0) {
+        mainHanzi = item.question.substring(0, bracketIndex);
+        let tempNote = item.question.substring(bracketIndex + 1);
+        if (tempNote.endsWith('）')) {
+            tempNote = tempNote.slice(0, -1);
+        }
+        noteText = tempNote;
+    }
+    const englishBracketIndex = item.question.indexOf('(');
+    if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
+        mainHanzi = item.question.substring(0, englishBracketIndex);
+        let tempNote = item.question.substring(englishBracketIndex + 1);
+        if (tempNote.endsWith(')')) {
+            tempNote = tempNote.slice(0, -1);
+        }
+        noteText = tempNote;
+    }
+    
+    const chars = mainHanzi.split('');
+    const noteChars = noteText ? noteText.split('') : [];
+    
+    let pinyinHtml = `
+        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 16px;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
+    `;
+    
+    chars.forEach(char => {
+        pinyinHtml += `
+            <div style="text-align: center;">
+                <div class="four-line-grid" style="width: 50px;">
+                    <div class="grid-line-1"></div>
+                    <div class="grid-line-2"></div>
+                    <div class="grid-line-3"></div>
+                    <div class="grid-line-4"></div>
+                    <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
                 </div>
-            `;
-            specialContent = pinyinHtml;
-        } else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
+                <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
+                    ${escapeHtml(char)}
+                </div>
+            </div>
+        `;
+    });
+    
+    noteChars.forEach(char => {
+        pinyinHtml += `
+            <div style="text-align: center;">
+                <div class="four-line-grid" style="width: 50px;">
+                    <div class="grid-line-1" style="border-top: 1px solid transparent;"></div>
+                    <div class="grid-line-2" style="border-top: 1px solid transparent;"></div>
+                    <div class="grid-line-3" style="border-top: 1px solid transparent;"></div>
+                    <div class="grid-line-4" style="border-top: 1px solid transparent;"></div>
+                    <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
+                </div>
+                <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
+                    ${escapeHtml(char)}
+                </div>
+            </div>
+        `;
+    });
+    
+    pinyinHtml += `
+            </div>
+        </div>
+    `;
+    specialContent = pinyinHtml;
+}
+
+        
+        else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
             const pinyins = item.question.trim().split(/\s+/);
             let tianGridsHtml = '';
             for (let i = 0; i < pinyins.length; i++) {
@@ -1928,25 +2023,31 @@ function openAddModal() {
     document.querySelector('#editModal .modal-container h4').innerText = "新增错题";
     editingItem = { id: null, subject: currentSubject };
     
-    // 清空表单
-    document.getElementById("editQuestion").value = "";
-    document.getElementById("editWrong").value = "";
-    document.getElementById("editCorrect").value = "";
-    document.getElementById("editSource").value = "";
-    document.getElementById("editUnit").value = "";
-    document.getElementById("editGrade").value = currentGradeFilter || "一下";
-    document.getElementById("editDate").value = new Date().toISOString().slice(0, 10);
+    // 清空表单 - 添加安全检查
+    const editQuestionEl = document.getElementById("editQuestion");
+    const editWrongEl = document.getElementById("editWrong");
+    const editCorrectEl = document.getElementById("editCorrect");
+    const editSourceEl = document.getElementById("editSource");
+    const editUnitEl = document.getElementById("editUnit");
+    const editGradeEl = document.getElementById("editGrade");
+    const editDateEl = document.getElementById("editDate");
     
-    // ========== 关键修复：彻底清空临时图片 ==========
-    // 清空 tempImages 对象
+    if (editQuestionEl) editQuestionEl.value = "";
+    if (editWrongEl) editWrongEl.value = "";
+    if (editCorrectEl) editCorrectEl.value = "";
+    if (editSourceEl) editSourceEl.value = "";
+    if (editUnitEl) editUnitEl.value = "";
+    if (editGradeEl) editGradeEl.value = currentGradeFilter || "一下";
+    if (editDateEl) editDateEl.value = new Date().toISOString().slice(0, 10);
+    
+    // 清空临时图片
     tempImages = { question: [], wrong: [], correct: [] };
     window._tempImages = tempImages;
     
-    // 刷新三个图片预览区域（清空显示）
+    // 刷新图片预览区域
     renderImagePreview('question');
     renderImagePreview('wrong');
     renderImagePreview('correct');
-    // ================================================
     
     // 动态生成类别选项
     let defaultTag = currentSubject === "chinese" ? currentChineseTag : "计算";
@@ -1955,17 +2056,19 @@ function openAddModal() {
     // 设置二级分类
     const subTagGroup = document.getElementById('subTagGroup');
     const tagSelect = document.getElementById('editTag');
-    if (currentSubject === "chinese" && tagSelect.value === "基础知识") {
-        subTagGroup.style.display = 'block';
+    if (currentSubject === "chinese" && tagSelect && tagSelect.value === "基础知识") {
+        if (subTagGroup) subTagGroup.style.display = 'block';
     } else {
-        subTagGroup.style.display = 'none';
+        if (subTagGroup) subTagGroup.style.display = 'none';
     }
     
     const subTagSelect = document.getElementById('editSubTag');
-    if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-        subTagSelect.value = currentChineseSubTag;
-    } else {
-        subTagSelect.value = "拼音";
+    if (subTagSelect) {
+        if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            subTagSelect.value = currentChineseSubTag;
+        } else {
+            subTagSelect.value = "拼音";
+        }
     }
     
     // 错误原因选项
@@ -1975,16 +2078,29 @@ function openAddModal() {
     reasonTagsContainer.innerHTML = tagsHtml;
     document.querySelectorAll('.reason-tag').forEach(tag => tag.addEventListener('click', (e) => tag.classList.toggle('selected')));
     
+    // 新增模式下隐藏删除按钮
+    const deleteInModalBtn = document.getElementById('deleteInModalBtn');
+    if (deleteInModalBtn) {
+        deleteInModalBtn.style.display = 'none';
+    }
+    
     editModal.classList.add('active');
     
-    tagSelect.onchange = function() {
-        if (currentSubject === "chinese" && tagSelect.value === "基础知识") {
-            subTagGroup.style.display = 'block';
-        } else {
-            subTagGroup.style.display = 'none';
-        }
-    };
+    if (tagSelect) {
+        tagSelect.onchange = function() {
+            if (currentSubject === "chinese" && tagSelect.value === "基础知识") {
+                if (subTagGroup) subTagGroup.style.display = 'block';
+            } else {
+                if (subTagGroup) subTagGroup.style.display = 'none';
+            }
+        };
+    }
 }
+
+
+
+
+
 function openEditModal(errorId, subject) {
     document.querySelector('#editModal .modal-container h4').innerText = "编辑错题";
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
@@ -1995,33 +2111,49 @@ function openEditModal(errorId, subject) {
     }
     editingItem = { id: errorId, subject: subject };
     
-    // 填充表单字段
-    document.getElementById("editQuestion").value = editItem.question || "";
-    document.getElementById("editWrong").value = editItem.wrongAnswer || "";
-    document.getElementById("editCorrect").value = editItem.correctAnswer || "";
-    document.getElementById("editSource").value = editItem.source || "";
-    document.getElementById("editUnit").value = editItem.unit || "";
-    document.getElementById("editDate").value = editItem.date || "";
-    document.getElementById("editGrade").value = editItem.grade || "一下";
-    
-    // 动态生成类别选项
-    refreshCategorySelect(subject, editItem.tag || "基础知识");
-    
-    // 设置二级分类显示/隐藏
+    // 先获取所有元素
+    const editQuestionEl = document.getElementById("editQuestion");
+    const editWrongEl = document.getElementById("editWrong");
+    const editCorrectEl = document.getElementById("editCorrect");
+    const editSourceEl = document.getElementById("editSource");
+    const editUnitEl = document.getElementById("editUnit");
+    const editDateEl = document.getElementById("editDate");
+    const editGradeEl = document.getElementById("editGrade");
+    const editSubTagEl = document.getElementById("editSubTag");
     const subTagGroup = document.getElementById('subTagGroup');
-    const tagSelect = document.getElementById('editTag');
-    if (subject === "chinese" && tagSelect.value === "基础知识") {
-        subTagGroup.style.display = 'block';
-    } else {
-        subTagGroup.style.display = 'none';
+    const reasonTagsContainer = document.getElementById("reasonTagsContainer");
+    
+    // 先填充表单字段（在刷新类别之前）
+    if (editQuestionEl) editQuestionEl.value = editItem.question || "";
+    if (editWrongEl) editWrongEl.value = editItem.wrongAnswer || "";
+    if (editCorrectEl) editCorrectEl.value = editItem.correctAnswer || "";
+    if (editSourceEl) editSourceEl.value = editItem.source || "";
+    if (editUnitEl) editUnitEl.value = editItem.unit || "";
+    if (editDateEl) editDateEl.value = editItem.date || "";
+    if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
+    
+    // 设置二级分类的值（在刷新类别之前）
+    if (editSubTagEl) {
+        if (editItem.subTag) {
+            editSubTagEl.value = editItem.subTag;
+        } else {
+            editSubTagEl.value = "拼音";
+        }
     }
     
-    // 设置二级分类的值
-    const subTagSelect = document.getElementById('editSubTag');
-    if (editItem.subTag) {
-        subTagSelect.value = editItem.subTag;
-    } else {
-        subTagSelect.value = "拼音";
+    // 动态生成类别选项（这会重新创建 select 的 option）
+    refreshCategorySelect(subject, editItem.tag || "基础知识");
+    
+    // 重新获取 editTagEl（因为 refreshCategorySelect 可能改变了内容）
+    const editTagEl = document.getElementById("editTag");
+    
+    // 设置二级分类显示/隐藏
+    if (editTagEl) {
+        if (subject === "chinese" && editTagEl.value === "基础知识") {
+            if (subTagGroup) subTagGroup.style.display = 'block';
+        } else {
+            if (subTagGroup) subTagGroup.style.display = 'none';
+        }
     }
     
     // 设置错误原因选项
@@ -2031,17 +2163,17 @@ function openEditModal(errorId, subject) {
     opts.forEach(opt => {
         tagsHtml += `<div class="reason-tag ${selectedReasons.includes(opt) ? 'selected' : ''}" data-reason="${opt}">${opt}</div>`;
     });
-    reasonTagsContainer.innerHTML = tagsHtml;
     
-    // 绑定错误原因点击事件
-    document.querySelectorAll('.reason-tag').forEach(tag => {
-        tag.addEventListener('click', (e) => {
-            e.currentTarget.classList.toggle('selected');
+    if (reasonTagsContainer) {
+        reasonTagsContainer.innerHTML = tagsHtml;
+        document.querySelectorAll('.reason-tag').forEach(tag => {
+            tag.addEventListener('click', (e) => {
+                e.currentTarget.classList.toggle('selected');
+            });
         });
-    });
+    }
     
-    // ========== 图片加载：从编辑项加载已有图片 ==========
-    // 重置临时图片为当前编辑项的图片
+    // 图片加载
     tempImages = {
         question: editItem.questionImages ? [...editItem.questionImages] : [],
         wrong: editItem.wrongImages ? [...editItem.wrongImages] : [],
@@ -2053,20 +2185,41 @@ function openEditModal(errorId, subject) {
     renderImagePreview('question');
     renderImagePreview('wrong');
     renderImagePreview('correct');
-    // ====================================================
     
     // 绑定类别切换事件
-    tagSelect.onchange = function() {
-        if (subject === "chinese" && tagSelect.value === "基础知识") {
-            subTagGroup.style.display = 'block';
-        } else {
-            subTagGroup.style.display = 'none';
+    if (editTagEl) {
+        editTagEl.onchange = function() {
+            if (subject === "chinese" && editTagEl.value === "基础知识") {
+                if (subTagGroup) subTagGroup.style.display = 'block';
+            } else {
+                if (subTagGroup) subTagGroup.style.display = 'none';
+            }
+        };
+    }
+    
+    
+    // 编辑模式下显示删除按钮
+const deleteInModalBtn = document.getElementById('deleteInModalBtn');
+if (deleteInModalBtn) {
+    deleteInModalBtn.style.display = 'inline-block';
+    // 先移除所有可能的事件监听器
+    const newDeleteBtn = deleteInModalBtn.cloneNode(true);
+    deleteInModalBtn.parentNode.replaceChild(newDeleteBtn, deleteInModalBtn);
+    const freshDeleteBtn = document.getElementById('deleteInModalBtn');
+    
+    freshDeleteBtn.addEventListener('click', function() {
+        if (confirm('确定要删除这道错题吗？删除后不可恢复！')) {
+            closeModal();
+            deleteQuestion(errorId, subject);
         }
-    };
+    });
+}
     
     // 显示模态框
     editModal.classList.add('active');
 }
+
+
 function saveEdit() {
 
     // 检查 Token 是否存在
@@ -2181,6 +2334,35 @@ function closeModal() {
     // 可选：关闭时清空临时图片（避免下次打开残留）
     if (window._tempImages) {
         window._tempImages = { question: [], wrong: [], correct: [] };
+    }
+}
+
+
+function closeModal() { 
+    editModal.classList.remove('active'); 
+    editingItem = { id: null, subject: null };
+    // 可选：关闭时清空临时图片（避免下次打开残留）
+    if (window._tempImages) {
+        window._tempImages = { question: [], wrong: [], correct: [] };
+    }
+}
+
+// ========== 删除错题函数 ==========
+function deleteQuestion(id, subject) {
+    const errorList = subject === "chinese" ? chineseErrors : mathErrors;
+    const index = errorList.findIndex(item => item.id === id);
+    if (index !== -1) {
+        errorList.splice(index, 1);
+        saveAllDataToLocalStorage();
+        saveToCloud();
+        renderSidebar();
+        renderContent();
+        if (reviewModal.classList.contains('active')) {
+            openReviewWithCurrentFilter();
+        }
+        alert('✅ 删除成功');
+    } else {
+        alert('❌ 删除失败：未找到该错题');
     }
 }
 
@@ -2461,7 +2643,6 @@ async function saveToCloud() {
     }
 }
 
-// 从 Gist 加载文字数据
 async function loadFromCloud() {
     if (!GIST_CONFIG.id) {
         console.log('请先配置 GIST_CONFIG.id');
@@ -2474,20 +2655,24 @@ async function loadFromCloud() {
         
         if (response.ok) {
             const data = await response.json();
-            if (data.chineseErrors) {
-                chineseErrors.length = 0;
-                data.chineseErrors.forEach(item => {
-                    chineseErrors.push({
-                        ...item,
-                        questionImages: item.questionImages || [],
-                        wrongImages: item.wrongImages || [],
-                        correctImages: item.correctImages || []
+            // 合并云端数据到本地，而不是覆盖
+            if (data.chineseErrors && data.chineseErrors.length > 0) {
+                // 如果本地没有数据，才使用云端数据
+                if (chineseErrors.length === 0) {
+                    data.chineseErrors.forEach(item => {
+                        chineseErrors.push({
+                            ...item,
+                            questionImages: item.questionImages || [],
+                            wrongImages: item.wrongImages || [],
+                            correctImages: item.correctImages || []
+                        });
                     });
-                });
+                }
             }
-            if (data.mathErrors) {
-                mathErrors.length = 0;
-                data.mathErrors.forEach(item => mathErrors.push(item));
+            if (data.mathErrors && data.mathErrors.length > 0) {
+                if (mathErrors.length === 0) {
+                    data.mathErrors.forEach(item => mathErrors.push(item));
+                }
             }
             renderSidebar();
             renderContent();
@@ -2499,7 +2684,6 @@ async function loadFromCloud() {
     }
     return false;
 }
-
 
 // ========== 数据持久化到 localStorage ==========
 function saveAllDataToLocalStorage() {
@@ -2635,9 +2819,35 @@ function init() {
         openReviewWithCurrentFilter();
     });
     
-    // 绑定关闭复习按钮
-    closeReviewBtn.addEventListener('click', () => reviewModal.classList.remove('active'));
-    
+  closeReviewBtn.addEventListener('click', () => reviewModal.classList.remove('active'));
+
+  // 绑定复习模式中的筛选按钮事件（今日、本周、本月）
+const filterBtns = document.querySelectorAll('.filter-btn');
+filterBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const filter = btn.getAttribute('data-filter');
+        if (filter) {
+            // 更新按钮样式
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // 设置筛选条件
+            if (filter === 'today') {
+                currentFilter = 'today';
+                customUnitKeyword = '';
+            } else if (filter === 'week') {
+                currentFilter = 'week';
+                customUnitKeyword = '';
+            } else if (filter === 'month') {
+                currentFilter = 'month';
+                customUnitKeyword = '';
+            }
+            
+            // 刷新复习列表
+            openReviewWithCurrentFilter();
+        }
+    });
+});
     // 点击遮罩关闭复习模态框
     reviewModal.addEventListener('click', (e) => {
         if (e.target === reviewModal) reviewModal.classList.remove('active');
