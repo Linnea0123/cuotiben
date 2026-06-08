@@ -592,34 +592,37 @@
         }
 
         /* 编辑弹窗 */
-        .modal-mask {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(2px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            visibility: hidden;
-            opacity: 0;
-        }
-        .modal-mask.active {
-            visibility: visible;
-            opacity: 1;
-        }
-        .modal-container {
-            width: 90%;
-            max-width: 580px;
-            max-height: 85vh;
-            background: white;
-            border-radius: 32px;
-            overflow-y: auto;
-            padding: 24px 28px 32px;
-        }
+.modal-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: 0.2s ease;
+}
+
+.modal-mask.active {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+    .modal-container {
+    width: 90%;
+    max-width: 580px;
+    max-height: 85vh;
+    background: white;
+    border-radius: 32px;
+    overflow-y: auto;
+    padding: 24px 28px 32px;
+    scroll-margin-top: 0;
+}
         .modal-container h4 {
             font-size: 22px;
             font-weight: 590;
@@ -645,7 +648,7 @@
             font-family: inherit;
             resize: vertical;
             line-height: 1.5;
-            min-height: 80px;
+            min-height: 42px;
         }
         .form-group input {
             width: 100%;
@@ -769,7 +772,8 @@
     display: block;
     margin-bottom: 6px;
 }
-.three-input input {
+.three-input input,
+.three-input select {
     width: 100%;
     padding: 10px 12px;
     border-radius: 12px;
@@ -777,12 +781,31 @@
     font-size: 14px;
     background: white;
     transition: 0.1s;
+    box-sizing: border-box;
 }
 .three-input input:focus {
     outline: none;
     border-color: #007aff;
     box-shadow: 0 0 0 2px rgba(0,122,255,0.1);
 }
+
+
+/* 统一日期选择框字体 */
+input[type="date"] {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    color: #1c1c1e;
+}
+
+/* 或者让所有输入框字体统一 */
+.three-input input,
+.three-input select,
+.three-input input[type="date"] {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    color: #1c1c1e;
+}
+
 
 /* 单元选择弹窗 */
 .unit-modal {
@@ -914,6 +937,148 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
     touch-action: manipulation;
 }
 
+/* 修复类别选框聚焦时的黑框问题 */
+select:focus, input:focus, textarea:focus {
+    outline: none;
+   
+    
+}
+
+
+/* 批量添加按钮样式 */
+.batch-add-btn {
+    background: #5856d6;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-left: 12px;
+    transition: 0.2s;
+}
+.batch-add-btn:active { opacity: 0.7; }
+
+/* 批量添加弹窗 */
+.batch-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    visibility: hidden;
+    opacity: 0;
+    transition: 0.2s ease;
+}
+.batch-modal.active {
+    visibility: visible;
+    opacity: 1;
+}
+.batch-modal-container {
+    width: 90%;
+    max-width: 500px;
+    background: white;
+    border-radius: 28px;
+    padding: 24px;
+}
+.batch-modal-container h4 {
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+.batch-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 0.5px solid #c6c6c8;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    resize: vertical;
+}
+.batch-tip {
+    font-size: 12px;
+    color: #8e8e93;
+    margin-top: 8px;
+}
+.batch-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+.batch-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 30px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+}
+.batch-cancel { background: #e9e9ef; color: #1c1c1e; }
+.batch-confirm { background: #007aff; color: white; }
+
+/* 生字卡片容器 */
+.shengzi-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+}
+
+.shengzi-item {
+    width: 80px;
+    text-align: center;
+}
+
+/* 强制调整生字田字格间距 */
+.special-content > div {
+    gap: 10px !important;
+}
+
+.special-content > div > div {
+    margin: 0 !important;
+}
+
+/* 主界面卡片网格布局 */
+.questions-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+/* 平板及以上屏幕：每行2张卡片 */
+@media (min-width: 768px) {
+    .questions-list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+}
+
+/* 大屏幕：每行2张 */
+@media (min-width: 1024px) {
+    .questions-list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+/* 卡片高度自适应，保持统一 */
+.card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-body {
+    flex: 1;
+}
+
     </style>
 </head>
 <body>
@@ -935,8 +1100,14 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
                 <option value="三下">三下</option>
             </select>
         </div>
-        <button id="openSettingsBtn" style="background: transparent; border: none; font-size: 24px; cursor: pointer; padding: 0 8px; color: #007aff;">⚙️</button>
-        <button class="review-btn-header" id="openReviewBtn">复习模式</button>
+<button id="openSettingsBtn" style="background: transparent; border: none; cursor: pointer; padding: 0 8px; color: #007aff; display: inline-flex; align-items: center; justify-content: center;">
+    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#8e8e93">
+        <g data-name="1" id="_1">
+            <path d="M293.9,450H233.53a15,15,0,0,1-14.92-13.42l-4.47-42.09a152.77,152.77,0,0,1-18.25-7.56L163,413.53a15,15,0,0,1-20-1.06l-42.69-42.69a15,15,0,0,1-1.06-20l26.61-32.93a152.15,152.15,0,0,1-7.57-18.25L76.13,294.1a15,15,0,0,1-13.42-14.91V218.81A15,15,0,0,1,76.13,203.9l42.09-4.47a152.15,152.15,0,0,1,7.57-18.25L99.18,148.25a15,15,0,0,1,1.06-20l42.69-42.69a15,15,0,0,1,20-1.06l32.93,26.6a152.77,152.77,0,0,1,18.25-7.56l4.47-42.09A15,15,0,0,1,233.53,48H293.9a15,15,0,0,1,14.92,13.42l4.46,42.09a152.91,152.91,0,0,1,18.26,7.56l32.92-26.6a15,15,0,0,1,20,1.06l42.69,42.69a15,15,0,0,1,1.06,20l-26.61,32.93a153.8,153.8,0,0,1,7.57,18.25l42.09,4.47a15,15,0,0,1,13.41,14.91v60.38A15,15,0,0,1,451.3,294.1l-42.09,4.47a153.8,153.8,0,0,1-7.57,18.25l26.61,32.93a15,15,0,0,1-1.06,20L384.5,412.47a15,15,0,0,1-20,1.06l-32.92-26.6a152.91,152.91,0,0,1-18.26,7.56l-4.46,42.09A15,15,0,0,1,293.9,450ZM247,420h33.39l4.09-38.56a15,15,0,0,1,11.06-12.91A123,123,0,0,0,325.7,356a15,15,0,0,1,17,1.31l30.16,24.37,23.61-23.61L372.06,328a15,15,0,0,1-1.31-17,122.63,122.63,0,0,0,12.49-30.14,15,15,0,0,1,12.92-11.06l38.55-4.1V232.31l-38.55-4.1a15,15,0,0,1-12.92-11.06A122.63,122.63,0,0,0,370.75,187a15,15,0,0,1,1.31-17l24.37-30.16-23.61-23.61-30.16,24.37a15,15,0,0,1-17,1.31,123,123,0,0,0-30.14-12.49,15,15,0,0,1-11.06-12.91L280.41,78H247l-4.09,38.56a15,15,0,0,1-11.07,12.91A122.79,122.79,0,0,0,201.73,142a15,15,0,0,1-17-1.31L154.6,116.28,131,139.89l24.38,30.16a15,15,0,0,1,1.3,17,123.41,123.41,0,0,0-12.49,30.14,15,15,0,0,1-12.91,11.06l-38.56,4.1v33.38l38.56,4.1a15,15,0,0,1,12.91,11.06A123.41,123.41,0,0,0,156.67,311a15,15,0,0,1-1.3,17L131,358.11l23.61,23.61,30.17-24.37a15,15,0,0,1,17-1.31,122.79,122.79,0,0,0,30.13,12.49,15,15,0,0,1,11.07,12.91ZM449.71,279.19h0Z"/>
+            <path d="M263.71,340.36A91.36,91.36,0,1,1,355.08,249,91.46,91.46,0,0,1,263.71,340.36Zm0-152.72A61.36,61.36,0,1,0,325.08,249,61.43,61.43,0,0,0,263.71,187.64Z"/>
+        </g>
+    </svg>
+</button>        <button class="review-btn-header" id="openReviewBtn">复习模式</button>
     </div>
 </div>
     <div class="subject-tabs" style="display: flex; justify-content: space-between; align-items: center;">
@@ -947,6 +1118,7 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
     <div style="display: flex; align-items: center; gap: 12px;">
         <span id="questionCountDisplay" style="font-size: 14px; color: #8e8e93;">0 道题</span>
         <button class="add-question-btn-header" style="background: transparent; border: none; padding: 4px 10px; border-radius: 20px; color: #707070; font-size: 18px; font-weight: 500; cursor: pointer;">+</button>
+  <button id="batchAddBtn" class="batch-add-btn" style="display: none;">批量添加</button> 
     </div>
 </div>
     <div class="two-columns">
@@ -968,8 +1140,9 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
         <div class="filter-group">
             <button class="filter-btn" data-filter="today">今日</button>
             <button class="filter-btn" data-filter="week">本周</button>
+             <button class="filter-btn" data-filter="nextWeek">下周</button>
             <button class="filter-btn" data-filter="month">本月</button>
-            <button id="selectUnitBtn" class="filter-btn" style="background: #e9e9ef; color: #3a3a3e;">📁 选择单元</button>
+            <button id="selectUnitBtn" class="filter-btn" style="background: #e9e9ef; color: #3a3a3e;">选择单元</button>
         </div>
     </div>
 </div>
@@ -983,7 +1156,7 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h4 style="margin: 0;" id="modalTitle">编辑错题</h4>
             <div style="display: flex; gap: 12px;">
-                <button type="button" id="deleteInModalBtn" style="background: transparent; border: none; color: #ff3b30; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">🗑️</button>
+                <button type="button" id="deleteInModalBtn" style="background: transparent; border: none; color: #ff3b30; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">删除</button>
                 <button type="button" id="modalSaveBtn" style="background: transparent; border: none; color: #007aff; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">保存</button>
             </div>
         </div>
@@ -999,15 +1172,16 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
                 <select id="editSubTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
                     <option value="拼音">拼音</option>
                     <option value="生字">生字</option>
+                     <option value="笔顺">笔顺</option>
                 </select>
             </div>
 
             <!-- 原题区域 -->
             <div class="form-group">
-                <label>原题 / 拼音 / 汉字</label>
-                <textarea id="editQuestion" class="auto-height-textarea" placeholder="输入题目内容..."></textarea>
+                <label>原题</label>
+                <textarea id="editQuestion" class="auto-height-textarea" rows="1"placeholder=""></textarea>
                 <div style="margin-top: 8px;">
-                    <button type="button" class="upload-img-btn" data-target="question">📷 上传原题图片</button>
+                    <button type="button" class="upload-img-btn" data-target="question">上传图片</button>
                     <input type="file" id="uploadQuestionImg" accept="image/*" style="display: none;">
                     <div id="questionImgPreview" class="img-preview-area"></div>
                 </div>
@@ -1016,9 +1190,9 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
             <!-- 错误答案区域 -->
             <div class="form-group">
                 <label>错误答案 / 过程</label>
-                <textarea id="editWrong" class="auto-height-textarea" placeholder="学生写的错误答案..."></textarea>
+                <textarea id="editWrong" class="auto-height-textarea" rows="1"placeholder=""></textarea>
                 <div style="margin-top: 8px;">
-                    <button type="button" class="upload-img-btn" data-target="wrong">📷 上传错误答案图片</button>
+                    <button type="button" class="upload-img-btn" data-target="wrong">上传图片</button>
                     <input type="file" id="uploadWrongImg" accept="image/*" style="display: none;">
                     <div id="wrongImgPreview" class="img-preview-area"></div>
                 </div>
@@ -1027,9 +1201,9 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
             <!-- 正确答案区域 -->
             <div class="form-group">
                 <label>正确答案 / 解析</label>
-                <textarea id="editCorrect" class="auto-height-textarea" placeholder="正确答案和解析..."></textarea>
+                <textarea id="editCorrect" class="auto-height-textarea"  rows="1"placeholder=""></textarea>
                 <div style="margin-top: 8px;">
-                    <button type="button" class="upload-img-btn" data-target="correct">📷 上传正确答案图片</button>
+                    <button type="button" class="upload-img-btn" data-target="correct">上传图片</button>
                     <input type="file" id="uploadCorrectImg" accept="image/*" style="display: none;">
                     <div id="correctImgPreview" class="img-preview-area"></div>
                 </div>
@@ -1101,8 +1275,7 @@ button, .category-tab, .tab-btn, .edit-btn, .review-correct-btn, .review-wrong-b
 
 
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                <button type="button" id="clearAllDataBtn" style="background: #ff3b30; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">🗑️ 清除所有错题</button>
-                <button type="button" id="resetToSampleBtn" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📋 恢复示例数据</button>
+<button type="button" id="deleteInModalBtn" style="background: transparent; border: none; color: #ff3b30; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">删除</button>                <button type="button" id="resetToSampleBtn" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📋 恢复示例数据</button>
             </div>
             <p style="font-size: 12px; color: #8e8e93; margin-top: 12px;">⚠️ 清除数据不可恢复，请谨慎操作</p>
         </div>
@@ -1303,23 +1476,49 @@ const GIST_CONFIG = {
         return mathErrors.filter(item => item.tag === currentMathTag);
     }
 }
-    function recordReview(itemId, subject, result) {
-        const list = subject === "chinese" ? chineseErrors : mathErrors;
-        const item = list.find(i => i.id === itemId);
-        if (item) {
-            item.reviewCount = (item.reviewCount || 0) + 1;
-            const now = new Date();
-            const timeStr = now.toLocaleString('zh-CN');
-            if (!item.reviewHistory) item.reviewHistory = [];
-            item.reviewHistory.unshift({ time: timeStr, result: result });
-            if (item.reviewHistory.length > 30) item.reviewHistory.pop();
-        }
-        renderSidebar(); 
-        renderContent(); 
-        if (reviewModal.classList.contains('active')) openReviewWithCurrentFilter();
-    }
 
-    function escapeHtml(str) {
+
+
+function recordReview(itemId, subject, result) {
+    const list = subject === "chinese" ? chineseErrors : mathErrors;
+    const item = list.find(i => i.id === itemId);
+    if (item) {
+        item.reviewCount = (item.reviewCount || 0) + 1;
+        const now = new Date();
+        const timeStr = now.toLocaleString('zh-CN');
+        if (!item.reviewHistory) item.reviewHistory = [];
+        item.reviewHistory.unshift({ time: timeStr, result: result });
+        if (item.reviewHistory.length > 30) item.reviewHistory.pop();
+        
+        if (result === 'correct') {
+            item._mastered = true;
+            item._nextReviewDate = null;
+            console.log(`✅ 做对，已掌握: ${item.question.substring(0, 20)}`);
+        } else if (result === 'wrong') {
+            // 做错了：推到下个月1号
+            const today = new Date();
+            let nextMonth = today.getMonth() + 1;
+            let nextYear = today.getFullYear();
+            if (nextMonth > 11) {
+                nextMonth = 0;
+                nextYear++;
+            }
+            item._nextReviewDate = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01`;
+            item._mastered = false;
+            console.log(`❌ 做错，推到下个月: ${item._nextReviewDate} - ${item.question.substring(0, 20)}`);
+        }
+        
+        saveAllDataToLocalStorage();
+    }
+    renderSidebar();
+    renderContent();
+    if (reviewModal.classList.contains('active')) {
+        openReviewWithCurrentFilter();
+    }
+}
+
+
+function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function(m) {
             if (m === '&') return '&amp;';
@@ -1410,33 +1609,73 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
 
 
 
+
+
 function renderShengziContent(question, wrongAnswer, correctAnswer) {
-    const pinyins = question.trim().split(/\s+/);
+    // 按空格分割成多个部分
+    const parts = question.trim().split(/\s+/);
     
-    let tianGridsHtml = '';
-    for (let i = 0; i < pinyins.length; i++) {
-        const pinyin = pinyins[i];
-        tianGridsHtml += `
-            <div style="display: inline-block; margin: 0 8px; text-align: center;">
-                <div style="font-size: 16px; color: #007aff; margin-bottom: 8px;">${escapeHtml(pinyin)}</div>
-                <div class="tian-grid" style="margin: 0 auto;">
-                    <div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>
-                </div>
-            </div>
-        `;
+    // 收集所有需要显示的项（每个汉字单独一项，每个拼音单独一项）
+    let items = [];
+    
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const hasChinese = [...part].some(char => /[\u4e00-\u9fa5]/.test(char));
+        
+        if (hasChinese) {
+            // 汉字：拆分成单个字符，每个字符单独一项
+            const chars = part.split('');
+            for (let j = 0; j < chars.length; j++) {
+                items.push({ type: 'hanzi', text: chars[j] });
+            }
+        } else {
+            // 拼音：每个拼音单独一项
+            items.push({ type: 'pinyin', text: part });
+        }
     }
     
+    // 将 items 分成左右两半（保持顺序）
+    const midIndex = Math.ceil(items.length / 2);
+    const leftItems = items.slice(0, midIndex);
+    const rightItems = items.slice(midIndex);
+    
+    // 渲染单项
+    const renderItem = (item) => {
+        if (item.type === 'hanzi') {
+            return `<div style="font-size: 32px; font-weight: normal; color: #1c1c1e; padding-top: 25px;">${escapeHtml(item.text)}</div>`;
+        } else {
+            return `
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="font-size: 14px; color: #007aff; margin-bottom: 6px;">${escapeHtml(item.text)}</div>
+                    <div class="tian-grid" style="width: 60px; height: 60px;">
+                        <div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>
+                    </div>
+                </div>
+            `;
+        }
+    };
+    
+    // 渲染左右两侧
+    const renderSide = (items) => {
+        if (items.length === 0) return '<div></div>';
+        let html = '';
+        for (let i = 0; i < items.length; i++) {
+            html += renderItem(items[i]);
+        }
+        return `<div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; align-items: center;">${html}</div>`;
+    };
+    
     return `
-        <div class="special-content">
-            <div style="text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;">
-                ${tianGridsHtml}
+        <div class="special-content" style="background: #f8f9fc; border-radius: 16px; padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap;">
+                ${renderSide(leftItems)}
+                ${renderSide(rightItems)}
             </div>
         </div>
     `;
 }
 
-
-   function renderNormalContent(question, wrongAnswer, correctAnswer) {
+function renderNormalContent(question, wrongAnswer, correctAnswer) {
     return `
         <div class="question-text" style="font-size: 16px; font-weight: 500;">${escapeHtml(question)}</div>
     `;
@@ -1485,6 +1724,7 @@ function renderSidebar() {
                     currentMathTag = tag;
                     renderSidebar();
                     renderContent();
+                    updateBatchAddButtonVisibility();
                 }
             });
         });
@@ -1495,6 +1735,16 @@ function renderSidebar() {
 
 function renderContent() {
     const list = getCurrentDisplayList();
+    
+    
+     list.sort((a, b) => {
+        const timeA = a.createdAt || 0;
+        const timeB = b.createdAt || 0;
+        return timeB - timeA;
+    });
+    
+    
+    
     const subjectName = currentSubject === "chinese" ? "语文" : "数学";
     // 更新学科标签行右侧的题目数量
     const questionCountDisplay = document.getElementById('questionCountDisplay');
@@ -1502,20 +1752,41 @@ function renderContent() {
         questionCountDisplay.textContent = `${list.length} 道题`;
     }
     
-    let subTabsHtml = "";
-    if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
-        const subTags = ["全部", "拼音", "生字"];
-        subTabsHtml = `
-           <div class="category-tabs" style="margin-top: -8px; margin-left: -17px; padding-top: 0;">
+   let subTabsHtml = "";
+if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
+    // 统计拼音和生字的数量
+    const pinyinCount = chineseErrors.filter(item => 
+        item.tag === "基础知识" && item.subTag === "拼音"
+    ).length;
+    const shengziCount = chineseErrors.filter(item => 
+        item.tag === "基础知识" && item.subTag === "生字"
+    ).length;
+    const bishunCount = chineseErrors.filter(item => 
+    item.tag === "基础知识" && item.subTag === "笔顺"
+).length;
+    const totalCount = chineseErrors.filter(item => 
+        item.tag === "基础知识"
+    ).length;
+    
+    const subTags = [
+    { name: "全部", count: totalCount },
+    { name: "拼音", count: pinyinCount },
+    { name: "生字", count: shengziCount },
+    { name: "笔顺", count: bishunCount }
+];
+    
+    subTabsHtml = `
+       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
+           <div class="category-tabs" style="display: flex; gap: 8px;">
                 ${subTags.map(st => `
-                    <div class="category-tab ${currentChineseSubTag === st ? 'active' : ''}" data-subtag="${st}">
-                        ${st}
+                    <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}">
+                        ${st.name} <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 6px;">${st.count}</span>
                     </div>
                 `).join('')}
             </div>
-        `;
-    }
-    
+        </div>
+    `;
+}
     if (list.length === 0) { 
         contentAreaDiv.innerHTML =  subTabsHtml + `<div class="empty-state">暂无错题记录</div>`; 
         bindSubTabEvents();
@@ -1619,28 +1890,22 @@ if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
 }
 
         
-        else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
-            const pinyins = item.question.trim().split(/\s+/);
-            let tianGridsHtml = '';
-            for (let i = 0; i < pinyins.length; i++) {
-                const pinyin = pinyins[i];
-                tianGridsHtml += `
-                    <div style="display: inline-block; margin: 0 8px; text-align: center;">
-                        <div style="font-size: 16px; color: #007aff; margin-bottom: 8px;">${escapeHtml(pinyin)}</div>
-                        <div class="tian-grid" style="margin: 0 auto;">
-                            <div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>
-                        </div>
-                    </div>
-                `;
-            }
-            specialContent = `
-                <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 16px;">
-                    <div style="text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;">
-                        ${tianGridsHtml}
-                    </div>
-                </div>
-            `;
-        } else if (hasTextContent) {
+        else if (item.tag === "基础知识" && item.subTag === "生字") {
+    // 调用专门的生字渲染函数
+    specialContent = renderShengziContent(item.question, item.wrongAnswer, item.correctAnswer);
+}else if (item.tag === "基础知识" && item.subTag === "笔顺" && hasTextContent) {
+    // 笔顺显示：居中、加大
+    specialContent = `
+        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
+            <div style="font-size: 25px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
+                ${escapeHtml(item.question)}
+            </div>
+            
+        </div>
+    `;
+}
+
+else if (hasTextContent) {
             // 普通文字内容（只有有文字时才显示）
             specialContent = `<div class="question-text" style="font-size: 16px; font-weight: 500; line-height: 1.5;">${escapeHtml(item.question)}</div>`;
         } else {
@@ -1678,7 +1943,7 @@ if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
                     
                     <div class="meta-info" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #8e8e93; margin-top: 16px; padding-top: 12px; border-top: 0.5px solid #f0f0f4;">
                         <span>${escapeHtml(item.source || '未知来源')}</span>
-                        <span>${escapeHtml(item.unit || '未分类')}</span>
+                        <span>${escapeHtml(item.unit || '所属单元')}</span>
                         <span>${item.date || '无日期'}</span>
                         <span style="cursor: pointer; color: #007aff; background: #e9e9ef; padding: 4px 12px; border-radius: 20px;" onclick="showHistoryModal('${item.id}', '${currentSubject}')">复习 ${item.reviewCount || 0} 次</span>
                     </div>
@@ -1732,12 +1997,13 @@ function handleSubTabClick(e) {
     const subTag = e.currentTarget.getAttribute('data-subtag');
     currentChineseSubTag = subTag;
     renderContent();
+      updateBatchAddButtonVisibility(); 
 }
-    
 
 function getFilteredQuestionsForReview() {
     let baseList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
     
+    // 分类筛选
     if (reviewContextFilter) {
         baseList = baseList.filter(q => q.tag === reviewContextFilter);
         if (reviewContextFilter === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
@@ -1752,30 +2018,177 @@ function getFilteredQuestionsForReview() {
         }
     }
     
-    const todayDate = new Date(); todayDate.setHours(0,0,0,0);
-    if (currentFilter === "today") {
-        return baseList.filter(q => { const d = new Date(q.date); d.setHours(0,0,0,0); return d.getTime() === todayDate.getTime(); });
-    }
-    if (currentFilter === "week") {
-        const startOfWeek = new Date(todayDate); startOfWeek.setDate(todayDate.getDate() - todayDate.getDay());
-        return baseList.filter(q => { const d = new Date(q.date); return d >= startOfWeek; });
-    }
-    if (currentFilter === "month") {
-        return baseList.filter(q => { const d = new Date(q.date); return d.getMonth() === todayDate.getMonth() && d.getFullYear() === todayDate.getFullYear(); });
-    }
+    // ========== 核心：做对隐藏，做错推到下周 ==========
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().slice(0, 10);
+    
+    // 调试：打印所有卡片的 _nextReviewDate
+    console.log('=== 所有卡片的复习状态 ===');
+    baseList.forEach(q => {
+        if (q._nextReviewDate) {
+            console.log(`📅 ${q.question.substring(0, 20)} - 下次复习: ${q._nextReviewDate} (今天: ${todayStr})`);
+        }
+        if (q._mastered) {
+            console.log(`✅ ${q.question.substring(0, 20)} - 已掌握`);
+        }
+    });
+    
+   // 第一步过滤：只过滤已掌握的
+
+// 第一步过滤：只过滤已掌握的（今日和本月筛选除外）
+if (currentFilter !== "today" && currentFilter !== "month") {
+    baseList = baseList.filter(q => {
+        if (q._mastered === true) {
+            console.log(`⏭️ 过滤(已掌握): ${q.question.substring(0, 20)}`);
+            return false;
+        }
+        return true;
+    });
+} else {
+    console.log(`当前筛选模式 ${currentFilter}，跳过已掌握过滤`);
+}
+// 今日和本月筛选不过滤已掌握的卡片
+
+    
+    // 过滤掉会话内临时隐藏的卡片
+    baseList = baseList.filter(q => !q._hiddenInCurrentSession);
+    
+    // ========== 日期筛选 ==========
+    const getDateStr = (date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    
+// 今日筛选 - 不受复习状态影响
+if (currentFilter === "today") {
+    // 获取今天的日期
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    console.log('=== 今日筛选（不受复习状态影响）===');
+    console.log('今天日期:', todayStr);
+    
+    // 注意：今日筛选不过滤 _mastered，只要有卡片的最新时间等于今天就显示
+    baseList = baseList.filter(q => {
+        // 获取卡片的最新时间
+        let latestDate = q.date;
+        if (q._nextReviewDate && q._nextReviewDate <= todayStr) {
+            latestDate = q._nextReviewDate;
+        }
+        return latestDate === todayStr;
+    });
+    
+    baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    console.log(`今日筛选结果: ${baseList.length} 条`);
+    return baseList;
+}
+
+// 本周筛选（周一到周日）
+if (currentFilter === "week") {
+    const dayOfWeek = today.getDay();
+    const diffToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diffToMonday);
+    const mondayStr = getDateStr(monday);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const sundayStr = getDateStr(sunday);
+    
+    console.log(`本周范围: ${mondayStr} ~ ${sundayStr}`);
+    
+    baseList = baseList.filter(q => {
+        // 优先使用 _nextReviewDate（如果存在且 <= 今天）
+        // 否则用原日期
+        let checkDate = q.date;
+        if (q._nextReviewDate && q._nextReviewDate <= todayStr) {
+            checkDate = q._nextReviewDate;
+        }
+        if (!checkDate) return false;
+        const inRange = checkDate >= mondayStr && checkDate <= sundayStr;
+        if (inRange) {
+            console.log(`✅ 本周显示: ${q.question.substring(0, 20)} (判断日期: ${checkDate})`);
+        }
+        return inRange;
+    });
+    baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    console.log(`本周筛选结果: ${baseList.length} 条`);
+    return baseList;
+}
+// 下周筛选
+if (currentFilter === "nextWeek") {
+    const dayOfWeek = today.getDay();
+    const diffToNextMonday = (dayOfWeek === 0 ? 1 : 8 - dayOfWeek);
+    const nextMonday = new Date(today);
+    nextMonday.setDate(today.getDate() + diffToNextMonday);
+    const nextMondayStr = getDateStr(nextMonday);
+    
+    const nextSunday = new Date(nextMonday);
+    nextSunday.setDate(nextMonday.getDate() + 6);
+    const nextSundayStr = getDateStr(nextSunday);
+    
+    console.log(`下周范围: ${nextMondayStr} ~ ${nextSundayStr}`);
+    
+    // 【关键修复】使用 _nextReviewDate 来判断是否在下周显示
+    baseList = baseList.filter(q => {
+        // 优先使用 _nextReviewDate，如果没有则用原日期
+        const checkDate = q._nextReviewDate || q.date;
+        if (!checkDate) return false;
+        const inRange = checkDate >= nextMondayStr && checkDate <= nextSundayStr;
+        if (inRange) {
+            console.log(`✅ 下周显示: ${q.question} (判断日期: ${checkDate})`);
+        }
+        return inRange;
+    });
+    baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    console.log(`下周筛选结果: ${baseList.length} 条`);
+    return baseList;
+}
+
+
+
+// 本月筛选 - 按原始日期筛选，不过滤已掌握
+if (currentFilter === "month") {
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+    const currentMonthStr = String(currentMonth).padStart(2, '0');
+    
+    baseList = baseList.filter(q => {
+        // 【修改】不过滤已掌握的卡片，本月筛选中全部显示
+        // 只按原始日期判断
+        if (!q.date) return false;
+        const [year, month] = q.date.split('-');
+        return year === String(currentYear) && month === currentMonthStr;
+    });
+    baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    console.log(`本月筛选结果: ${baseList.length} 条 (所有本月卡片)`);
+    return baseList;
+}
+
+
+// 单元筛选
     if (currentFilter === "unit" && customUnitKeyword) {
-        return baseList.filter(q => q.unit && q.unit.includes(customUnitKeyword));
+        baseList = baseList.filter(q => q.unit && q.unit.includes(customUnitKeyword));
+        baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        return baseList;
     }
+    
+    // 默认：按日期倒序
+    baseList.sort((a, b) => {
+        const dateA = a.date || '';
+        const dateB = b.date || '';
+        return dateB.localeCompare(dateA);
+    });
     
     return baseList;
 }
 
 
-// 获取当前显示的所有单元（去重）
+
 function getAllUnits() {
-    let baseList = currentSubject === "chinese" ? chineseErrors : mathErrors;
+    let baseList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
     
-    // 按当前页面分类筛选（与复习模式保持一致）
+    // 按当前页面分类筛选
     if (reviewContextFilter) {
         baseList = baseList.filter(q => q.tag === reviewContextFilter);
         if (reviewContextFilter === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
@@ -1789,6 +2202,10 @@ function getAllUnits() {
             }
         }
     }
+
+
+
+
     
     // 提取所有有单元的项目
     const unitsSet = new Set();
@@ -1799,7 +2216,6 @@ function getAllUnits() {
     });
     return Array.from(unitsSet).sort();
 }
-
 // 打开单元选择弹窗
 function openUnitModal() {
     const units = getAllUnits();
@@ -1834,6 +2250,13 @@ function selectUnit(unit) {
 }
 
 function openReviewWithCurrentFilter() {
+
+// 【新增】每次打开复习模式，清除所有会话内的临时隐藏标记
+    const allErrors = [...chineseErrors, ...mathErrors];
+    allErrors.forEach(item => {
+        delete item._hiddenInCurrentSession;
+    });
+
     const filtered = getFilteredQuestionsForReview();
     
     if (filtered.length === 0) {
@@ -1858,14 +2281,14 @@ function openReviewWithCurrentFilter() {
                 chars.forEach(char => {
                     pinyinHtml += `
                         <div style="text-align: center;">
-                            <div class="four-line-grid" style="width: 50px;">
+                            <div class="four-line-grid" style="width: 70px;">
                                 <div class="grid-line-1"></div>
                                 <div class="grid-line-2"></div>
                                 <div class="grid-line-3"></div>
                                 <div class="grid-line-4"></div>
                                 <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
                             </div>
-                            <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
+                            <div style="font-size: 40px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
                                 ${escapeHtml(char)}
                             </div>
                         </div>
@@ -1876,27 +2299,72 @@ function openReviewWithCurrentFilter() {
                     </div>
                 `;
                 specialContent = pinyinHtml;
-            } else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
-                const pinyins = item.question.trim().split(/\s+/);
-                let tianGridsHtml = '';
-                for (let i = 0; i < pinyins.length; i++) {
-                    const pinyin = pinyins[i];
-                    tianGridsHtml += `
-                        <div style="display: inline-block; margin: 0 8px; text-align: center;">
-                            <div style="font-size: 16px; color: #007aff; margin-bottom: 8px;">${escapeHtml(pinyin)}</div>
-                            <div class="tian-grid" style="margin: 0 auto;">
-                                <div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>
-                            </div>
-                        </div>
-                    `;
-                }
-                specialContent = `
-                    <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 16px;">
-                        <div style="text-align: center; display: flex; flex-wrap: wrap; justify-content: center; gap: 16px;">
-                            ${tianGridsHtml}
-                        </div>
-                    </div>
-                `;
+      } else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
+    // 解析输入：格式如 "小草 qing qing" 或 "ni 你好"
+    let hanzi = '';
+    let pinyinParts = [];
+    
+    const parts = item.question.trim().split(/\s+/);
+    
+    // 分离汉字和拼音
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const hasChinese = [...part].some(char => /[\u4e00-\u9fa5]/.test(char));
+        if (hasChinese) {
+            hanzi += part;
+        } else {
+            pinyinParts.push(part);
+        }
+    }
+    
+    // 生成拼音 + 田字格（右边）
+    let pinyinGridHtml = '';
+    for (let i = 0; i < pinyinParts.length; i++) {
+        pinyinGridHtml += `
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <div style="font-size: 22px; font-weight: 500; color: #007aff; margin-bottom: 10px;">${escapeHtml(pinyinParts[i])}</div>
+                <div class="tian-grid" style="width: 80px; height: 80px;">
+                    <div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    if (pinyinGridHtml === '') {
+        pinyinGridHtml = '<div style="color: #8e8e93; font-size: 14px;">（无拼音）</div>';
+    }
+    
+    specialContent = `
+        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap;">
+                <!-- 左边：汉字（无田字格，加大字号） -->
+                <div style="font-size: 40px; font-weight: normal;  padding-top: 25px;color: #1c1c1e;">${escapeHtml(hanzi)}</div>
+                <!-- 右边：拼音 + 田字格 -->
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+                    ${pinyinGridHtml}
+                </div>
+            </div>
+        </div>
+    `;
+
+
+             
+
+} else if (item.tag === "基础知识" && item.subTag === "笔顺" && hasTextContent) {
+    // 笔顺显示：居中、加大（与主界面一致）
+    specialContent = `
+        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
+            <div style="font-size: 48px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
+                ${escapeHtml(item.question)}
+            </div>
+            <div style="font-size: 14px; color: #8e8e93; text-align: center; margin-top: 16px;">
+                按正确笔顺书写
+            </div>
+        </div>
+    `;
+
+
+
             } else if (hasTextContent) {
                 // 所有其他分类：阅读理解、作文表达、文学常识、数学等
                 specialContent = `<div class="review-question" style="font-size: 16px; font-weight: 500; line-height: 1.5; margin: 12px 0; background: #f8f9fc; padding: 16px; border-radius: 16px;">${escapeHtml(item.question)}</div>`;
@@ -1910,52 +2378,51 @@ function openReviewWithCurrentFilter() {
             const cImagesHtml = renderImagesInCard(item.correctImages, '正确答案图片', 'full');
             
             // ========== 构建复习卡片HTML ==========
-            html += `
-                <div class="review-card">
-                    <div class="review-meta">
-                        <span>📌 ${item.tag}${subTagInfo}</span>
-                        <span>📅 ${item.date || '无日期'}</span>
-                        <span>📁 ${item.source || '未知'}</span>
-                        <span>📚 ${item.unit || '未标注'}</span>
-                        <span>💡 原因: ${item.reasons?.join(',') || '未标注'}</span>
-                    </div>
-                    
-                    <!-- 原题区域：文字 + 图片（只有有内容时才显示这个区域） -->
-                    ${(specialContent || qImagesHtml) ? `
-                    <div class="review-question-area" style="margin-bottom: 16px;">
-                        ${specialContent}
-                        ${qImagesHtml}
-                    </div>
-                    ` : ''}
-                    
-                    <div class="review-stats">
-                        <span class="review-count-badge" onclick="showHistoryModal('${item.id}', '${currentSubject}')">📊 复习次数: ${item.reviewCount || 0}</span>
-                        <span class="last-review">🕐 最近复习: ${lastReviewText}</span>
-                        <div class="review-action-group">
-                            <button class="review-correct-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="correct">✓ 做对了</button>
-                            <button class="review-wrong-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="wrong">✗ 还是错了</button>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <button class="toggle-details-btn" data-id="${item.id}">🔍 显示答案与解析</button>
-                    </div>
-                    
-                    <!-- 展开详情：错误答案和正确答案（含图片） -->
-                    <div id="review-details-${item.id}" class="details-container">
-                        <div class="detail-wrong">
-                            <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px;">❌ 错误答案 / 错误过程：</div>
-                            <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.5;">${escapeHtml(item.wrongAnswer || '未记录')}</div>
-                            ${wImagesHtml}
-                        </div>
-                        <div class="detail-correct">
-                            <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px;">✅ 正确答案 / 解析：</div>
-                            <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.5;">${escapeHtml(item.correctAnswer || '未记录')}</div>
-                            ${cImagesHtml}
-                        </div>
-                    </div>
-                </div>
-            `;
+           html += `
+    <div class="review-card">
+        <!-- 卡片头部：左侧显示精简信息，右侧显示编辑按钮 -->
+        <!-- 卡片头部：只显示编辑按钮，右对齐 -->
+<div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+    <button class="review-edit-btn" data-id="${item.id}" data-subject="${currentSubject}" style="background: #007aff; color: white; border: none; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer;">✏️ 编辑</button>
+</div>
+        
+        <!-- 原题区域：文字 + 图片 -->
+        ${(specialContent || qImagesHtml) ? `
+        <div class="review-question-area" style="margin-bottom: 16px;">
+            ${specialContent}
+            ${qImagesHtml}
+        </div>
+        ` : ''}
+        
+        <div class="review-stats">
+            <span class="review-count-badge" onclick="showHistoryModal('${item.id}', '${currentSubject}')">📊 复习次数: ${item.reviewCount || 0}</span>
+            <span class="last-review">🕐 最近复习: ${lastReviewText}</span>
+            <div class="review-action-group">
+                <button class="review-correct-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="correct">✓ 做对了</button>
+                <button class="review-wrong-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="wrong">✗ 还是错了</button>
+            </div>
+        </div>
+        
+        <div>
+            <button class="toggle-details-btn" data-id="${item.id}">🔍 显示答案与解析</button>
+        </div>
+        
+        <div id="review-details-${item.id}" class="details-container">
+            <div class="detail-wrong">
+                <div style="font-weight: 600; margin-bottom: 8px;">❌ 错误答案 / 错误过程：</div>
+                <div style="white-space: pre-wrap;">${escapeHtml(item.wrongAnswer || '未记录')}</div>
+                ${wImagesHtml}
+            </div>
+            <div class="detail-correct">
+                <div style="font-weight: 600; margin-bottom: 8px;">✅ 正确答案 / 解析：</div>
+                <div style="white-space: pre-wrap;">${escapeHtml(item.correctAnswer || '未记录')}</div>
+                ${cImagesHtml}
+            </div>
+        </div>
+    </div>
+`;
+       
+       
         });
         reviewListContainer.innerHTML = html;
         
@@ -1980,6 +2447,31 @@ function openReviewWithCurrentFilter() {
                 recordReview(id, subject, result);
             });
         });
+
+
+
+
+
+
+
+
+
+// 绑定复习卡片中的编辑按钮事件 - 使用专用弹窗
+document.querySelectorAll('.review-edit-btn').forEach(btn => {
+    btn.removeEventListener('click', btn._handler);
+    const handler = (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const subject = btn.getAttribute('data-subject');
+        console.log('编辑按钮点击:', id, subject);
+        if (id && subject) {
+            openReviewEditModal(id, subject);  // 调用新函数
+        }
+    };
+    btn._handler = handler;
+    btn.addEventListener('click', handler);
+});
+    
     }
     reviewModal.classList.add('active');
 }
@@ -2036,8 +2528,37 @@ function openAddModal() {
     
     // 清空表单 - 添加安全检查
     const editQuestionEl = document.getElementById("editQuestion");
-    const editWrongEl = document.getElementById("editWrong");
-    const editCorrectEl = document.getElementById("editCorrect");
+  // 支持错误答案输入框粘贴图片
+const editWrongEl = document.getElementById('editWrong');
+if (editWrongEl) {
+    editWrongEl.addEventListener('paste', function(e) {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                e.preventDefault();
+                const file = items[i].getAsFile();
+                handleImageUploadFromFile(file, 'wrong');
+                break;
+            }
+        }
+    });
+}
+
+// 支持正确答案输入框粘贴图片
+const editCorrectEl = document.getElementById('editCorrect');
+if (editCorrectEl) {
+    editCorrectEl.addEventListener('paste', function(e) {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                e.preventDefault();
+                const file = items[i].getAsFile();
+                handleImageUploadFromFile(file, 'correct');
+                break;
+            }
+        }
+    });
+}
     const editSourceEl = document.getElementById("editSource");
     const editUnitEl = document.getElementById("editUnit");
     const editGradeEl = document.getElementById("editGrade");
@@ -2064,23 +2585,34 @@ function openAddModal() {
     let defaultTag = currentSubject === "chinese" ? currentChineseTag : "计算";
     refreshCategorySelect(currentSubject, defaultTag);
     
-    // 设置二级分类
-    const subTagGroup = document.getElementById('subTagGroup');
-    const tagSelect = document.getElementById('editTag');
-    if (currentSubject === "chinese" && tagSelect && tagSelect.value === "基础知识") {
-        if (subTagGroup) subTagGroup.style.display = 'block';
-    } else {
-        if (subTagGroup) subTagGroup.style.display = 'none';
-    }
-    
+
+ // 【新增】设置二级分类的默认值为当前选中的二级分类
     const subTagSelect = document.getElementById('editSubTag');
     if (subTagSelect) {
-        if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-            subTagSelect.value = currentChineseSubTag;
+        if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
+            // 如果当前二级分类是"全部"，默认选"拼音"
+            if (currentChineseSubTag === "全部") {
+                subTagSelect.value = "拼音";
+            } else {
+                subTagSelect.value = currentChineseSubTag;
+            }
         } else {
             subTagSelect.value = "拼音";
         }
     }
+    
+    // 设置二级分类显示/隐藏
+    const tagSelect = document.getElementById('editTag');
+    if (currentSubject === "chinese" && tagSelect && tagSelect.value === "基础知识") {
+        const subTagGroup = document.getElementById('subTagGroup');
+        if (subTagGroup) subTagGroup.style.display = 'block';
+    } else {
+        const subTagGroup = document.getElementById('subTagGroup');
+        if (subTagGroup) subTagGroup.style.display = 'none';
+    }
+
+
+    
     
     // 错误原因选项
     const opts = currentSubject === "chinese" ? chineseReasonOptions : mathReasonOptions;
@@ -2094,7 +2626,7 @@ function openAddModal() {
     if (deleteInModalBtn) {
         deleteInModalBtn.style.display = 'none';
     }
-    
+    scrollModalToTop('editModal');
     editModal.classList.add('active');
     
     if (tagSelect) {
@@ -2108,8 +2640,255 @@ function openAddModal() {
     }
 }
 
+// 复习界面专用编辑变量
+let reviewEditingItem = { id: null, subject: null };
+let reviewTempImages = { question: [], wrong: [], correct: [] };
+
+// 打开复习界面专用编辑弹窗
+function openReviewEditModal(errorId, subject) {
+    console.log('openReviewEditModal 被调用', errorId, subject);
+// 设置全局编辑变量
+    reviewEditingItem = { id: errorId, subject: subject };
+    
+   
+
+    const modal = document.getElementById('reviewEditModal');
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.right = '0';
+    modal.style.bottom = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.4)';
+    modal.style.zIndex = '9999';
+    const errorList = subject === "chinese" ? chineseErrors : mathErrors;
+    const editItem = errorList.find(err => err.id === errorId);
+    if (!editItem) {
+        alert("未找到该错题");
+        return;
+    }
+    
+    reviewEditingItem = { id: errorId, subject: subject };
+    
+    // 显示基础信息
+    document.getElementById('reviewEditTag').innerText = editItem.tag || '';
+    document.getElementById('reviewEditSubTag').innerText = editItem.subTag || (editItem.tag === "基础知识" ? "拼音" : "无");
+    document.getElementById('reviewEditDate').innerText = editItem.date || '无日期';
+    document.getElementById('reviewEditSource').innerText = editItem.source || '未知';
+    document.getElementById('reviewEditUnit').innerText = editItem.unit || '未标注';
+    document.getElementById('reviewEditGrade').innerText = editItem.grade || '一下';
+    document.getElementById('reviewEditReasons').innerHTML = (editItem.reasons?.length ? editItem.reasons.join('、') : '未标注');
+    
+    // 填充可编辑字段
+    document.getElementById('reviewEditQuestion').value = editItem.question || '';
+    document.getElementById('reviewEditWrong').value = editItem.wrongAnswer || '';
+    document.getElementById('reviewEditCorrect').value = editItem.correctAnswer || '';
+    
+    // 加载图片
+    reviewTempImages = {
+        question: editItem.questionImages ? [...editItem.questionImages] : [],
+        wrong: editItem.wrongImages ? [...editItem.wrongImages] : [],
+        correct: editItem.correctImages ? [...editItem.correctImages] : []
+    };
+    
+
+    // 重新绑定保存按钮（确保事件有效）
+    const saveBtn = document.getElementById('saveReviewEditBtn');
+    if (saveBtn) {
+        const newSaveBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        newSaveBtn.onclick = function(e) {
+            e.stopPropagation();
+            saveReviewEdit();
+        };
+    }
+    
+    const cancelBtn = document.getElementById('cancelReviewEditBtn');
+    if (cancelBtn) {
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        newCancelBtn.onclick = function(e) {
+            e.stopPropagation();
+            closeReviewEditModal();
+        };
+    }
+    
+    const closeBtn = document.getElementById('closeReviewEditBtn');
+    if (closeBtn) {
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        newCloseBtn.onclick = function(e) {
+            e.stopPropagation();
+            closeReviewEditModal();
+        };
+    }
+
+    
+    // 渲染图片预览
+    renderReviewImagePreview('question');
+    renderReviewImagePreview('wrong');
+    renderReviewImagePreview('correct');
+    
+    // 显示弹窗
+    const reviewEditModal = document.getElementById('reviewEditModal');
+    reviewEditModal.classList.add('active');
+}
+
+// 渲染复习编辑弹窗的图片预览
+function renderReviewImagePreview(target) {
+    const container = document.getElementById(`review${capitalize(target)}ImgPreview`);
+    if (!container) return;
+    
+    const images = reviewTempImages[target] || [];
+    if (images.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    images.forEach((img, idx) => {
+        html += `
+            <div class="img-preview-item">
+                <img src="${img}" alt="预览图">
+                <div class="remove-img" data-target="${target}" data-index="${idx}">×</div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    
+    container.querySelectorAll('.remove-img').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            const t = el.getAttribute('data-target');
+            const idx = parseInt(el.getAttribute('data-index'));
+            if (reviewTempImages[t] && reviewTempImages[t][idx]) {
+                reviewTempImages[t].splice(idx, 1);
+                renderReviewImagePreview(t);
+            }
+        };
+    });
+}
 
 
+function saveReviewEdit() {
+    console.log('保存按钮被点击', reviewEditingItem);
+    
+    const { id, subject } = reviewEditingItem;
+    if (!id) {
+        console.error('没有找到要编辑的题目');
+        alert('请重新打开编辑窗口');
+        return;
+    }
+    
+    const errorList = subject === "chinese" ? chineseErrors : mathErrors;
+    const idx = errorList.findIndex(e => e.id === id);
+    
+    if (idx === -1) {
+        alert("未找到该错题");
+        return;
+    }
+    
+    const newQuestion = document.getElementById('reviewEditQuestion').value;
+    const newWrong = document.getElementById('reviewEditWrong').value;
+    const newCorrect = document.getElementById('reviewEditCorrect').value;
+    
+    const hasQuestionText = newQuestion && newQuestion.trim();
+    const hasQuestionImages = reviewTempImages.question && reviewTempImages.question.length > 0;
+    
+    if (!hasQuestionText && !hasQuestionImages) {
+        alert("请填写原题内容或上传原题图片！");
+        return;
+    }
+    
+    errorList[idx] = {
+        ...errorList[idx],
+        question: newQuestion,
+        wrongAnswer: newWrong,
+        correctAnswer: newCorrect,
+        questionImages: [...reviewTempImages.question],
+        wrongImages: [...reviewTempImages.wrong],
+        correctImages: [...reviewTempImages.correct]
+    };
+    
+    saveAllDataToLocalStorage();
+    renderSidebar();
+    renderContent();
+    
+    if (reviewModal && reviewModal.classList.contains('active')) {
+        openReviewWithCurrentFilter();
+    }
+    
+    alert('✅ 保存成功！');
+    closeReviewEditModal();
+}
+
+// 关闭复习编辑弹窗
+function closeReviewEditModal() {
+    const reviewEditModal = document.getElementById('reviewEditModal');
+    reviewEditModal.classList.remove('active');
+    reviewEditingItem = { id: null, subject: null };
+    reviewTempImages = { question: [], wrong: [], correct: [] };
+}
+
+// 初始化复习编辑弹窗的上传按钮
+function initReviewImageUpload() {
+    const targets = ['question', 'wrong', 'correct'];
+    targets.forEach(target => {
+        const btn = document.querySelector(`.upload-img-btn[data-target="review_${target}"]`);
+        const fileInput = document.getElementById(`uploadReview${capitalize(target)}Img`);
+        if (btn && fileInput) {
+            btn.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => handleReviewImageUpload(e, target);
+        }
+    });
+}
+
+// 处理复习编辑弹窗的图片上传
+async function handleReviewImageUpload(event, target) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件');
+        return;
+    }
+    
+    const btn = document.querySelector(`.upload-img-btn[data-target="review_${target}"]`);
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ 上传中...';
+    btn.disabled = true;
+    
+    try {
+        compressImageTo200KB(file, async (compressedBase64) => {
+            try {
+                const ext = file.name.split('.').pop() || 'jpg';
+                const fileName = `images/${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
+                const imageUrl = await uploadToGitHub(compressedBase64, fileName);
+                
+                if (!reviewTempImages[target]) reviewTempImages[target] = [];
+                reviewTempImages[target].push(imageUrl);
+                renderReviewImagePreview(target);
+                
+                alert('✅ 图片已上传！');
+            } catch (err) {
+                alert('❌ 上传失败：' + err.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+                event.target.value = '';
+            }
+        });
+    } catch (err) {
+        alert('❌ 上传失败');
+        btn.textContent = originalText;
+        btn.disabled = false;
+        event.target.value = '';
+    }
+}
 
 
 function openEditModal(errorId, subject) {
@@ -2151,6 +2930,7 @@ function openEditModal(errorId, subject) {
             editSubTagEl.value = "拼音";
         }
     }
+    
     
     // 动态生成类别选项（这会重新创建 select 的 option）
     refreshCategorySelect(subject, editItem.tag || "基础知识");
@@ -2226,6 +3006,12 @@ if (deleteInModalBtn) {
     });
 }
     
+ // 【新增】滚动到顶部（在显示弹窗之前）
+    const modalContainer = document.querySelector('#editModal .modal-container');
+    if (modalContainer) {
+        modalContainer.scrollTop = 0;
+    }
+
     // 显示模态框
     editModal.classList.add('active');
 }
@@ -2278,75 +3064,84 @@ if (id === null && newQuestion && newQuestion.trim()) {
     }
 }
     
-    if (id === null) {
-        // 新增模式
-        const newId = subject === "chinese" ? `ch_${Date.now()}` : `math_${Date.now()}`;
-        const newItem = {
-            id: newId,
+ 
+if (id === null) {
+    // 新增模式
+    let finalDate = newDate;
+    if (!finalDate) {
+        finalDate = new Date().toISOString().slice(0, 10);
+    }
+
+    const newId = subject === "chinese" ? `ch_${Date.now()}` : `math_${Date.now()}`;
+    const newItem = {
+        id: newId,
+        tag: newTag,
+        subTag: (newTag === "基础知识") ? newSubTag : undefined,
+        grade: newGrade,
+        unit: newUnit,
+        question: newQuestion,
+        wrongAnswer: newWrong,
+        correctAnswer: newCorrect,
+        reasons: newReasons,
+        source: newSource,
+        date: finalDate,
+        createdAt: Date.now(),
+        reviewCount: 0,
+        reviewHistory: [],
+        questionImages: newQuestionImages,
+        wrongImages: newWrongImages,
+        correctImages: newCorrectImages
+    };
+    errorList.push(newItem);
+    alert("✅ 新增错题成功！");
+} else {
+    // 编辑模式
+    const idx = errorList.findIndex(e => e.id === id);
+    if (idx !== -1) {
+        errorList[idx] = { 
+            ...errorList[idx], 
+            question: newQuestion, 
+            wrongAnswer: newWrong, 
+            correctAnswer: newCorrect, 
+            source: newSource, 
+            unit: newUnit, 
+            date: newDate, 
+            reasons: newReasons,
             tag: newTag,
             subTag: (newTag === "基础知识") ? newSubTag : undefined,
             grade: newGrade,
-            unit: newUnit,
-            question: newQuestion,
-            wrongAnswer: newWrong,
-            correctAnswer: newCorrect,
-            reasons: newReasons,
-            source: newSource,
-            date: newDate,
-            reviewCount: 0,
-            reviewHistory: [],
             questionImages: newQuestionImages,
             wrongImages: newWrongImages,
             correctImages: newCorrectImages
         };
-        errorList.push(newItem);
-        alert("✅ 新增错题成功！");
+        alert("✅ 编辑成功！");
     } else {
-        // 编辑模式
-        const idx = errorList.findIndex(e => e.id === id);
-        if (idx !== -1) {
-            errorList[idx] = { 
-                ...errorList[idx], 
-                question: newQuestion, 
-                wrongAnswer: newWrong, 
-                correctAnswer: newCorrect, 
-                source: newSource, 
-                unit: newUnit, 
-                date: newDate, 
-                reasons: newReasons,
-                tag: newTag,
-                subTag: (newTag === "基础知识") ? newSubTag : undefined,
-                grade: newGrade,
-                questionImages: newQuestionImages,
-                wrongImages: newWrongImages,
-                correctImages: newCorrectImages
-            };
-            alert("✅ 编辑成功！");
-        } else {
-            alert("❌ 未找到要编辑的题目");
-            return;
-        }
+        alert("❌ 未找到要编辑的题目");
+        return;
     }
+}
+   
+   
     saveAllDataToLocalStorage();  // 保存后自动存到本地
     closeModal(); 
     renderSidebar(); 
     renderContent();
     saveToCloud();  // 保存后自动同步到云端
     
-    // 如果复习模式打开，刷新复习列表
-    if (reviewModal && reviewModal.classList && reviewModal.classList.contains('active')) {
+        
+    // 【关键修复】强制刷新复习模式
+    if (reviewModal && reviewModal.classList.contains('active')) {
+        // 清除所有临时隐藏标记
+        const allErrors = [...chineseErrors, ...mathErrors];
+        allErrors.forEach(item => {
+            delete item._hiddenInCurrentSession;
+        });
+        // 重新加载复习列表
         openReviewWithCurrentFilter();
     }
 }
 
-function closeModal() { 
-    editModal.classList.remove('active'); 
-    editingItem = { id: null, subject: null };
-    // 可选：关闭时清空临时图片（避免下次打开残留）
-    if (window._tempImages) {
-        window._tempImages = { question: [], wrong: [], correct: [] };
-    }
-}
+
 
 
 function closeModal() { 
@@ -2357,6 +3152,15 @@ function closeModal() {
         window._tempImages = { question: [], wrong: [], correct: [] };
     }
 }
+
+// 滚动弹窗到顶部
+function scrollModalToTop(modalId) {
+    const modalContainer = document.querySelector(`#${modalId} .modal-container`);
+    if (modalContainer) {
+        modalContainer.scrollTop = 0;
+    }
+}
+
 
 // ========== 删除错题函数 ==========
 function deleteQuestion(id, subject) {
@@ -2371,7 +3175,7 @@ function deleteQuestion(id, subject) {
         if (reviewModal.classList.contains('active')) {
             openReviewWithCurrentFilter();
         }
-        alert('✅ 删除成功');
+        
     } else {
         alert('❌ 删除失败：未找到该错题');
     }
@@ -2864,7 +3668,187 @@ function loadAllDataFromLocalStorage() {
     return false;
 }
 
+// 批量添加功能
+function openBatchModal() {
+    document.getElementById('batchModal').classList.add('active');
+    document.getElementById('batchInput').value = '';
+}
+
+function closeBatchModal() {
+    document.getElementById('batchModal').classList.remove('active');
+}
+
+
+function batchAddQuestions() {
+    const input = document.getElementById('batchInput').value;
+    if (!input.trim()) {
+        alert('请输入要添加的错题');
+        return;
+    }
+    
+    const lines = input.split('\n').filter(line => line.trim().length > 0);
+    if (lines.length === 0) {
+        alert('没有有效内容');
+        return;
+    }
+    
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const currentGrade = currentGradeFilter;
+    const currentUnit = document.getElementById('editUnit') ? document.getElementById('editUnit').value : '';
+    
+    let addedCount = 0;
+    let duplicateCount = 0;
+    const existingQuestions = new Set(chineseErrors.map(item => item.question));
+    
+    lines.forEach(line => {
+        const word = line.trim();
+        if (!word) return;
+        
+        // 检查是否已存在
+        if (existingQuestions.has(word)) {
+            duplicateCount++;
+            console.log(`⏭️ 跳过重复: ${word}`);
+            return;
+        }
+        
+        const newId = `ch_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+        const newItem = {
+            id: newId,
+            tag: '基础知识',
+            subTag: currentChineseSubTag === '拼音' ? '拼音' : '生字',
+            grade: currentGrade,
+            unit: currentUnit,
+            question: word,
+            wrongAnswer: '我写错了这个字',
+            correctAnswer: word,
+            reasons: ['需要加强'],
+            source: '批量添加',
+            createdAt: Date.now(), 
+            date: todayStr,
+            reviewCount: 0,
+            reviewHistory: [],
+            questionImages: [],
+            wrongImages: [],
+            correctImages: []
+        };
+        chineseErrors.push(newItem);
+        addedCount++;
+        existingQuestions.add(word);
+    });
+    
+    if (addedCount > 0) {
+        saveAllDataToLocalStorage();
+        renderSidebar();
+        renderContent();
+        closeBatchModal();
+        let msg = `✅ 批量添加了 ${addedCount} 条错题`;
+        if (duplicateCount > 0) msg += `，跳过 ${duplicateCount} 条重复`;
+        showToast(msg);
+    } else if (duplicateCount > 0) {
+        showToast(`⚠️ 所有 ${duplicateCount} 条错题都已存在，未添加`);
+    } else {
+        alert('添加失败，请检查输入格式');
+    }
+}
+
+
+
+// 添加一个简单的提示函数（可选）
+function showToast(message) {
+    // 创建临时提示
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 30px;
+        font-size: 14px;
+        z-index: 10000;
+        pointer-events: none;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+// 控制批量添加按钮的显示（只在语文基础知识分类下显示）
+// 控制批量添加按钮的显示（只在语文基础知识→拼音/生字分类下显示）
+function updateBatchAddButtonVisibility() {
+    const batchBtn = document.getElementById('batchAddBtn');
+    if (batchBtn) {
+        // 只在语文、基础知识、且二级分类为拼音或生字时显示
+        if (currentSubject === 'chinese' && 
+            currentChineseTag === '基础知识' && 
+            (currentChineseSubTag === '拼音' || currentChineseSubTag === '生字')) {
+            batchBtn.style.display = 'inline-block';
+        } else {
+            batchBtn.style.display = 'none';
+        }
+    }
+}
+
+
 function init() {
+
+
+    // 支持在原题输入框中粘贴图片
+const editQuestionEl = document.getElementById('editQuestion');
+if (editQuestionEl) {
+    editQuestionEl.addEventListener('paste', function(e) {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                e.preventDefault();
+                const file = items[i].getAsFile();
+                handleImageUploadFromFile(file, 'question');
+                break;
+            }
+        }
+    });
+}
+
+// 从文件对象处理图片上传
+async function handleImageUploadFromFile(file, target) {
+    if (!file.type.startsWith('image/')) {
+        alert('请上传图片文件');
+        return;
+    }
+    
+    const btn = document.querySelector(`.upload-img-btn[data-target="${target}"]`);
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ 上传中...';
+    btn.disabled = true;
+    
+    try {
+        compressImageTo200KB(file, async (compressedBase64) => {
+            try {
+                const ext = file.name.split('.').pop() || 'jpg';
+                const fileName = `images/${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
+                const imageUrl = await uploadToGitHub(compressedBase64, fileName);
+                
+                if (!tempImages[target]) tempImages[target] = [];
+                tempImages[target].push(imageUrl);
+                renderImagePreview(target);
+                
+                alert('✅ 图片已上传！');
+            } catch (err) {
+                alert('❌ 上传失败：' + err.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+    } catch (err) {
+        alert('❌ 压缩失败');
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+}
+
+
     // ========== 加载 Token ==========
     function loadToken() {
         let token = localStorage.getItem('github_token');
@@ -2875,12 +3859,8 @@ function init() {
         return token;
     }
     
-    const modalSaveBtn = document.getElementById('modalSaveBtn');
-    if (modalSaveBtn) {
-        modalSaveBtn.addEventListener('click', () => {
-            saveEdit();
-        });
-    }
+ 
+
 
     const token = loadToken();
     if (token) {
@@ -2925,6 +3905,16 @@ function init() {
     // 绑定取消按钮
     cancelBtn.addEventListener('click', closeModal);
     
+   
+// 【修复】编辑弹窗保存按钮绑定事件
+const modalSaveBtn = document.getElementById('modalSaveBtn');
+if (modalSaveBtn) {
+    modalSaveBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        saveEdit();
+    });
+}
+
     // 绑定表单提交
     editForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -2937,35 +3927,136 @@ function init() {
         openReviewWithCurrentFilter();
     });
     
-  closeReviewBtn.addEventListener('click', () => reviewModal.classList.remove('active'));
+  if (closeReviewBtn) {
+    const newCloseReviewBtn = closeReviewBtn.cloneNode(true);
+    closeReviewBtn.parentNode.replaceChild(newCloseReviewBtn, closeReviewBtn);
+    newCloseReviewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        reviewModal.classList.remove('active');
+    });
+}
 
-  // 绑定复习模式中的筛选按钮事件（今日、本周、本月）
+
+// 绑定复习模式中的筛选按钮事件
 const filterBtns = document.querySelectorAll('.filter-btn');
 filterBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
         const filter = btn.getAttribute('data-filter');
         if (filter) {
-            // 更新按钮样式
             filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            // 设置筛选条件
             if (filter === 'today') {
                 currentFilter = 'today';
                 customUnitKeyword = '';
             } else if (filter === 'week') {
                 currentFilter = 'week';
                 customUnitKeyword = '';
+            } else if (filter === 'nextWeek') {
+                currentFilter = 'nextWeek';
+                customUnitKeyword = '';
             } else if (filter === 'month') {
                 currentFilter = 'month';
                 customUnitKeyword = '';
             }
             
-            // 刷新复习列表
             openReviewWithCurrentFilter();
         }
     });
 });
+
+
+// ========== 批量添加功能事件绑定 ==========
+const batchAddBtn = document.getElementById('batchAddBtn');
+if (batchAddBtn) {
+    // 移除旧事件避免重复
+    const newBatchBtn = batchAddBtn.cloneNode(true);
+    batchAddBtn.parentNode.replaceChild(newBatchBtn, batchAddBtn);
+    newBatchBtn.addEventListener('click', function() {
+        document.getElementById('batchModal').classList.add('active');
+        document.getElementById('batchInput').value = '';
+    });
+}
+
+const batchCancelBtn = document.getElementById('batchCancelBtn');
+if (batchCancelBtn) {
+    const newCancelBtn = batchCancelBtn.cloneNode(true);
+    batchCancelBtn.parentNode.replaceChild(newCancelBtn, batchCancelBtn);
+    newCancelBtn.addEventListener('click', function() {
+        document.getElementById('batchModal').classList.remove('active');
+    });
+}
+
+const batchConfirmBtn = document.getElementById('batchConfirmBtn');
+if (batchConfirmBtn) {
+    const newConfirmBtn = batchConfirmBtn.cloneNode(true);
+    batchConfirmBtn.parentNode.replaceChild(newConfirmBtn, batchConfirmBtn);
+    newConfirmBtn.addEventListener('click', function() {
+        const input = document.getElementById('batchInput').value;
+        if (!input.trim()) {
+            alert('请输入要添加的错题');
+            return;
+        }
+        const lines = input.split('\n').filter(line => line.trim().length > 0);
+        if (lines.length === 0) {
+            alert('没有有效内容');
+            return;
+        }
+        
+        const todayStr = new Date().toISOString().slice(0, 10);
+        let addedCount = 0;
+        
+        lines.forEach(line => {
+            const word = line.trim();
+            if (!word) return;
+            
+            const newId = `ch_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+            const newItem = {
+                id: newId,
+                tag: '基础知识',
+                subTag: currentChineseSubTag === '拼音' ? '拼音' : '生字',
+                grade: currentGradeFilter,
+                unit: '',
+                question: word,
+                wrongAnswer: '我写错了这个字',
+                correctAnswer: word,
+                reasons: ['需要加强'],
+                source: '批量添加',
+                 createdAt: Date.now(),  
+                date: todayStr,
+                reviewCount: 0,
+                reviewHistory: [],
+                questionImages: [],
+                wrongImages: [],
+                correctImages: []
+            };
+            chineseErrors.push(newItem);
+            addedCount++;
+        });
+        
+        if (addedCount > 0) {
+            saveAllDataToLocalStorage();
+            renderSidebar();
+            renderContent();
+            document.getElementById('batchModal').classList.remove('active');
+            console.log(`✅ 批量添加了 ${addedCount} 条错题`);
+        }
+    });
+}
+
+// 点击遮罩关闭
+const batchModal = document.getElementById('batchModal');
+if (batchModal) {
+    batchModal.onclick = function(e) {
+        if (e.target === this) {
+            document.getElementById('batchModal').classList.remove('active');
+        }
+    };
+}
+
+
+
+
     // 点击遮罩关闭复习模态框
     reviewModal.addEventListener('click', (e) => {
         if (e.target === reviewModal) reviewModal.classList.remove('active');
@@ -2994,6 +4085,54 @@ filterBtns.forEach(btn => {
         unitOverlay.addEventListener('click', closeUnitModal);
     }
     
+
+
+// 初始化复习编辑弹窗
+initReviewImageUpload();
+
+// 绑定复习编辑弹窗按钮 - 使用事件委托方式（更可靠）
+document.body.addEventListener('click', function(e) {
+    // 关闭按钮
+    if (e.target.id === 'closeReviewEditBtn' || e.target.id === 'cancelReviewEditBtn') {
+        e.stopPropagation();
+        closeReviewEditModal();
+    }
+    // 保存按钮
+    if (e.target.id === 'saveReviewEditBtn') {
+        e.stopPropagation();
+        saveReviewEdit();
+    }
+});
+
+
+const cancelReviewEditBtn = document.getElementById('cancelReviewEditBtn');
+if (cancelReviewEditBtn) {
+    const newCancelBtn = cancelReviewEditBtn.cloneNode(true);
+    cancelReviewEditBtn.parentNode.replaceChild(newCancelBtn, cancelReviewEditBtn);
+    newCancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeReviewEditModal();
+    });
+}
+
+const saveReviewEditBtn = document.getElementById('saveReviewEditBtn');
+if (saveReviewEditBtn) {
+    const newSaveBtn = saveReviewEditBtn.cloneNode(true);
+    saveReviewEditBtn.parentNode.replaceChild(newSaveBtn, saveReviewEditBtn);
+    newSaveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveReviewEdit();
+    });
+}
+
+// 点击遮罩关闭
+const reviewEditModal = document.getElementById('reviewEditModal');
+if (reviewEditModal) {
+    reviewEditModal.onclick = (e) => {
+        if (e.target === reviewEditModal) closeReviewEditModal();
+    };
+}
+
     // ========== 首页设置弹窗逻辑 ==========
     const settingsModal = document.getElementById('settingsModal');
     const openSettingsBtn = document.getElementById('openSettingsBtn');
@@ -3183,12 +4322,14 @@ if (restoreFromCloudBtn) {
                 saveAllDataToLocalStorage();
                 renderSidebar();
                 renderContent();
+                
                 if (reviewModal.classList.contains('active')) openReviewWithCurrentFilter();
                 alert('✅ 已恢复示例数据');
                 settingsModal.classList.remove('active');
             }
         };
     }
+      updateBatchAddButtonVisibility();
 }
 
 
@@ -3198,6 +4339,92 @@ if (restoreFromCloudBtn) {
 </script>
 
 
+<!-- 复习界面专用编辑弹窗 -->
+<div id="reviewEditModal" class="modal-mask">
+    <div class="modal-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h4 style="margin: 0;">📝 编辑错题信息</h4>
+            <button type="button" id="closeReviewEditBtn" style="background: transparent; border: none; font-size: 24px; cursor: pointer; color: #8e8e93;">&times;</button>
+        </div>
+        
+        <!-- 基础信息只读显示区 -->
+        <div style="background: #f8f9fc; border-radius: 16px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 70px 1fr; gap: 12px; font-size: 14px;">
+                <div style="color: #8e8e93;">分类：</div>
+                <div id="reviewEditTag" style="font-weight: 500;"></div>
+                
+                <div style="color: #8e8e93;">二级分类：</div>
+                <div id="reviewEditSubTag" style="font-weight: 500;"></div>
+                
+                <div style="color: #8e8e93;">日期：</div>
+                <div id="reviewEditDate"></div>
+                
+                <div style="color: #8e8e93;">来源：</div>
+                <div id="reviewEditSource"></div>
+                
+                <div style="color: #8e8e93;">所属单元：</div>
+                <div id="reviewEditUnit"></div>
+                
+                <div style="color: #8e8e93;">年级学期：</div>
+                <div id="reviewEditGrade"></div>
+                
+                <div style="color: #8e8e93;">错误原因：</div>
+                <div id="reviewEditReasons"></div>
+            </div>
+        </div>
+        
+        <!-- 可编辑区域 -->
+        <form id="reviewEditForm">
+            <div class="form-group">
+                <label>原题 / 拼音 / 汉字</label>
+                <textarea id="reviewEditQuestion" class="auto-height-textarea" placeholder="输入题目内容..."></textarea>
+                <div style="margin-top: 8px;">
+                    <button type="button" class="upload-img-btn" data-target="review_question">📷 上传原题图片</button>
+                    <input type="file" id="uploadReviewQuestionImg" accept="image/*" style="display: none;">
+                    <div id="reviewQuestionImgPreview" class="img-preview-area"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>错误答案 / 过程</label>
+                <textarea id="reviewEditWrong" class="auto-height-textarea" placeholder="学生写的错误答案..."></textarea>
+                <div style="margin-top: 8px;">
+                    <button type="button" class="upload-img-btn" data-target="review_wrong">📷 上传错误答案图片</button>
+                    <input type="file" id="uploadReviewWrongImg" accept="image/*" style="display: none;">
+                    <div id="reviewWrongImgPreview" class="img-preview-area"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>正确答案 / 解析</label>
+                <textarea id="reviewEditCorrect" class="auto-height-textarea" placeholder="正确答案和解析..."></textarea>
+                <div style="margin-top: 8px;">
+                    <button type="button" class="upload-img-btn" data-target="review_correct">📷 上传正确答案图片</button>
+                    <input type="file" id="uploadReviewCorrectImg" accept="image/*" style="display: none;">
+                    <div id="reviewCorrectImgPreview" class="img-preview-area"></div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button type="button" class="btn-cancel" id="cancelReviewEditBtn">取消</button>
+                <button type="button" class="btn-save" id="saveReviewEditBtn">保存修改</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 批量添加弹窗 -->
+<div id="batchModal" class="batch-modal">
+    <div class="batch-modal-container">
+        <h4>📦 批量添加错题</h4>
+        <textarea id="batchInput" class="batch-textarea" placeholder="每行一个错题&#10;&#10;拼音模式示例：&#10;汗&#10;晴&#10;情&#10;&#10;生字模式示例：&#10;han&#10;shi&#10;wang"></textarea>
+        <div class="batch-tip">💡 每行一个汉字（拼音模式）或一个拼音（生字模式），自动创建错题</div>
+        <div class="batch-actions">
+            <button class="batch-cancel" onclick="closeBatchModal()">取消</button>
+            <button class="batch-confirm" onclick="batchAddQuestions()">批量添加</button>
+        </div>
+    </div>
+</div>
 
 
 </body>
