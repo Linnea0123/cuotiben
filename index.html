@@ -1079,6 +1079,25 @@ select:focus, input:focus, textarea:focus {
     flex: 1;
 }
 
+
+
+/* 图片加载占位 */
+img {
+    background-color: #ffffff;
+    min-height: 100px;
+}
+
+img[loading="lazy"] {
+    background: linear-gradient(90deg, #ffffff 25%, #f0f0f0 50%, #ffffff 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
     </style>
 </head>
 <body>
@@ -1370,7 +1389,13 @@ async function uploadToGitHub(base64Data, fileName) {
     }
     
     const result = await response.json();
-    return `https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben/${fileName}`;
+       // 获取 GitHub 上的原始文件链接
+    const rawUrl = `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/${fileName}`;
+    // 使用 jsDelivr CDN 链接 (推荐)
+    const cdnUrl = `https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben@main/${fileName}`;
+    
+    // 返回 CDN 链接，它通常更快
+    return cdnUrl;
 }
 
 
