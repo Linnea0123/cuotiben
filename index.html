@@ -1103,8 +1103,8 @@ select:focus, input:focus, textarea:focus {
             </select>
         </div>
         <!-- 同步和恢复按钮 -->
-        <button id="syncNowBtn" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;">☁️ 同步</button>
-        <button id="restoreFromCloudBtn" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;">📥 恢复</button>
+        <button id="syncNowBtn" style="background: #007aff; color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;">同步</button>
+        <button id="restoreFromCloudBtn" style="background: #5856d6; color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;">恢复</button>
         <!-- 设置按钮保持原样 -->
         <button id="openSettingsBtn" style="background: transparent; border: none; cursor: pointer; padding: 0 8px; color: #007aff; display: inline-flex; align-items: center; justify-content: center;">
             <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="#8e8e93">
@@ -1115,11 +1115,11 @@ select:focus, input:focus, textarea:focus {
                 </g>
             </svg>
         </button>
-        <button class="review-btn-header" id="openReviewBtn">复习模式</button>
+        
     </div>
 </div>
 
-    <div class="subject-tabs" style="display: flex; justify-content: space-between; align-items: center;">
+  <div class="subject-tabs" style="display: flex; justify-content: space-between; align-items: center;">
     <div style="display: flex; gap: 28px;">
         <button class="tab-btn active" data-subject="chinese">语文</button>
         <button class="tab-btn" data-subject="math">数学</button>
@@ -1127,7 +1127,8 @@ select:focus, input:focus, textarea:focus {
     <div style="display: flex; align-items: center; gap: 12px;">
         <span id="questionCountDisplay" style="font-size: 14px; color: #8e8e93;">0 道题</span>
         <button class="add-question-btn-header" style="background: transparent; border: none; padding: 4px 10px; border-radius: 20px; color: #707070; font-size: 18px; font-weight: 500; cursor: pointer;">+</button>
-  <button id="batchAddBtn" class="batch-add-btn" style="display: none;">批量添加</button> 
+        <button class="review-btn-header" id="openReviewBtn" style="background: #007aff; color: white; border: none; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer;">复习模式</button>
+        <button id="batchAddBtn" class="batch-add-btn" style="display: none;">批量添加</button> 
     </div>
 </div>
     <div class="two-columns">
@@ -1147,12 +1148,13 @@ select:focus, input:focus, textarea:focus {
     </div>
     <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 12px;">
         <div class="filter-group">
-            <button class="filter-btn" data-filter="today">今日</button>
-            <button class="filter-btn" data-filter="week">本周</button>
-             <button class="filter-btn" data-filter="nextWeek">下周</button>
-            <button class="filter-btn" data-filter="month">本月</button>
-            <button id="selectUnitBtn" class="filter-btn" style="background: #e9e9ef; color: #3a3a3e;">选择单元</button>
-        </div>
+    <button class="filter-btn" data-filter="today">今日 <span class="filter-count" id="todayCount">(0)</span></button>
+    <button class="filter-btn" data-filter="week">本周 <span class="filter-count" id="weekCount">(0)</span></button>
+    <button class="filter-btn" data-filter="nextWeek">下周 <span class="filter-count" id="nextWeekCount">(0)</span></button>
+    <button class="filter-btn" data-filter="month">本月 <span class="filter-count" id="monthCount">(0)</span></button>
+    <button id="selectUnitBtn" class="filter-btn" style="background: #e9e9ef; color: #3a3a3e;" onclick="openUnitModal(this)">选择单元 <span class="filter-count" id="unitCount">(0)</span></button>
+    <button id="clearUnitBtn" class="filter-btn" style="display: none; background: #e9e9ef; color: #3a3a3e;" onclick="clearUnitFilter()">清除</button>
+</div>
     </div>
 </div>
     
@@ -1248,15 +1250,14 @@ select:focus, input:focus, textarea:focus {
     </div>
 </div>
 
+
 <!-- 全局设置弹窗 -->
 <div id="settingsModal" class="modal-mask">
-    <div class="modal-container" style="max-width: 480px;"
-    
-
-        <h4>⚙️ 系统设置</h4>
+    <div class="modal-container" style="max-width: 480px;">
+        <h4>设置</h4>
         
         <div class="form-group">
-            <label>🔐 GitHub Token（图片上传/云同步）</label>
+            <label>GitHub Token</label>
             <input type="password" id="settingsTokenInput" placeholder="输入你的 GitHub Token" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px;">
             <div style="font-size: 12px; color: #8e8e93; margin-top: 6px;">
                 <a href="https://github.com/settings/tokens" target="_blank" style="color: #007aff;">👉 点击生成 Token</a>（需勾选 repo 和 gist）
@@ -1264,30 +1265,21 @@ select:focus, input:focus, textarea:focus {
         </div>
         
         <div class="form-group">
-            <label>📦 Gist ID（文字数据云存储）</label>
+            <label>Gist ID</label>
             <input type="text" id="settingsGistIdInput" placeholder="Gist ID" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px;">
-            <div style="font-size: 12px; color: #8e8e93;">默认：9fb733b006f81daa05b09f021b60d43d</div>
         </div>
         
-        <hr style="margin: 20px 0; border: 0.5px solid #e9e9ef;">
-        
-        <div class="form-group">
-            <label>🗄️ 数据管理</label>
-           
-
-<div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
-    <button type="button" id="syncNowBtn" style="background: #007aff; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">☁️ 同步到云端</button>
-    <button type="button" id="restoreFromCloudBtn" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">☁️ 从云端恢复</button>
-    <button type="button" id="exportDataBtn" style="background: #34c759; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📥 导出数据</button>
-    <button type="button" id="importDataBtn" style="background: #ff9500; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📤 导入数据</button>
-</div>
-
-
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-<button type="button" id="deleteInModalBtn" style="background: transparent; border: none; color: #ff3b30; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">删除</button>                <button type="button" id="resetToSampleBtn" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">📋 恢复示例数据</button>
-            </div>
-            <p style="font-size: 12px; color: #8e8e93; margin-top: 12px;">⚠️ 清除数据不可恢复，请谨慎操作</p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+            <button type="button" id="syncNowBtn" style="background: #007aff; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">云端同步</button>
+            <button type="button" id="restoreFromCloudBtn" style="background: #5856d6; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">云端恢复</button>
+            <button type="button" id="exportDataBtn" style="background: #34c759; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">导出数据</button>
+            <button type="button" id="importDataBtn" style="background: #ff9500; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">导入数据</button>
         </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
+            <button type="button" id="clearAllDataBtn" style="background: #ff3b30; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">🗑️ 清除所有数据</button>
+        </div>
+        <p style="font-size: 12px; color: #8e8e93; margin-top: 12px;">⚠️ 清除数据不可恢复，请谨慎操作</p>
         
         <div class="modal-actions" style="margin-top: 20px;">
             <button type="button" class="btn-cancel" id="closeSettingsBtn">关闭</button>
@@ -1295,6 +1287,8 @@ select:focus, input:focus, textarea:focus {
         </div>
     </div>
 </div>
+
+
 
 <!-- 隐藏的文件导入 input -->
 <input type="file" id="importFileInput" accept=".json" style="display: none;">
@@ -1523,6 +1517,7 @@ function recordReview(itemId, subject, result) {
     renderContent();
     if (reviewModal.classList.contains('active')) {
         openReviewWithCurrentFilter();
+        updateFilterCounts();
     }
 }
 
@@ -2237,10 +2232,14 @@ function getAllUnits() {
     });
     return Array.from(unitsSet).sort();
 }
+
 // 打开单元选择弹窗
-function openUnitModal() {
+function openUnitModal(btnElement) {
     const units = getAllUnits();
     const unitListDiv = document.getElementById('unitList');
+    
+    // 保存当前按钮的引用
+    window.currentUnitBtn = btnElement;
     
     if (units.length === 0) {
         unitListDiv.innerHTML = '<div style="text-align: center; padding: 20px; color: #8e8e93;">暂无单元数据</div>';
@@ -2256,6 +2255,8 @@ function openUnitModal() {
     document.getElementById('unitOverlay').classList.add('show');
 }
 
+
+
 // 关闭单元选择弹窗
 function closeUnitModal() {
     document.getElementById('unitModal').classList.remove('show');
@@ -2263,14 +2264,159 @@ function closeUnitModal() {
 }
 
 // 选择单元并筛选
+// 选择单元并筛选
 function selectUnit(unit) {
     closeUnitModal();
     currentFilter = "unit";
     customUnitKeyword = unit;
+    
+    // 获取该单元下的错题数量
+    const allList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
+    let count = 0;
+    
+    // 根据当前分类筛选
+    if (currentSubject === "chinese") {
+        let filtered = allList.filter(item => item.tag === currentChineseTag);
+        if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            filtered = filtered.filter(item => item.subTag === currentChineseSubTag);
+        }
+        count = filtered.filter(item => item.unit === unit).length;
+    } else {
+        count = allList.filter(item => item.tag === currentMathTag && item.unit === unit).length;
+    }
+    
+    // 修改按钮文字为"单元名称 (数量)"
+    if (window.currentUnitBtn) {
+        window.currentUnitBtn.innerHTML = `${unit} <span class="filter-count">(${count})</span>`;
+        window.currentUnitBtn.classList.add('active');
+    }
+    
+    // 显示清除单元按钮
+    const clearUnitBtn = document.getElementById('clearUnitBtn');
+    if (clearUnitBtn) {
+        clearUnitBtn.style.display = 'inline-block';
+    }
+    
+    // 更新其他按钮的数量统计
+    updateFilterCounts();
+    
     openReviewWithCurrentFilter();
 }
 
+// 清除单元筛选
+function clearUnitFilter() {
+    currentFilter = "all";
+    customUnitKeyword = "";
+    
+    // 恢复按钮文字为"选择单元 (X个单元)"
+    const selectUnitBtn = document.getElementById('selectUnitBtn');
+    if (selectUnitBtn) {
+        // 重新计算单元总数
+        const allList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
+        let filtered = allList;
+        if (currentSubject === "chinese") {
+            filtered = allList.filter(item => item.tag === currentChineseTag);
+            if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                filtered = filtered.filter(item => item.subTag === currentChineseSubTag);
+            }
+        } else {
+            filtered = allList.filter(item => item.tag === currentMathTag);
+        }
+        
+        const unitsSet = new Set();
+        filtered.forEach(item => {
+            if (item.unit && item.unit.trim()) {
+                unitsSet.add(item.unit);
+            }
+        });
+        selectUnitBtn.innerHTML = `选择单元 <span class="filter-count">(${unitsSet.size}个单元)</span>`;
+        selectUnitBtn.classList.remove('active');
+    }
+    
+    // 隐藏清除按钮
+    const clearUnitBtn = document.getElementById('clearUnitBtn');
+    if (clearUnitBtn) {
+        clearUnitBtn.style.display = 'none';
+    }
+    
+    // 移除其他筛选按钮的 active 状态
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // 更新数量统计
+    updateFilterCounts();
+    
+    openReviewWithCurrentFilter();
+}
+
+// 更新所有筛选按钮的题目数量
+function updateFilterCounts() {
+    // 保存当前筛选状态
+    const previousFilter = currentFilter;
+    const previousUnit = customUnitKeyword;
+    
+    // 统计今日数量
+    currentFilter = "today";
+    customUnitKeyword = "";
+    const todayList = getFilteredQuestionsForReview();
+    const todayCount = document.getElementById('todayCount');
+    if (todayCount) todayCount.textContent = `(${todayList.length})`;
+    
+    // 统计本周数量
+    currentFilter = "week";
+    const weekList = getFilteredQuestionsForReview();
+    const weekCount = document.getElementById('weekCount');
+    if (weekCount) weekCount.textContent = `(${weekList.length})`;
+    
+    // 统计下周数量
+    currentFilter = "nextWeek";
+    const nextWeekList = getFilteredQuestionsForReview();
+    const nextWeekCount = document.getElementById('nextWeekCount');
+    if (nextWeekCount) nextWeekCount.textContent = `(${nextWeekList.length})`;
+    
+    // 统计本月数量
+    currentFilter = "month";
+    const monthList = getFilteredQuestionsForReview();
+    const monthCount = document.getElementById('monthCount');
+    if (monthCount) monthCount.textContent = `(${monthList.length})`;
+    
+    // 统计单元数量
+    currentFilter = "all";
+    customUnitKeyword = "";
+    const allList = getFilteredQuestionsForReview();
+    
+    // 按单元分组统计
+    const unitMap = new Map();
+    allList.forEach(item => {
+        if (item.unit && item.unit.trim()) {
+            const count = unitMap.get(item.unit) || 0;
+            unitMap.set(item.unit, count + 1);
+        }
+    });
+    
+    // 更新单元数量显示
+    const unitCountSpan = document.getElementById('unitCount');
+    if (unitCountSpan) {
+        // 如果当前选中了具体单元，显示该单元的数量；否则显示单元总数
+        if (currentFilter === "unit" && customUnitKeyword) {
+            const specificCount = unitMap.get(customUnitKeyword) || 0;
+            unitCountSpan.textContent = `(${specificCount})`;
+        } else {
+            const totalUnits = unitMap.size;
+            unitCountSpan.textContent = `(${totalUnits}个单元)`;
+        }
+    }
+    
+    // 恢复原来的筛选状态
+    currentFilter = previousFilter;
+    customUnitKeyword = previousUnit;
+}
+
+
+
 function openReviewWithCurrentFilter() {
+    updateFilterCounts();
  // 获取当前分类名称
     let categoryName = '';
     if (currentSubject === 'chinese') {
@@ -2357,7 +2503,7 @@ specialContent = `
 }
       
       
-    else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
+   else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
     let hanzi = '';
     let pinyinParts = [];
     
@@ -2365,12 +2511,13 @@ specialContent = `
     
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
-        const hasChinese = [...part].some(char => /[\u4e00-\u9fa5]/.test(char));
-        if (hasChinese) {
-            hanzi += part;
-        } else {
-            pinyinParts.push(part);
-        }
+       const hasChinese = /[\u4e00-\u9fa5]/.test(part);
+if (hasChinese) {
+    hanzi += part;
+} else {
+    // ✅ 正确：整个拼音作为一个整体
+    pinyinParts.push(part);
+}
     }
     
     // 原题：左边汉字 + 右边拼音+田字格（始终显示）
@@ -3153,10 +3300,15 @@ if (!hasQuestionText && !hasQuestionImages) {
     
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     
-   // 重复检测（新增模式时）- 只有填写了原题文字才检测重复
+// 重复检测（新增模式时）- 只有填写了原题文字才检测重复
 if (id === null && newQuestion && newQuestion.trim()) {
+    // 确保排除当前正在编辑的题目（虽然id=null时没有当前题目）
+    // 并且只检测非删除状态的题目
     const isDuplicate = errorList.some(item => item.question === newQuestion);
     if (isDuplicate) {
+        // 添加调试信息，看看是哪个题目重复了
+        const duplicateItem = errorList.find(item => item.question === newQuestion);
+        console.log('重复的题目:', duplicateItem);
         alert("⚠️ 这道题已经存在错题本中了！\n请勿重复添加。");
         return;
     }
@@ -3260,7 +3412,6 @@ function scrollModalToTop(modalId) {
 }
 
 
-// ========== 删除错题函数 ==========
 function deleteQuestion(id, subject) {
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     const index = errorList.findIndex(item => item.id === id);
@@ -3273,7 +3424,6 @@ function deleteQuestion(id, subject) {
         if (reviewModal.classList.contains('active')) {
             openReviewWithCurrentFilter();
         }
-        
     } else {
         alert('❌ 删除失败：未找到该错题');
     }
@@ -4193,12 +4343,12 @@ if (batchModal) {
     initImageUpload();
     
     // 绑定单元选择按钮
-    const selectUnitBtn = document.getElementById('selectUnitBtn');
-    if (selectUnitBtn) {
-        selectUnitBtn.addEventListener('click', () => {
-            openUnitModal();
-        });
-    }
+const selectUnitBtn = document.getElementById('selectUnitBtn');
+if (selectUnitBtn) {
+    selectUnitBtn.addEventListener('click', (e) => {
+        openUnitModal(e.currentTarget);  // ✅ 传递按钮本身
+    });
+}
     
     // 绑定单元选择弹窗遮罩
     const unitOverlay = document.getElementById('unitOverlay');
@@ -4262,12 +4412,11 @@ if (reviewEditModal) {
     const settingsTokenInput = document.getElementById('settingsTokenInput');
     const settingsGistIdInput = document.getElementById('settingsGistIdInput');
     const syncNowBtn = document.getElementById('syncNowBtn');
-    const clearAllDataBtn = document.getElementById('clearAllDataBtn');
     const resetToSampleBtn = document.getElementById('resetToSampleBtn');
     const exportDataBtn = document.getElementById('exportDataBtn');
     const importDataBtn = document.getElementById('importDataBtn');
     const importFileInput = document.getElementById('importFileInput');
-
+const clearAllDataBtn = document.getElementById('clearAllDataBtn');
     // 打开设置弹窗
     if (openSettingsBtn) {
         openSettingsBtn.onclick = () => {
@@ -4313,7 +4462,7 @@ if (reviewEditModal) {
                 alert('⚠️ 请先在设置中填写 GitHub Token');
                 return;
             }
-            syncNowBtn.textContent = '⏳ 同步中...';
+            syncNowBtn.textContent = '同步中...';
             syncNowBtn.disabled = true;
             try {
                 await saveToCloud();
@@ -4321,7 +4470,7 @@ if (reviewEditModal) {
             } catch (err) {
                 alert('❌ 同步失败：' + err.message);
             } finally {
-                syncNowBtn.textContent = '☁️ 手动同步到云端';
+                syncNowBtn.textContent = '同步';
                 syncNowBtn.disabled = false;
             }
         };
@@ -4344,7 +4493,7 @@ if (restoreFromCloudBtn) {
             } catch (err) {
                 alert('❌ 恢复失败：' + err.message);
             } finally {
-                restoreFromCloudBtn.textContent = '☁️ 从云端恢复';
+                restoreFromCloudBtn.textContent = '恢复';
                 restoreFromCloudBtn.disabled = false;
             }
         }
@@ -4409,53 +4558,37 @@ if (restoreFromCloudBtn) {
         };
     }
 
-    // 清除所有数据
-    if (clearAllDataBtn) {
-        clearAllDataBtn.onclick = () => {
-            if (confirm('⚠️ 确定要清除所有错题数据吗？此操作不可恢复！')) {
-                chineseErrors = [];
-                mathErrors = [];
-                saveAllDataToLocalStorage();
-                renderSidebar();
-                renderContent();
-                if (reviewModal.classList.contains('active')) openReviewWithCurrentFilter();
-                alert('✅ 所有数据已清除');
-                settingsModal.classList.remove('active');
+// 清除所有数据
+if (clearAllDataBtn) {
+    clearAllDataBtn.onclick = () => {
+        if (confirm('⚠️ 确定要清除所有错题数据吗？此操作不可恢复！\n\n清除后将删除：\n- 所有语文错题\n- 所有数学错题\n- 所有复习记录\n\n确定继续吗？')) {
+            // 清空数组
+            chineseErrors.length = 0;
+            mathErrors.length = 0;
+            
+            // 保存到本地
+            saveAllDataToLocalStorage();
+            
+            // 同步到云端（清空云端数据）
+            saveToCloud().catch(err => console.error('云端同步失败:', err));
+            
+            // 刷新界面
+            renderSidebar();
+            renderContent();
+            
+            // 如果复习模式打开，也刷新
+            if (reviewModal && reviewModal.classList.contains('active')) {
+                openReviewWithCurrentFilter();
             }
-        };
-    }
-
-    // 恢复示例数据
-    if (resetToSampleBtn) {
-        resetToSampleBtn.onclick = () => {
-            if (confirm('恢复示例数据会覆盖当前所有错题，确定继续吗？')) {
-                chineseErrors = [
-                    { id: "ch_1", tag: "基础知识", subTag: "拼音", grade: "一下", unit: "第一单元", question: "汗", wrongAnswer: "我写成了'汉'", correctAnswer: "汗", reasons: ["粗心大意"], source: "听写本", date: "2026-05-12", reviewCount: 2, reviewHistory: [{ time: "2026-06-01 19:30:00", result: "correct" }, { time: "2026-05-30 10:15:00", result: "wrong" }], questionImages: [], wrongImages: [], correctImages: [] },
-                    { id: "ch_2", tag: "基础知识", subTag: "拼音", grade: "一下", unit: "第一单元", question: "晴", wrongAnswer: "我写成了'睛'", correctAnswer: "晴", reasons: ["粗心大意"], source: "听写本", date: "2026-05-15", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
-                    { id: "ch_3", tag: "基础知识", subTag: "生字", grade: "一下", unit: "第二单元", question: "shi", wrongAnswer: "我写成了'是'", correctAnswer: "诗", reasons: ["概念模糊"], source: "生字本", date: "2026-05-18", reviewCount: 1, reviewHistory: [{ time: "2026-05-28 09:30:00", result: "wrong" }], questionImages: [], wrongImages: [], correctImages: [] },
-                    { id: "ch_4", tag: "基础知识", subTag: "生字", grade: "一下", unit: "第二单元", question: "wang", wrongAnswer: "我写成了'忘'", correctAnswer: "望", reasons: ["思路错误"], source: "生字本", date: "2026-05-20", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
-                    { id: "ch_5", tag: "阅读理解", grade: "一下", unit: "第二单元", question: "阅读短文《背影》片段：父亲爬过月台买橘子的动作描写，体现了什么情感？", wrongAnswer: "答：体现了父亲身体强壮，动作敏捷。", correctAnswer: "体现了父亲深沉的爱与关怀，尽管笨拙却充满父爱。", reasons: ["审题不清", "思路错误"], source: "月考", date: "2026-05-05", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
-                    { id: "ch_6", tag: "作文表达", grade: "一下", unit: "第三单元", question: "请以\"春天的早晨\"写一个比喻句", wrongAnswer: "早晨非常新鲜", correctAnswer: "春天的早晨像一首轻快的钢琴曲", reasons: ["完全不会"], source: "课后练习", date: "2026-06-01", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] }
-                ];
-                mathErrors = [
-                    { id: "math_1", tag: "计算", unit: "第一单元", question: "计算 25 × 4 ÷ 25 × 4 = ?", wrongAnswer: "1", correctAnswer: "16", reasons: ["粗心大意"], source: "口算练习", date: "2026-05-15", reviewCount: 1, reviewHistory: [{ time: "2026-05-30 14:20:00", result: "wrong" }], questionImages: [], wrongImages: [], correctImages: [] }
-                ];
-                saveAllDataToLocalStorage();
-                renderSidebar();
-                renderContent();
-                
-                if (reviewModal.classList.contains('active')) openReviewWithCurrentFilter();
-                alert('✅ 已恢复示例数据');
-                settingsModal.classList.remove('active');
-            }
-        };
-    }
-      updateBatchAddButtonVisibility();
+            
+            // 关闭设置弹窗
+            settingsModal.classList.remove('active');
+            
+            alert('✅ 所有数据已清除！');
+        }
+    };
 }
-
-
-
-   
+}
    init();
 </script>
 
