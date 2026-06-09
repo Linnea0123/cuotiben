@@ -1424,7 +1424,7 @@ const GIST_CONFIG = {
     fileName: 'cuoti_data.json', 
     token: ''  // 留空，从 localStorage 读取
 };
-
+const PAGE_ID = 'cuotiben_main'; 
 
 
     const chineseReasonOptions = ["粗心大意", "审题不清", "思路错误", "完全不会"];
@@ -4133,18 +4133,14 @@ async function handleImageUploadFromFile(file, target) {
 }
 
 
-    // ========== 加载 Token ==========
-    function loadToken() {
-        let token = localStorage.getItem('github_token');
-        if (!token) {
-            console.log('⚠️ 未设置 GitHub Token，请在首页 → 设置 中配置');
-            return null;
-        }
-        return token;
+  function loadToken() {
+    let token = localStorage.getItem(PAGE_ID + '_github_token');
+    if (!token) {
+        console.log('⚠️ 未设置 GitHub Token，请在首页 → 设置 中配置');
+        return null;
     }
-    
- 
-
+    return token;
+}
 
     const token = loadToken();
     if (token) {
@@ -4156,10 +4152,11 @@ async function handleImageUploadFromFile(file, target) {
     }
     
     // 加载保存的 Gist ID
-    const savedGistId = localStorage.getItem('gist_id');
-    if (savedGistId) {
-        GIST_CONFIG.id = savedGistId;
-    }
+    // 加载保存的 Gist ID（使用 PAGE_ID 独立存储）
+const savedGistId = localStorage.getItem(PAGE_ID + '_gist_id');
+if (savedGistId) {
+    GIST_CONFIG.id = savedGistId;
+}
     
     // 【关键修复】先加载本地存储的数据
     const hasLocalData = loadAllDataFromLocalStorage();
@@ -4444,41 +4441,42 @@ if (reviewEditModal) {
 const clearAllDataBtn = document.getElementById('clearAllDataBtn');
     // 打开设置弹窗
     if (openSettingsBtn) {
-        openSettingsBtn.onclick = () => {
-            settingsTokenInput.value = localStorage.getItem('github_token') || '';
-            settingsGistIdInput.value = localStorage.getItem('gist_id') || GIST_CONFIG.id || '';
-            settingsModal.classList.add('active');
-        };
-    }
-
+    openSettingsBtn.onclick = () => {
+        settingsTokenInput.value = localStorage.getItem(PAGE_ID + '_github_token') || '';
+        settingsGistIdInput.value = localStorage.getItem(PAGE_ID + '_gist_id') || GIST_CONFIG.id || '';
+        settingsModal.classList.add('active');
+    };
+}
     // 关闭弹窗
     if (closeSettingsBtn) closeSettingsBtn.onclick = () => settingsModal.classList.remove('active');
     if (settingsModal) settingsModal.onclick = (e) => { if (e.target === settingsModal) settingsModal.classList.remove('active'); };
 
     // 保存设置
-    if (saveSettingsBtn) {
-        saveSettingsBtn.onclick = () => {
-            const newToken = settingsTokenInput.value.trim();
-            const newGistId = settingsGistIdInput.value.trim();
-            if (newToken) {
-                localStorage.setItem('github_token', newToken);
-                GITHUB_CONFIG.token = newToken;
-                GIST_CONFIG.token = newToken;
-            } else {
-                localStorage.removeItem('github_token');
-                GITHUB_CONFIG.token = '';
-                GIST_CONFIG.token = '';
-            }
-            if (newGistId) {
-                localStorage.setItem('gist_id', newGistId);
-                GIST_CONFIG.id = newGistId;
-            } else {
-                localStorage.removeItem('gist_id');
-            }
-            alert('✅ 设置已保存');
-            settingsModal.classList.remove('active');
-        };
-    }
+   
+if (saveSettingsBtn) {
+    saveSettingsBtn.onclick = () => {
+        const newToken = settingsTokenInput.value.trim();
+        const newGistId = settingsGistIdInput.value.trim();
+        if (newToken) {
+            localStorage.setItem(PAGE_ID + '_github_token', newToken);
+            GITHUB_CONFIG.token = newToken;
+            GIST_CONFIG.token = newToken;
+        } else {
+            localStorage.removeItem(PAGE_ID + '_github_token');
+            GITHUB_CONFIG.token = '';
+            GIST_CONFIG.token = '';
+        }
+        if (newGistId) {
+            localStorage.setItem(PAGE_ID + '_gist_id', newGistId);
+            GIST_CONFIG.id = newGistId;
+        } else {
+            localStorage.removeItem(PAGE_ID + '_gist_id');
+        }
+        alert('✅ 设置已保存');
+        settingsModal.classList.remove('active');
+    };
+}
+
 
     // 手动同步到云端
     if (syncNowBtn) {
