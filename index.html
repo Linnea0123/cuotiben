@@ -12,6 +12,170 @@
             box-sizing: border-box;
         }
 
+
+/* 月历弹窗样式 */
+.calendar-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 4000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    visibility: hidden;
+    opacity: 0;
+    transition: 0.2s ease;
+}
+.calendar-modal.active {
+    visibility: visible;
+    opacity: 1;
+}
+.calendar-container {
+    width: 95%;
+    max-width: 450px;
+    max-height: 85vh;
+    background: white;
+    border-radius: 28px;
+    padding: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    overflow-y: auto;
+}
+.calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.calendar-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1c1c1e;
+}
+.calendar-nav-btn, .calendar-close-btn {
+    background: #f2f2f6;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    color: #007aff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.calendar-nav-btn:active, .calendar-close-btn:active {
+    opacity: 0.7;
+}
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #8e8e93;
+    font-weight: 500;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid #e9e9ef;
+}
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+.calendar-day {
+    min-height: 65px;
+    background: #f8f9fc;
+    border-radius: 12px;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.1s;
+}
+.calendar-day:active {
+    transform: scale(0.95);
+    background: #e9e9ef;
+}
+.calendar-day.empty {
+    background: transparent;
+    cursor: default;
+}
+.calendar-day.empty:active {
+    transform: none;
+}
+.calendar-day.today {
+    background: #007aff20;
+    border: 1px solid #007aff;
+}
+.day-number {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1c1c1e;
+    margin-bottom: 4px;
+}
+.badges-container {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.badge-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: #ffffffcc;
+    padding: 2px 6px;
+    border-radius: 20px;
+}
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+.chinese-dot {
+    background: #ffc107;
+}
+.math-dot {
+    background: #34c759;
+}
+.badge-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1c1c1e;
+}
+.calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 0.5px solid #e9e9ef;
+    font-size: 12px;
+    color: #8e8e93;
+}
+.calendar-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.legend-dot.chinese {
+    background: #ffc107;
+}
+.legend-dot.math {
+    background: #34c759;
+}
         html, body {
             height: 100%;
             width: 100%;
@@ -1126,7 +1290,7 @@ img[loading="lazy"] {
 
 <div class="header">
     <div>
-        <h1>错题本</h1>
+       <h1 id="calendarTrigger" style="cursor: pointer;">错题本 📅</h1>
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
         <div style="display: flex; align-items: center; gap: 6px;">
@@ -1208,12 +1372,13 @@ img[loading="lazy"] {
 <div id="editModal" class="modal-mask">
     <div class="modal-container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h4 style="margin: 0;" id="modalTitle">编辑错题</h4>
-            <div style="display: flex; gap: 12px;">
-                <button type="button" id="deleteInModalBtn" style="background: transparent; border: none; color: #ff3b30; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">删除</button>
-                <button type="button" id="modalSaveBtn" style="background: transparent; border: none; color: #007aff; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">保存</button>
-            </div>
-        </div>
+    <h4 style="margin: 0;" id="modalTitle">编辑错题</h4>
+    <div style="display: flex; gap: 12px;">
+        <button type="button" id="cancelInModalBtn" style="background: transparent; border: none; color: #8e8e93; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">取消</button>
+        <button type="button" id="deleteInModalBtn" style="background: transparent; border: none; color: #ff3b30; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">删除</button>
+        <button type="button" id="modalSaveBtn" style="background: transparent; border: none; color: #007aff; font-size: 15px; font-weight: 500; cursor: pointer; padding: 4px 8px;">保存</button>
+    </div>
+</div>
         <form id="editForm">
             <div class="form-group">
                 <label>类别</label>
@@ -3279,11 +3444,7 @@ if (deleteInModalBtn) {
 
 function saveEdit() {
 
-    // 检查 Token 是否存在
-    if (!GITHUB_CONFIG.token) {
-        alert('⚠️ 未配置 GitHub Token，请刷新页面后重新输入 Token');
-        return;
-    }
+    
     const { id, subject } = editingItem;
     const newQuestion = document.getElementById("editQuestion").value;
     const newWrong = document.getElementById("editWrong").value;
@@ -3391,7 +3552,7 @@ if (id === null) {
     closeModal(); 
     renderSidebar(); 
     renderContent();
-    saveToCloud();  // 保存后自动同步到云端
+    
     
         
     // 【关键修复】强制刷新复习模式
@@ -3433,7 +3594,7 @@ function deleteQuestion(id, subject) {
     if (index !== -1) {
         errorList.splice(index, 1);
         saveAllDataToLocalStorage();
-        saveToCloud();
+        
         renderSidebar();
         renderContent();
         if (reviewModal.classList.contains('active')) {
@@ -3883,6 +4044,9 @@ function saveAllDataToLocalStorage() {
         };
         localStorage.setItem('cuoti_data', JSON.stringify(dataToSave));
         console.log('✅ 数据已保存到本地');
+        
+        // 自动同步到云端（静默，不弹提示）
+        saveToCloud().catch(e => console.log('云端同步失败:', e));
     } catch (e) {
         if (e.name === 'QuotaExceededError') {
             alert('存储空间不足！图片太多，请删除一些旧错题。');
@@ -3891,7 +4055,6 @@ function saveAllDataToLocalStorage() {
         }
     }
 }
-
 function loadAllDataFromLocalStorage() {
     const saved = localStorage.getItem('cuoti_data');
     if (saved) {
@@ -4054,7 +4217,347 @@ function updateBatchAddButtonVisibility() {
 }
 
 
+
+// ========== 月历变量 ==========
+let currentCalendarYear = new Date().getFullYear();
+let currentCalendarMonth = new Date().getMonth();
+
+// 渲染月历
+function renderCalendar() {
+    const year = currentCalendarYear;
+    const month = currentCalendarMonth;
+    
+    const titleEl = document.getElementById('calendarMonthTitle');
+    if (titleEl) titleEl.innerText = `${year}年${month + 1}月`;
+    
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay = new Date(year, month, 1);
+    let startOffset = firstDay.getDay();
+    startOffset = startOffset === 0 ? 6 : startOffset - 1;
+    
+    let html = '';
+    for (let i = 0; i < startOffset; i++) {
+        html += `<div class="calendar-day empty"></div>`;
+    }
+    
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = (dateStr === todayStr);
+    const chineseCount = chineseErrors.filter(item => item.date === dateStr).length;
+    const mathCount = mathErrors.filter(item => item.date === dateStr).length;
+    
+    let badgesHtml = '';
+    if (chineseCount > 0) {
+        badgesHtml += `<div class="badge-item" data-date="${dateStr}" data-subject="chinese">
+                        <span class="dot chinese-dot"></span>
+                        <span class="badge-count">${chineseCount}</span>
+                       </div>`;
+    }
+    if (mathCount > 0) {
+        badgesHtml += `<div class="badge-item" data-date="${dateStr}" data-subject="math">
+                        <span class="dot math-dot"></span>
+                        <span class="badge-count">${mathCount}</span>
+                       </div>`;
+    }
+    
+    html += `<div class="calendar-day ${isToday ? 'today' : ''}" data-date="${dateStr}">
+                <span class="day-number">${d}</span>
+                ${badgesHtml ? `<div class="badges-container">${badgesHtml}</div>` : ''}
+            </div>`;
+}
+    const daysContainer = document.getElementById('calendarDays');
+    if (daysContainer) daysContainer.innerHTML = html;
+    
+    // ========== 每次渲染后重新绑定所有按钮 ==========
+    
+    // 1. 关闭按钮
+    var closeBtn = document.getElementById('closeCalendarBtn');
+    if (closeBtn) {
+        // 移除旧事件避免重复
+        var newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        newCloseBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('calendarModal').classList.remove('active');
+            return false;
+        };
+    }
+    
+    // 2. 上一月按钮
+    var prevBtn = document.getElementById('prevMonthBtn');
+    if (prevBtn) {
+        var newPrevBtn = prevBtn.cloneNode(true);
+        prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+        newPrevBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            currentCalendarMonth--;
+            if (currentCalendarMonth < 0) {
+                currentCalendarMonth = 11;
+                currentCalendarYear--;
+            }
+            renderCalendar();
+            return false;
+        };
+    }
+    
+    // 3. 下一月按钮
+    var nextBtn = document.getElementById('nextMonthBtn');
+    if (nextBtn) {
+        var newNextBtn = nextBtn.cloneNode(true);
+        nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+        newNextBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            currentCalendarMonth++;
+            if (currentCalendarMonth > 11) {
+                currentCalendarMonth = 0;
+                currentCalendarYear++;
+            }
+            renderCalendar();
+            return false;
+        };
+    }
+    
+    // 4. 重新绑定日期点击事件
+ // 绑定日期格子本身的点击（点击空白区域）
+document.querySelectorAll('#calendarDays .calendar-day:not(.empty)').forEach(function(day) {
+    var newDay = day.cloneNode(true);
+    day.parentNode.replaceChild(newDay, day);
+    
+    // 点击整个日期格子（默认显示语文错题，如果没有语文则显示数学）
+    newDay.onclick = function(e) {
+        // 防止点击 badge 时触发两次
+        if (e.target.classList.contains('badge-item') || 
+            e.target.classList.contains('dot') || 
+            e.target.classList.contains('badge-count')) {
+            return;
+        }
+        e.stopPropagation();
+        const dateStr = this.dataset.date;
+        filterByDate(dateStr, 'auto');  // auto 模式：优先语文，没有则数学
+        document.getElementById('calendarModal').classList.remove('active');
+    };
+    
+    // 绑定语文点的点击事件
+    const chineseBadges = newDay.querySelectorAll('.badge-item[data-subject="chinese"]');
+    chineseBadges.forEach(function(badge) {
+        badge.onclick = function(e) {
+            e.stopPropagation();
+            const dateStr = this.dataset.date;
+            filterByDate(dateStr, 'chinese');
+            document.getElementById('calendarModal').classList.remove('active');
+        };
+    });
+    
+    // 绑定数学点的点击事件
+    const mathBadges = newDay.querySelectorAll('.badge-item[data-subject="math"]');
+    mathBadges.forEach(function(badge) {
+        badge.onclick = function(e) {
+            e.stopPropagation();
+            const dateStr = this.dataset.date;
+            filterByDate(dateStr, 'math');
+            document.getElementById('calendarModal').classList.remove('active');
+        };
+    });
+});
+
+}
+    
+    // 绑定日期点击事件
+    document.querySelectorAll('#calendarDays .calendar-day:not(.empty)').forEach(day => {
+        day.onclick = function(e) {
+            e.stopPropagation();
+            const dateStr = this.getAttribute('data-date');
+            filterByDate(dateStr);
+            closeCalendarModal();
+        };
+    });
+
+
+// 打开月历
+function openCalendarModal() {
+    currentCalendarYear = new Date().getFullYear();
+    currentCalendarMonth = new Date().getMonth();
+    renderCalendar();
+    document.getElementById('calendarModal').classList.add('active');
+}
+
+// 关闭月历
+function closeCalendarModal() {
+    document.getElementById('calendarModal').classList.remove('active');
+}
+
+// 上一月
+function prevMonth() {
+    currentCalendarMonth--;
+    if (currentCalendarMonth < 0) {
+        currentCalendarMonth = 11;
+        currentCalendarYear--;
+    }
+    renderCalendar();
+}
+
+// 下一月
+function nextMonth() {
+    currentCalendarMonth++;
+    if (currentCalendarMonth > 11) {
+        currentCalendarMonth = 0;
+        currentCalendarYear++;
+    }
+    renderCalendar();
+}
+
+// 按日期筛选
+function filterByDate(dateStr, subjectFilter = 'auto') {
+    // 获取该日期的错题
+    const chineseOnDate = chineseErrors.filter(item => item.date === dateStr);
+    const mathOnDate = mathErrors.filter(item => item.date === dateStr);
+    
+    let displayList = [];
+    let displaySubject = '';
+    let chineseCount = chineseOnDate.length;
+    let mathCount = mathOnDate.length;
+    
+    if (subjectFilter === 'chinese') {
+        displayList = chineseOnDate;
+        displaySubject = 'chinese';
+    } else if (subjectFilter === 'math') {
+        displayList = mathOnDate;
+        displaySubject = 'math';
+    } else {
+        // auto 模式：优先语文，没有则数学
+        if (chineseOnDate.length > 0) {
+            displayList = chineseOnDate;
+            displaySubject = 'chinese';
+        } else if (mathOnDate.length > 0) {
+            displayList = mathOnDate;
+            displaySubject = 'math';
+        }
+    }
+    
+    if (displayList.length === 0) {
+        alert(`${dateStr} 没有${subjectFilter === 'chinese' ? '语文' : subjectFilter === 'math' ? '数学' : ''}错题记录`);
+        return;
+    }
+    
+    // 保存原始状态
+    const originalSubject = currentSubject;
+    const originalChineseTag = currentChineseTag;
+    const originalChineseSubTag = currentChineseSubTag;
+    const originalMathTag = currentMathTag;
+    const originalGetDisplayList = window.getCurrentDisplayList || getCurrentDisplayList;
+    
+    // 切换到对应学科
+    currentSubject = displaySubject;
+    
+    // 临时覆盖获取列表的函数
+    window.getCurrentDisplayList = function() {
+        return displayList;
+    };
+    
+    // 刷新内容
+    renderContent();
+    
+    // 添加恢复提示
+    const hint = document.createElement('div');
+    const subjectName = displaySubject === 'chinese' ? '语文' : '数学';
+    hint.textContent = `📅 ${dateStr} 的${subjectName}错题（共 ${displayList.length} 道）· 点击恢复全部`;
+    hint.style.cssText = 'background: #007aff; color: white; padding: 8px 16px; border-radius: 30px; font-size: 12px; text-align: center; margin-bottom: 12px; cursor: pointer;';
+    hint.onclick = function() {
+        window.getCurrentDisplayList = originalGetDisplayList;
+        currentSubject = originalSubject;
+        currentChineseTag = originalChineseTag;
+        currentChineseSubTag = originalChineseSubTag;
+        currentMathTag = originalMathTag;
+        renderContent();
+        hint.remove();
+    };
+    
+    const contentArea = document.getElementById('contentArea');
+    if (contentArea.firstChild) {
+        contentArea.insertBefore(hint, contentArea.firstChild);
+    } else {
+        contentArea.appendChild(hint);
+    }
+    
+    closeCalendarModal();
+}
+
 function init() {
+
+
+// 绑定顶部取消按钮
+const cancelInModalBtn = document.getElementById('cancelInModalBtn');
+if (cancelInModalBtn) {
+    cancelInModalBtn.onclick = function() {
+        closeModal();
+    };
+}
+
+// 绑定月历按钮事件
+const prevBtn = document.getElementById('prevMonthBtn');
+const nextBtn = document.getElementById('nextMonthBtn');
+const closeBtn = document.getElementById('closeCalendarBtn');
+const calendarModalEl = document.getElementById('calendarModal');
+const calendarTrigger = document.getElementById('calendarTrigger');
+
+if (prevBtn) {
+    prevBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        prevMonth();
+        return false;
+    };
+}
+if (nextBtn) {
+    nextBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        nextMonth();
+        return false;
+    };
+}
+// 修复关闭按钮 - 使用 addEventListener
+if (closeBtn) {
+    // 先移除所有旧事件
+    var oldBtn = closeBtn;
+    var newBtn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+    
+    // 添加新事件
+    newBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var modal = document.getElementById('calendarModal');
+        if (modal) modal.classList.remove('active');
+        console.log('关闭按钮工作');
+    });
+}
+const calendarModalElem = document.getElementById('calendarModal');
+if (calendarModalElem) {
+    calendarModalElem.onclick = function(e) {
+        // 点击关闭按钮 或 点击遮罩层，都关闭弹窗
+        if (e.target.id === 'closeCalendarBtn' || 
+            e.target.classList?.contains('calendar-close-btn') ||
+            e.target === calendarModalElem) {
+            document.getElementById('calendarModal').classList.remove('active');
+        }
+    };
+}
+
+
+if (calendarTrigger) {
+    calendarTrigger.onclick = function(e) {
+        e.preventDefault();
+        openCalendarModal();
+        return false;
+    };
+}
 
  // 恢复上次的页面状态
     const savedSubject = localStorage.getItem('cuoti_subject');
@@ -4694,6 +5197,25 @@ if (clearAllDataBtn) {
     </div>
 </div>
 
+<!-- 月历弹窗 -->
+<div id="calendarModal" class="calendar-modal">
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <button type="button" class="calendar-nav-btn" id="prevMonthBtn">←</button>
+            <h3 id="calendarMonthTitle">2026年6月</h3>
+            <button type="button" class="calendar-nav-btn" id="nextMonthBtn">→</button>
+            <button type="button" class="calendar-close-btn" id="closeCalendarBtn">✕</button>
+        </div>
+        <div class="calendar-weekdays">
+            <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        </div>
+        <div class="calendar-days" id="calendarDays"></div>
+        <div class="calendar-legend">
+            <span><i class="legend-dot chinese"></i> 语文错题</span>
+            <span><i class="legend-dot math"></i> 数学错题</span>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
