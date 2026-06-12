@@ -438,15 +438,16 @@ body {
             padding: 0 20px 16px 20px;
         }
         
-       /* 四线三格样式 - 修正为4条线 */
+
+        /* 四线三格样式 */
 .four-line-grid {
     display: inline-block;
     margin: 10px 0;
     position: relative;
-    width: 140px;
+    width: 80px;
 }
 
-.grid-line-1 { /* 第1条线 - 顶线 */
+.grid-line-1 {
     display: block;
     height: 0;
     border-top: 1px solid #8e8e93;
@@ -454,7 +455,7 @@ body {
     margin-bottom: 8px;
 }
 
-.grid-line-2 { /* 第2条线 - 中上 */
+.grid-line-2 {
     display: block;
     height: 0;
     border-top: 1px solid #c6c6c8;
@@ -462,7 +463,7 @@ body {
     margin-bottom: 8px;
 }
 
-.grid-line-3 { /* 第3条线 - 中下 */
+.grid-line-3 {
     display: block;
     height: 0;
     border-top: 1px solid #c6c6c8;
@@ -470,7 +471,7 @@ body {
     margin-bottom: 8px;
 }
 
-.grid-line-4 { /* 第4条线 - 底线 */
+.grid-line-4 {
     display: block;
     height: 0;
     border-top: 1px solid #8e8e93;
@@ -486,7 +487,14 @@ body {
     text-align: center;
     margin-top: 4px;
 }
-        
+
+.special-content {
+    background: #f8f9fc;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 12px 0;
+}
+
        /* 田字格样式 */
 .tian-grid {
     display: inline-block;
@@ -550,6 +558,8 @@ body {
             background: #007aff;
             color: white;
         }
+        
+
         
         .empty-state {
             text-align: center;
@@ -775,7 +785,6 @@ body {
             color: #8e8e93;
         }
 
-        /* 编辑弹窗 */
 .modal-mask {
     position: fixed;
     top: 0;
@@ -787,11 +796,22 @@ body {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    z-index: 1000;
+    z-index: 10000;
     visibility: hidden;
     opacity: 0;
     transition: 0.2s ease;
+    /* 新增：确保弹窗容器可以点击，但遮罩不拦截内部按钮 */
+    pointer-events: none;
 }
+.modal-mask.active {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto;  /* 关键：激活时允许点击内部元素 */
+}
+.modal-container {
+    pointer-events: auto;  /* 确保容器内元素可点击 */
+}
+
 
 .modal-mask.active {
     visibility: visible !important;
@@ -1128,6 +1148,28 @@ select:focus, input:focus, textarea:focus {
     
 }
 
+/* 打印设置弹窗内按钮样式 */
+.print-category-filter {
+    background: #f2f2f6;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.print-category-filter.active {
+    background: #007aff;
+    color: white;
+}
+
+/* 预览窗口打印样式 */
+@media print {
+    body.preview-mode {
+        margin: 0;
+        padding: 0;
+    }
+}
 
 /* 批量添加按钮样式 */
 .batch-add-btn {
@@ -1292,6 +1334,65 @@ img[loading="lazy"] {
     animation: spin 0.8s linear infinite;
 }
 
+/* ========== 分类打印样式 ========== */
+
+/* 拼音卡片 */
+.print-card-pinyin .print-question {
+    font-size: 22px !important;
+}
+.print-card-pinyin .four-line-grid-print {
+    margin: 0 10px;
+}
+.print-card-pinyin .grid-line-print {
+    width: 70px;
+}
+
+/* 生字卡片 */
+.print-card-shengzi .print-question {
+    font-size: 20px !important;
+}
+.print-card-shengzi .tian-box {
+    width: 55px !important;
+    height: 55px !important;
+}
+.print-card-shengzi .tian-box::before,
+.print-card-shengzi .tian-box::after {
+    background: #ccc !important;
+}
+
+/* 笔顺卡片 */
+.print-card-bishun .print-question {
+    text-align: center !important;
+}
+.print-card-bishun .print-question > div {
+    font-size: 32px !important;
+    letter-spacing: 10px !important;
+    background: #f5f5f5 !important;
+    padding: 20px !important;
+    border-radius: 12px !important;
+}
+
+/* 数学卡片 */
+.print-card-math .print-question {
+    text-align: center !important;
+}
+.print-card-math .print-question > div {
+    font-size: 22px !important;
+    font-family: 'Courier New', monospace !important;
+    background: #f8f9fc !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+}
+
+/* 其他卡片 */
+.print-card-other .print-question > div {
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+}
+
+
+
+
     </style>
 </head>
 <body>
@@ -1334,7 +1435,18 @@ img[loading="lazy"] {
         <line x1="12" y1="17" x2="16" y2="13" stroke="#888" stroke-width="1.5"/>
     </svg>
 </button>
-
+<!-- 打印按钮（放在设置按钮左边） -->
+<!-- 打印按钮（放在设置按钮左边） -->
+<button id="printBtn" style="background: none; border: none; cursor: pointer; padding: 0 8px; display: inline-flex; align-items: center;" title="打印当前分类错题">
+    <svg width="20" height="20" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#8e8e93" d="M58.688,55h-5.065c-1.104,0-2-0.896-2-2c0-1.105,0.896-2,2-2h5.065C60.223,51,62,49.452,62,47.752V22.616 C62,20.898,60.145,20,58.688,20H6.551C5.094,20,4,20.898,4,22.616v25.136C4,49.452,5.017,51,6.551,51h6.068c1.104,0,2,0.895,2,2c0,1.104-0.896,2-2,2H6.551C2.793,55,0,51.682,0,47.752V22.616C0,18.845,2.599,16,6.551,16h52.137 C62.639,16,66,18.845,66,22.616v25.136C66,51.682,62.443,55,58.688,55z"/>
+        <path fill="#8e8e93" d="M55,59.068C55,62.896,51.896,66,48.068,66H17.932C14.104,66,11,62.896,11,59.068V45.932C11,42.104,14.104,39,17.932,39h30.136C51.896,39,55,42.104,55,45.932V59.068z M51,45.932C51,44.312,49.688,43,48.068,43H17.932C16.313,43,15,44.312,15,45.932v13.137C15,60.688,16.313,62,17.932,62h30.136C49.688,62,51,60.688,51,59.068V45.932z"/>
+        <path fill="#8e8e93" d="M53,20c-1.104,0-2-0.896-2-2V6.616C51,4.898,49.145,4,47.688,4H17.551C16.094,4,15,4.898,15,6.616V18c0,1.104-0.896,2-2,2s-2-0.896-2-2V6.616C11,2.845,13.599,0,17.551,0h30.137C51.639,0,55,2.845,55,6.616V18C55,19.104,54.104,20,53,20z"/>
+        <path fill="#8e8e93" d="M12.619,26h-3c-0.553,0-1-0.447-1-1s0.447-1,1-1h3c0.552,0,1,0.447,1,1S13.171,26,12.619,26z"/>
+        <path fill="#8e8e93" d="M19.619,26h-3c-0.553,0-1-0.447-1-1s0.447-1,1-1h3c0.552,0,1,0.447,1,1S20.171,26,19.619,26z"/>
+        <path fill="#8e8e93" d="M52.619,35h-40c-0.553,0-1-0.447-1-1s0.447-1,1-1h40c0.552,0,1,0.447,1,1S53.171,35,52.619,35z"/>
+    </svg>
+</button>
 
         <!-- 设置按钮保持原样 -->
         <button id="openSettingsBtn" style="background: transparent; border: none; cursor: pointer; padding: 0 8px; color: #007aff; display: inline-flex; align-items: center; justify-content: center;">
@@ -4045,7 +4157,8 @@ async function loadFromCloud() {
             }
             
             // 保存合并后的数据到本地
-            saveAllDataToLocalStorage();
+            // 保存合并后的数据到本地（静默保存，不触发云端上传）
+saveAllDataToLocalStorageSilent();
             
             // 刷新界面
             renderSidebar();
@@ -4070,8 +4183,98 @@ async function loadFromCloud() {
     }
 }
 
-
-
+// 静默合并云端数据（不触发上传）
+// 静默合并云端数据（不触发上传）- 用于页面刷新时自动合并
+async function loadFromCloudSilent() {
+    if (!GIST_CONFIG.id) {
+        console.log('请先配置 GIST_CONFIG.id');
+        return false;
+    }
+    
+    try {
+        const rawUrl = `https://gist.githubusercontent.com/Linnea0123/${GIST_CONFIG.id}/raw/${GIST_CONFIG.fileName}`;
+        const response = await fetch(rawUrl);
+        
+        if (response.ok) {
+            const data = await response.json();
+            let addedCount = 0, updatedCount = 0;
+            
+            // 合并语文错题
+            if (data.chineseErrors && data.chineseErrors.length > 0) {
+                for (const cloudItem of data.chineseErrors) {
+                    const existingIndex = chineseErrors.findIndex(local => local.id === cloudItem.id);
+                    if (existingIndex === -1) {
+                        chineseErrors.push({
+                            ...cloudItem,
+                            questionImages: cloudItem.questionImages || [],
+                            wrongImages: cloudItem.wrongImages || [],
+                            correctImages: cloudItem.correctImages || []
+                        });
+                        addedCount++;
+                    } else {
+                        const localItem = chineseErrors[existingIndex];
+                        const localTime = new Date(localItem.updatedAt || localItem.date || '1970-01-01');
+                        const cloudTime = new Date(cloudItem.updatedAt || cloudItem.date || '1970-01-01');
+                        if (cloudTime > localTime) {
+                            chineseErrors[existingIndex] = {
+                                ...cloudItem,
+                                questionImages: cloudItem.questionImages || [],
+                                wrongImages: cloudItem.wrongImages || [],
+                                correctImages: cloudItem.correctImages || []
+                            };
+                            updatedCount++;
+                        }
+                    }
+                }
+            }
+            
+            // 合并数学错题
+            if (data.mathErrors && data.mathErrors.length > 0) {
+                for (const cloudItem of data.mathErrors) {
+                    const existingIndex = mathErrors.findIndex(local => local.id === cloudItem.id);
+                    if (existingIndex === -1) {
+                        mathErrors.push({
+                            ...cloudItem,
+                            questionImages: cloudItem.questionImages || [],
+                            wrongImages: cloudItem.wrongImages || [],
+                            correctImages: cloudItem.correctImages || []
+                        });
+                        addedCount++;
+                    } else {
+                        const localItem = mathErrors[existingIndex];
+                        const localTime = new Date(localItem.updatedAt || localItem.date || '1970-01-01');
+                        const cloudTime = new Date(cloudItem.updatedAt || cloudItem.date || '1970-01-01');
+                        if (cloudTime > localTime) {
+                            mathErrors[existingIndex] = {
+                                ...cloudItem,
+                                questionImages: cloudItem.questionImages || [],
+                                wrongImages: cloudItem.wrongImages || [],
+                                correctImages: cloudItem.correctImages || []
+                            };
+                            updatedCount++;
+                        }
+                    }
+                }
+            }
+            
+            // 使用静默保存（不触发上传）
+            saveAllDataToLocalStorageSilent();
+            
+            renderSidebar();
+            renderContent();
+            
+            console.log(`✅ 云端合并完成: 新增 ${addedCount} 条，更新 ${updatedCount} 条`);
+            if (addedCount > 0 || updatedCount > 0) {
+                showToast(`📦 已从云端同步: 新增 ${addedCount} 条，更新 ${updatedCount} 条`);
+            }
+            return true;
+        }
+        return false;
+    } catch (err) {
+        console.error('加载失败:', err);
+        return false;
+    }
+}
 async function loadFromCloudForce() {
     console.log('📥 [loadFromCloudForce] 开始执行');
     
@@ -4197,6 +4400,26 @@ function stopDownloadSpin() {
 // 在函数外部添加防抖定时器变量（放在 saveAllDataToLocalStorage 函数之前）
 let syncTimer = null;
 
+// 静默保存（不触发云端上传，用于页面加载时的合并）
+function saveAllDataToLocalStorageSilent() {
+    try {
+        const dataToSave = {
+            chineseErrors: chineseErrors,
+            mathErrors: mathErrors,
+            version: '1.0',
+            lastSaved: new Date().toISOString()
+        };
+        localStorage.setItem('cuoti_data', JSON.stringify(dataToSave));
+        console.log('✅ 数据已静默保存到本地（不触发云端上传）');
+    } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+            alert('存储空间不足！图片太多，请删除一些旧错题。');
+        } else {
+            console.error('保存失败:', e);
+        }
+    }
+}
+
 function saveAllDataToLocalStorage() {
     try {
         const dataToSave = {
@@ -4208,23 +4431,17 @@ function saveAllDataToLocalStorage() {
         localStorage.setItem('cuoti_data', JSON.stringify(dataToSave));
         console.log('✅ 数据已保存到本地');
         
-        // ========== 防抖静默同步（5秒）==========
+        // ========== 用户修改数据时才触发防抖静默同步 ==========
         if (GITHUB_CONFIG.token && GIST_CONFIG.id) {
-            // 清除之前的定时器
             if (syncTimer) clearTimeout(syncTimer);
-            
-            // 开始旋转动画（表示即将同步）
             startUploadSpin();
-            
-            // 5秒后执行同步
             syncTimer = setTimeout(() => {
-                console.log('🔄 防抖触发，开始静默同步...');
+                console.log('🔄 用户修改数据，触发云端同步...');
                 saveToCloud().catch(e => console.log('云端同步失败:', e)).finally(() => {
-                    // 同步完成后停止旋转
                     setTimeout(() => stopUploadSpin(), 500);
                 });
                 syncTimer = null;
-            }, 5000);  // 5秒防抖
+            }, 5000);
         }
     } catch (e) {
         if (e.name === 'QuotaExceededError') {
@@ -4234,7 +4451,6 @@ function saveAllDataToLocalStorage() {
         }
     }
 }
-
 
 function loadAllDataFromLocalStorage() {
     const saved = localStorage.getItem('cuoti_data');
@@ -4669,14 +4885,1330 @@ function filterByDate(dateStr, subjectFilter = 'auto') {
     closeCalendarModal();
 }
 
+// ========== 打印功能 ==========
+function getPrintTitle() {
+    let subjectName = currentSubject === "chinese" ? "语文" : "数学";
+    let categoryName = "";
+    if (currentSubject === "chinese") {
+        categoryName = currentChineseTag;
+        if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            categoryName += " · " + currentChineseSubTag;
+        }
+    } else {
+        categoryName = currentMathTag;
+    }
+    return `${subjectName} · ${categoryName} 错题本`;
+}
+
+// 根据不同类型生成打印内容
+function generatePrintContent(item, idx) {
+    const isMath = item.id && item.id.startsWith('math');
+    let html = `
+    <div class="print-card" style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+            <span style="font-size: 12px; color: #888;">${item.date || '无日期'} | ${item.source || '未知来源'}</span>
+        </div>
+`;
+    
+    // ========== 原题区域（根据分类不同格式） ==========
+    html += `<div style="margin-bottom: 16px;"><div style="font-size: 13px; color: #666; margin-bottom: 6px;">📖 原题：</div>`;
+    
+ 
+
+if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
+    var chars = item.question.split('');
+    html += '<div style="background: #f8f9fc; border-radius: 16px; padding: 20px; margin: 12px 0;">';
+    html += '<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">';
+    for (var i = 0; i < chars.length; i++) {
+        html += '<div style="text-align: center; width: 80px;">';
+        // 四线格
+        html += '<div style="border-top: 1px solid #8e8e93; margin-bottom: 6px;"></div>';
+        html += '<div style="border-top: 1px solid #c6c6c8; margin-bottom: 6px;"></div>';
+        html += '<div style="border-top: 1px solid #c6c6c8; margin-bottom: 6px;"></div>';
+        html += '<div style="border-top: 1px solid #8e8e93;"></div>';
+        // 加一个空白块强制分隔
+        html += '<div style="height: 20px;"></div>';
+        // 汉字
+        html += '<div style="font-size: 36px; font-weight: 500; color: #1c1c1e;">' + escapeHtml(chars[i]) + '</div>';
+        html += '</div>';
+    }
+    html += '</div></div>';
+} 
+    // 生字分类：田字格格式
+    else if (item.tag === "基础知识" && item.subTag === "生字" && item.question) {
+        const parts = item.question.trim().split(/\s+/);
+        let hanzi = '';
+        let pinyinParts = [];
+        for (let i = 0; i < parts.length; i++) {
+            if (/[\u4e00-\u9fa5]/.test(parts[i])) {
+                hanzi += parts[i];
+            } else {
+                pinyinParts.push(parts[i]);
+            }
+        }
+        html += `<div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">`;
+        html += `<div style="font-size: 36px; font-weight: normal;">${escapeHtml(hanzi)}</div>`;
+        html += `<div style="display: flex; gap: 16px; flex-wrap: wrap;">`;
+        pinyinParts.forEach(p => {
+            html += `
+                <div style="text-align: center;">
+                    <div style="font-size: 14px; color: #007aff; margin-bottom: 6px;">${escapeHtml(p)}</div>
+                    <div style="width: 60px; height: 60px; border: 1px solid #333; position: relative;">
+                        <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #ddd;"></div>
+                        <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #ddd;"></div>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+    }
+    
+    
+    
+    
+    // 笔顺分类
+    else if (item.tag === "基础知识" && item.subTag === "笔顺" && item.question) {
+        html += `<div style="font-size: 32px; font-weight: 600; text-align: center; letter-spacing: 8px; padding: 20px; background: #f8f9fc; border-radius: 12px;">${escapeHtml(item.question)}</div>`;
+    }
+    // 数学题目：居中放大
+    else if (isMath && item.question) {
+        html += `<div style="font-size: 28px; font-weight: 600; text-align: center; padding: 20px; background: #f8f9fc; border-radius: 12px;">${escapeHtml(item.question)}</div>`;
+    }
+    // 普通文本
+    else if (item.question) {
+        html += `<div style="font-size: 16px; line-height: 1.6; padding: 12px; background: #f8f9fc; border-radius: 12px;">${escapeHtml(item.question)}</div>`;
+    }
+    
+    // 原题图片
+    if (item.questionImages && item.questionImages.length > 0) {
+        item.questionImages.forEach(img => {
+            html += `<div style="margin-top: 8px;"><img src="${img}" style="max-width: 100%; max-height: 200px; border-radius: 8px;"></div>`;
+        });
+    }
+    html += `</div>`;
+    
+    // ========== 错误答案区域 ==========
+    html += `<div style="margin-bottom: 14px; padding: 10px; background: #fff5f5; border-left: 3px solid #ff3b30; border-radius: 8px;">`;
+    html += `<div style="font-size: 13px; font-weight: bold; color: #ff3b30; margin-bottom: 6px;">❌ 错误答案 / 过程：</div>`;
+    html += `<div style="font-size: 14px; line-height: 1.5;">${escapeHtml(item.wrongAnswer || '未记录')}</div>`;
+    if (item.wrongImages && item.wrongImages.length > 0) {
+        item.wrongImages.forEach(img => {
+            html += `<img src="${img}" style="max-width: 100%; max-height: 150px; margin-top: 8px; border-radius: 8px;">`;
+        });
+    }
+    html += `</div>`;
+    
+    // ========== 正确答案区域（拼音和生字不重复显示正确答案，因为原题已显示） ==========
+    const skipCorrect = (item.tag === "基础知识" && (item.subTag === "拼音" || item.subTag === "生字"));
+    if (!skipCorrect) {
+        html += `<div style="margin-bottom: 14px; padding: 10px; background: #f0fff0; border-left: 3px solid #34c759; border-radius: 8px;">`;
+        html += `<div style="font-size: 13px; font-weight: bold; color: #34c759; margin-bottom: 6px;">✅ 正确答案 / 解析：</div>`;
+        html += `<div style="font-size: 14px; line-height: 1.5;">${escapeHtml(item.correctAnswer || '未记录')}</div>`;
+        if (item.correctImages && item.correctImages.length > 0) {
+            item.correctImages.forEach(img => {
+                html += `<img src="${img}" style="max-width: 100%; max-height: 150px; margin-top: 8px; border-radius: 8px;">`;
+            });
+        }
+        html += `</div>`;
+    }
+    
+    // ========== 错误原因 ==========
+    const reasonText = item.reasons?.length ? item.reasons.join("、") : "未标注";
+    html += `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ddd; font-size: 12px; color: #888;">`;
+    html += `<span>📌 错误原因：${escapeHtml(reasonText)}</span>`;
+    html += `<span style="margin-left: 20px;">📚 单元：${escapeHtml(item.unit || '未标注')}</span>`;
+    html += `<span style="margin-left: 20px;">🔄 复习次数：${item.reviewCount || 0}</span>`;
+    html += `</div>`;
+    
+    html += `</div>`;
+    return html;
+}
+
+// 打印当前分类的所有错题
+// 打印当前分类的所有错题
+function printCurrentCategory() {
+    // 获取当前显示的错题列表
+    let list = [];
+    if (currentSubject === "chinese") {
+        list = chineseErrors.filter(item => item.tag === currentChineseTag);
+        if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            list = list.filter(item => item.subTag === currentChineseSubTag);
+        }
+    } else {
+        list = mathErrors.filter(item => item.tag === currentMathTag);
+    }
+    
+    if (list.length === 0) {
+        alert("当前分类没有错题，无法打印");
+        return;
+    }
+    
+    // 生成打印内容
+    const title = getPrintTitle();
+    const now = new Date().toLocaleString('zh-CN');
+    
+    let printHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>${title}</title>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                    padding: 20px;
+                    background: white;
+                }
+                .print-header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    padding-bottom: 15px;
+                    border-bottom: 2px solid #333;
+                }
+                .print-header h1 {
+                    font-size: 24px;
+                    margin-bottom: 8px;
+                }
+                .print-header p {
+                    font-size: 13px;
+                    color: #666;
+                }
+                .print-card {
+    border: none !important;           /* 删除外框 */
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin-bottom: 20px;
+}
+                .print-card-header {
+    border-bottom: none !important;    /* 删除下划线 */
+    margin-bottom: 8px;
+    padding-bottom: 0;
+}
+                .print-question {
+    white-space: pre-wrap !important;   /* 保留您自己的换行，不要自动换行 */
+    word-break: keep-all !important;   /* 防止单词内换行 */
+}
+
+.print-question div {
+    white-space: pre-wrap !important;
+}
+                .print-question-label {
+                    font-size: 13px;
+                    font-weight: bold;
+                    color: #007aff;
+                    margin-bottom: 8px;
+                }
+                .print-wrong {
+                    margin-bottom: 14px;
+                    padding: 10px;
+                    background: #fff5f5;
+                    border-left: 3px solid #ff3b30;
+                    border-radius: 8px;
+                }
+                .print-correct {
+                    margin-bottom: 14px;
+                    padding: 10px;
+                    background: #f0fff0;
+                    border-left: 3px solid #34c759;
+                    border-radius: 8px;
+                }
+                .print-meta {
+                    margin-top: 8px;
+                    padding-top: 8px;
+                    border-top: 1px dashed #ddd;
+                    font-size: 12px;
+                    color: #888;
+                }
+                .print-footer {
+                    margin-top: 30px;
+                    padding-top: 15px;
+                    text-align: center;
+                    font-size: 11px;
+                    color: #999;
+                    border-top: 1px solid #ddd;
+                }
+                /* 四线三格样式 */
+                .four-line-grid-print {
+                    display: inline-block;
+                    text-align: center;
+                    margin: 0 8px;
+                }
+                .grid-line-print {
+                    width: 70px;
+                }
+                .grid-line-print div {
+                    height: 0;
+                    width: 100%;
+                }
+                .line1, .line4 { border-top: 1px solid #333; margin-bottom: 8px; }
+                .line2, .line3 { border-top: 1px solid #999; margin-bottom: 8px; }
+                /* 田字格样式 */
+                .tian-grid-print {
+                    display: inline-block;
+                    text-align: center;
+                    margin: 0 8px;
+                }
+                .tian-box {
+                    width: 60px;
+                    height: 60px;
+                    border: 1px solid #333;
+                    position: relative;
+                    margin-top: 5px;
+                }
+                .tian-box::before {
+                    content: '';
+                    position: absolute;
+                    top: 50%;
+                    left: 0;
+                    right: 0;
+                    height: 1px;
+                    background: #ddd;
+                }
+                .tian-box::after {
+                    content: '';
+                    position: absolute;
+                    left: 50%;
+                    top: 0;
+                    bottom: 0;
+                    width: 1px;
+                    background: #ddd;
+                }
+                img {
+                    max-width: 100%;
+                    max-height: 200px;
+                    border-radius: 8px;
+                    margin-top: 8px;
+                }
+                @media print {
+                    body {
+                        padding: 0;
+                        margin: 0.5cm;
+                    }
+                    .no-print {
+                        display: none;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-header">
+                <h1>📚 ${escapeHtml(title)}</h1>
+                <p>打印时间：${escapeHtml(now)} | 共 ${list.length} 道错题</p>
+            </div>
+    `;
+    
+    // 生成每道题的卡片
+    list.forEach((item, idx) => {
+        const isMath = item.id && item.id.startsWith('math');
+        
+        printHtml += `
+            <div class="print-card">
+                <div class="print-card-header">
+                    <span style="font-size: 14px; font-weight: bold; color: #007aff;">第 ${idx + 1} 题</span>
+                    <span style="font-size: 12px; color: #888;">${escapeHtml(item.date || '无日期')} | ${escapeHtml(item.source || '未知来源')}</span>
+                </div>
+        `;
+        
+        // ========== 原题区域 ==========
+        printHtml += `<div class="print-question">`;
+        printHtml += `<div class="print-question-label">📖 原题：</div>`;
+        
+        // 拼音分类：四线三格格式
+        if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
+            const chars = item.question.split('');
+            printHtml += `<div style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: flex-start;">`;
+            chars.forEach(char => {
+                printHtml += `
+                    <div class="four-line-grid-print">
+                        <div class="grid-line-print">
+                            <div class="line1"></div>
+                            <div class="line2"></div>
+                            <div class="line3"></div>
+                            <div class="line4"></div>
+                        </div>
+                        <div style="font-size: 28px; font-weight: 500; margin-top: -28px;">${escapeHtml(char)}</div>
+                    </div>
+                `;
+            });
+            printHtml += `</div>`;
+        }
+        // 生字分类：田字格格式
+        else if (item.tag === "基础知识" && item.subTag === "生字" && item.question) {
+            const parts = item.question.trim().split(/\s+/);
+            let hanzi = '';
+            let pinyinParts = [];
+            for (let i = 0; i < parts.length; i++) {
+                if (/[\u4e00-\u9fa5]/.test(parts[i])) {
+                    hanzi += parts[i];
+                } else {
+                    pinyinParts.push(parts[i]);
+                }
+            }
+            printHtml += `<div style="display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">`;
+            printHtml += `<div style="font-size: 36px; font-weight: normal;">${escapeHtml(hanzi)}</div>`;
+            printHtml += `<div style="display: flex; gap: 16px; flex-wrap: wrap;">`;
+            pinyinParts.forEach(p => {
+                printHtml += `
+                    <div class="tian-grid-print">
+                        <div style="font-size: 14px; color: #007aff; margin-bottom: 6px;">${escapeHtml(p)}</div>
+                        <div class="tian-box"></div>
+                    </div>
+                `;
+            });
+            printHtml += `</div></div>`;
+        }
+        // 笔顺分类
+        else if (item.tag === "基础知识" && item.subTag === "笔顺" && item.question) {
+            printHtml += `<div style="font-size: 32px; font-weight: 600; text-align: center; letter-spacing: 8px; padding: 20px; background: #f8f9fc; border-radius: 12px;">${escapeHtml(item.question)}</div>`;
+        }
+        // 数学题目：居中放大
+        else if (isMath && item.question) {
+            printHtml += `<div style="font-size: 28px; font-weight: 600; text-align: center; padding: 20px; background: #f8f9fc; border-radius: 12px;">${escapeHtml(item.question)}</div>`;
+        }
+        // 普通文本
+        else if (item.question) {
+            printHtml += `<div style="font-size: 16px; line-height: 1.6; padding: 12px; background: #f8f9fc; border-radius: 12px;">${escapeHtml(item.question)}</div>`;
+        }
+        
+        // 原题图片
+        if (item.questionImages && item.questionImages.length > 0) {
+            item.questionImages.forEach(img => {
+                printHtml += `<div style="margin-top: 8px;"><img src="${img}" alt="原题图片"></div>`;
+            });
+        }
+        printHtml += `</div>`;
+        
+        // ========== 错误答案区域 ==========
+        printHtml += `
+            <div class="print-wrong">
+                <div style="font-size: 13px; font-weight: bold; color: #ff3b30; margin-bottom: 6px;">❌ 错误答案 / 过程：</div>
+                <div style="font-size: 14px; line-height: 1.5;">${escapeHtml(item.wrongAnswer || '未记录')}</div>
+        `;
+        if (item.wrongImages && item.wrongImages.length > 0) {
+            item.wrongImages.forEach(img => {
+                printHtml += `<img src="${img}" alt="错误答案图片">`;
+            });
+        }
+        printHtml += `</div>`;
+        
+        // ========== 正确答案区域（拼音和生字不重复显示） ==========
+        const skipCorrect = (item.tag === "基础知识" && (item.subTag === "拼音" || item.subTag === "生字"));
+        if (!skipCorrect) {
+            printHtml += `
+                <div class="print-correct">
+                    <div style="font-size: 13px; font-weight: bold; color: #34c759; margin-bottom: 6px;">✅ 正确答案 / 解析：</div>
+                    <div style="font-size: 14px; line-height: 1.5;">${escapeHtml(item.correctAnswer || '未记录')}</div>
+            `;
+            if (item.correctImages && item.correctImages.length > 0) {
+                item.correctImages.forEach(img => {
+                    printHtml += `<img src="${img}" alt="正确答案图片">`;
+                });
+            }
+            printHtml += `</div>`;
+        }
+        
+        // ========== 错误原因和元信息 ==========
+        const reasonText = item.reasons?.length ? item.reasons.join("、") : "未标注";
+        printHtml += `
+            <div class="print-meta">
+                <span>📌 错误原因：${escapeHtml(reasonText)}</span>
+                <span style="margin-left: 20px;">📚 单元：${escapeHtml(item.unit || '未标注')}</span>
+                <span style="margin-left: 20px;">🔄 复习次数：${item.reviewCount || 0}</span>
+            </div>
+        `;
+        
+        printHtml += `</div>`;
+    });
+    
+    printHtml += `
+            <div class="print-footer">
+                错题本打印 | 温故而知新
+            </div>
+            <script>
+                // 页面加载完成后自动调出打印机
+                window.onload = function() {
+                    window.print();
+                };
+            <\/script>
+        </body>
+        </html>
+    `;
+    
+    // 打开新窗口，写入内容，然后自动调出打印机
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+}
+
+
+
+// 更新打印统计数量
+function updatePrintStats() {
+    let list = getPrintFilteredList();
+    document.getElementById('printCount').innerText = list.length;
+}
+
+
+
+
+// 更新分类详情显示
+function updatePrintCategoryDetail() {
+    const detailDiv = document.getElementById('printCategoryDetail');
+    if (!detailDiv) return;
+    
+    if (currentPrintFilter === "current") {
+        let subjectName = currentSubject === "chinese" ? "语文" : "数学";
+        let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+        if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            categoryName += " · " + currentChineseSubTag;
+        }
+        detailDiv.innerHTML = `当前：${subjectName} · ${categoryName}`;
+    } else if (currentPrintFilter === "all") {
+        detailDiv.innerHTML = `全部错题（语文 ${chineseErrors.length} 道 + 数学 ${mathErrors.length} 道）`;
+    } else if (currentPrintFilter === "chinese") {
+        detailDiv.innerHTML = `语文全部错题（共 ${chineseErrors.length} 道）`;
+    } else if (currentPrintFilter === "math") {
+        detailDiv.innerHTML = `数学全部错题（共 ${mathErrors.length} 道）`;
+    }
+}
+
+// 打开打印设置弹窗
+// 找到这个函数定义，确保它包含 classList.add('active')
+function openPrintSettings() {
+    // 设置当前分类筛选按钮状态
+    document.querySelectorAll('.print-category-filter').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-filter') === currentPrintFilter) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // 清空日期范围
+    document.getElementById('printStartDate').value = '';
+    document.getElementById('printEndDate').value = '';
+    
+    // 重置排序为默认
+    document.getElementById('printSortBy').value = 'date_desc';
+    
+    // 更新详情和统计
+    updatePrintCategoryDetail();
+    updatePrintStats();
+    
+    // 显示弹窗 ← 这一行必须有！
+    document.getElementById('printSettingsModal').classList.add('active');
+}
+function closePrintSettings() {
+    console.log('closePrintSettings 执行');
+    const modal = document.getElementById('printSettingsModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function executePrint() {
+    console.log('开始打印');
+    
+    const list = getPrintFilteredList();
+    if (list.length === 0) {
+        alert("没有符合筛选条件的错题");
+        return;
+    }
+    // ========== 获取用户打印选项 ==========
+    const options = {
+        question: document.getElementById('printQuestion')?.checked ?? true,
+        wrong: document.getElementById('printWrong')?.checked ?? false,
+        correct: document.getElementById('printCorrect')?.checked ?? false,
+        reason: document.getElementById('printReason')?.checked ?? false,
+        meta: document.getElementById('printMeta')?.checked ?? false
+    };
+    
+    // ========== 判断是否为数学分类 ==========
+    const isMathPrint = currentSubject === "math";
+    
+    // ========== 读取用户在打印设置弹窗里选择的值 ==========
+    var pageOrientation = document.getElementById('printOrientation')?.value || 'portrait';
+    var gridColumns = parseInt(document.getElementById('printColumns')?.value) || 2;
+    
+    // ========== 生成打印 HTML ==========
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>打印(' + gridColumns + '列)</title><style>';
+    html += '*{margin:0;padding:0;box-sizing:border-box;}';
+    html += '@page{size:A4 ' + pageOrientation + ';margin:0.8cm;}';
+    html += 'body{padding:5px;background:#fff;font-family:sans-serif;}';
+    html += '.print-grid{display:grid;grid-template-columns:repeat(' + gridColumns + ',1fr);gap:16px;}';
+    html += '.print-card{padding:2px;border:1px solid #ddd;border-radius:8px;background:#fff;page-break-inside:avoid;break-inside:avoid;}';
+    html += '.card-header{font-size:10px;color:#999;margin-bottom:8px;text-align:center;}';
+    
+    // 数学专用样式
+    if (isMathPrint) {
+        html += '.math-question{font-size:18px;font-weight:500;text-align:center;padding:20px 10px;background:#f8f9fc;border-radius:12px;margin:8px 0;}';
+        html += '.math-answer{font-size:14px;margin-top:12px;padding:10px;background:#f0fff0;border-left:3px solid #34c759;border-radius:8px;}';
+        html += '.math-wrong{font-size:14px;margin-top:8px;padding:10px;background:#fff5f5;border-left:3px solid #ff3b30;border-radius:8px;}';
+        html += '.math-meta{font-size:11px;color:#888;margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;display:flex;flex-wrap:wrap;gap:12px;}';
+    }
+    
+    // 拼音四线格样式
+    html += '.four-line-grid{display:inline-block;width:60px;margin:2px 0;}';
+    html += '.grid-line-1,.grid-line-4{border-top:1px solid #333;margin-bottom:6px;}';
+    html += '.grid-line-2,.grid-line-3{border-top:1px dashed #ccc;margin-bottom:6px;}';
+    html += '.pinyin-text{visibility:hidden;height:15px;}';
+    html += '.flex-row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}';
+    html += '.char-box{text-align:center;}';
+    html += '.hanzi{font-size:18px;font-weight:400;margin-top:-20px;color:#1c1c1e;}';
+    
+    // 生字田字格样式
+    html += '.tian-grid{display:inline-block;width:1.3cm;height:1.3cm;border:1px solid #000;position:relative;background:#fff;}';
+    html += '@media print{body{padding:0;margin:0;}}';
+    html += '</style></head><body>';
+    
+    // 添加提示文字（仅语文）
+    if (!isMathPrint && list.length > 0) {
+        if (list[0].subTag === "拼音") {
+            html += '<div style="text-align: left; margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 16px; font-weight: bold; color: #000000;">写拼音</div>';
+        } else if (list[0].subTag === "生字") {
+            html += '<div style="text-align: left; margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 16px; font-weight: bold; color: #000000;">看拼音写汉字</div>';
+        }
+    }
+    
+    html += '<div class="print-grid">';
+    
+    for(var i = 0; i < list.length; i++) {
+        var item = list[i];
+        var isMath = item.id && item.id.startsWith('math');
+        
+        if(isMath) {
+            // ========== 数学卡片渲染 ==========
+            html += '<div class="print-card">';
+            html += '<div class="card-header">第 ' + (i+1) + ' 题 | ' + (item.date || '无日期') + ' | ' + escapeHtml(item.source || '未知来源') + '</div>';
+            
+            // 原题
+            if(options.question) {
+                html += '<div class="math-question">';
+                if(item.question && item.question.trim()) {
+                    html += '<div>' + escapeHtml(item.question) + '</div>';
+                }
+                if(item.questionImages && item.questionImages.length > 0) {
+                    for(var qi = 0; qi < item.questionImages.length; qi++) {
+                        html += '<div style="margin-top:12px;text-align:center;"><img src="' + item.questionImages[qi] + '" style="max-width:100%; max-height:200px; border-radius:8px;"></div>';
+                    }
+                }
+                html += '</div>';
+            }
+            
+            // 错误答案
+            if(options.wrong && ((item.wrongAnswer && item.wrongAnswer.trim()) || (item.wrongImages && item.wrongImages.length > 0))) {
+                html += '<div class="math-wrong">';
+                html += '<strong style="color:#ff3b30;">❌ 错误答案：</strong><br>';
+                if(item.wrongAnswer && item.wrongAnswer.trim()) {
+                    html += '<div>' + escapeHtml(item.wrongAnswer) + '</div>';
+                }
+                if(item.wrongImages && item.wrongImages.length > 0) {
+                    for(var wi = 0; wi < item.wrongImages.length; wi++) {
+                        html += '<div style="margin-top:8px;"><img src="' + item.wrongImages[wi] + '" style="max-width:100%; max-height:150px; border-radius:6px;"></div>';
+                    }
+                }
+                html += '</div>';
+            }
+            
+            // 正确答案
+            if(options.correct && ((item.correctAnswer && item.correctAnswer.trim()) || (item.correctImages && item.correctImages.length > 0))) {
+                html += '<div class="math-answer">';
+                html += '<strong style="color:#34c759;">✅ 正确答案：</strong><br>';
+                if(item.correctAnswer && item.correctAnswer.trim()) {
+                    html += '<div>' + escapeHtml(item.correctAnswer) + '</div>';
+                }
+                if(item.correctImages && item.correctImages.length > 0) {
+                    for(var ci = 0; ci < item.correctImages.length; ci++) {
+                        html += '<div style="margin-top:8px;"><img src="' + item.correctImages[ci] + '" style="max-width:100%; max-height:150px; border-radius:6px;"></div>';
+                    }
+                }
+                html += '</div>';
+            }
+            
+            // 元信息
+            if(options.reason || options.meta) {
+                html += '<div class="math-meta">';
+                if(options.reason && item.reasons && item.reasons.length) {
+                    html += '<span>📌 错误原因：' + escapeHtml(item.reasons.join('、')) + '</span>';
+                }
+                if(options.meta && item.unit) {
+                    html += '<span>📚 单元：' + escapeHtml(item.unit) + '</span>';
+                }
+                if(options.meta) {
+                    html += '<span>🔄 复习次数：' + (item.reviewCount || 0) + '</span>';
+                }
+                html += '</div>';
+            }
+            
+            html += '</div>';
+        }
+        else if(item.subTag === "生字") {
+            // ========== 生字渲染 ==========
+            var parts = item.question.trim().split(/\s+/);
+            var hanzi = '';
+            var pinyinParts = [];
+            for(var p = 0; p < parts.length; p++) {
+                if(/[\u4e00-\u9fa5]/.test(parts[p])) {
+                    hanzi += parts[p];
+                } else {
+                    pinyinParts.push(parts[p]);
+                }
+            }
+            
+            var cardSpan = Math.min(pinyinParts.length + (hanzi ? 1 : 0), gridColumns);
+            html += '<div class="print-card" style="grid-column:span ' + cardSpan + ';">';
+            html += '<div class="card-header">' + (i+1) + ' ' + (item.date || '') + '</div>';
+            html += '<div style="display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:8px;">';
+            
+            if(hanzi) {
+                html += '<div style="text-align:center;">';
+                html += '<div style="font-size:20px;font-weight:normal;color:#1c1c1e;margin-top:12px;">' + escapeHtml(hanzi) + '</div>';
+                html += '</div>';
+            }
+            
+            for(var p = 0; p < pinyinParts.length; p++) {
+                html += '<div style="text-align:center;">';
+                html += '<div style="font-size:11px;color:#000;margin-bottom:4px;font-weight:500;">' + escapeHtml(pinyinParts[p]) + '</div>';
+                html += '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:1.3cm;height:1.3cm;border:1px solid #000;">';
+                html += '<div style="border-right:1px dashed #999;border-bottom:1px dashed #999;"></div>';
+                html += '<div style="border-bottom:1px dashed #999;"></div>';
+                html += '<div style="border-right:1px dashed #999;"></div>';
+                html += '<div></div>';
+                html += '</div>';
+                html += '</div>';
+            }
+            
+            html += '</div></div>';
+        }
+        else {
+            // ========== 拼音渲染 ==========
+            var chars = item.question.split('');
+            for(var j = 0; j < chars.length; j++) {
+                html += '<div class="print-card">';
+                html += '<div class="card-header">' + (i+1) + ' ' + (item.date || '') + '</div>';
+                html += '<div class="flex-row">';
+                html += '<div class="char-box">';
+                html += '<div class="four-line-grid">';
+                html += '<div class="grid-line-1"></div>';
+                html += '<div class="grid-line-2"></div>';
+                html += '<div class="grid-line-3"></div>';
+                html += '<div class="grid-line-4"></div>';
+                html += '<div class="pinyin-text">&nbsp;</div>';
+                html += '</div>';
+                html += '<div class="hanzi">' + escapeHtml(chars[j]) + '</div>';
+                html += '</div>';
+                html += '</div></div>';
+            }
+        }
+    }
+    
+    html += '</div></body></html>';
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(html);
+    printWindow.document.close();
+    
+    printWindow.onload = function() {
+        printWindow.print();
+        closePrintSettings();
+    };
+}
+
+
+
+
+
+// ========== 打印设置功能 ==========
+let currentPrintFilter = "current"; // current, all, chinese, math
+
+// 获取打印筛选后的列表
+function getPrintFilteredList() {
+    let list = [];
+    
+    if (currentPrintFilter === "current") {
+        if (currentSubject === "chinese") {
+            list = chineseErrors.filter(item => item.tag === currentChineseTag);
+            if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                list = list.filter(item => item.subTag === currentChineseSubTag);
+            }
+        } else {
+            list = mathErrors.filter(item => item.tag === currentMathTag);
+        }
+    } else if (currentPrintFilter === "all") {
+        list = [...chineseErrors, ...mathErrors];
+    } else if (currentPrintFilter === "chinese") {
+        list = [...chineseErrors];
+    } else if (currentPrintFilter === "math") {
+        list = [...mathErrors];
+    }
+    
+    // 日期范围筛选
+    const startDate = document.getElementById('printStartDate')?.value;
+    const endDate = document.getElementById('printEndDate')?.value;
+    if (startDate || endDate) {
+        list = list.filter(item => {
+            const itemDate = item.date || '';
+            if (!itemDate) return false;
+            if (startDate && itemDate < startDate) return false;
+            if (endDate && itemDate > endDate) return false;
+            return true;
+        });
+    }
+    
+    // 排序
+    const sortBy = document.getElementById('printSortBy')?.value;
+    if (sortBy === 'date_desc') {
+        list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    } else if (sortBy === 'date_asc') {
+        list.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    } else if (sortBy === 'review_desc') {
+        list.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+    } else if (sortBy === 'review_asc') {
+        list.sort((a, b) => (a.reviewCount || 0) - (b.reviewCount || 0));
+    }
+    
+    return list;
+}
+
+// 更新打印统计
+function updatePrintStats() {
+    const list = getPrintFilteredList();
+    const countSpan = document.getElementById('printCount');
+    if (countSpan) countSpan.innerText = list.length;
+}
+
+// 更新分类详情显示
+function updatePrintCategoryDetail() {
+    const detailDiv = document.getElementById('printCategoryDetail');
+    if (!detailDiv) return;
+    
+    if (currentPrintFilter === "current") {
+        let subjectName = currentSubject === "chinese" ? "语文" : "数学";
+        let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+        if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            categoryName += " · " + currentChineseSubTag;
+        }
+        detailDiv.innerHTML = `当前：${subjectName} · ${categoryName}`;
+    } else if (currentPrintFilter === "all") {
+        detailDiv.innerHTML = `全部错题（语文 ${chineseErrors.length} 道 + 数学 ${mathErrors.length} 道）`;
+    } else if (currentPrintFilter === "chinese") {
+        detailDiv.innerHTML = `语文全部错题（共 ${chineseErrors.length} 道）`;
+    } else if (currentPrintFilter === "math") {
+        detailDiv.innerHTML = `数学全部错题（共 ${mathErrors.length} 道）`;
+    }
+}
+
+// 获取打印设置
+function getPrintSettings() {
+    return {
+        orientation: document.getElementById('printOrientation')?.value || 'portrait',
+        columns: parseInt(document.getElementById('printColumns')?.value) || 2,
+        margin: {
+            top: parseFloat(document.getElementById('printMarginTop')?.value) || 0.5,
+            right: parseFloat(document.getElementById('printMarginRight')?.value) || 0.5,
+            bottom: parseFloat(document.getElementById('printMarginBottom')?.value) || 0.5,
+            left: parseFloat(document.getElementById('printMarginLeft')?.value) || 0.5
+        },
+        options: {
+            question: document.getElementById('printQuestion')?.checked ?? true,
+            wrong: document.getElementById('printWrong')?.checked ?? true,
+            correct: document.getElementById('printCorrect')?.checked ?? true,
+            reason: document.getElementById('printReason')?.checked ?? true,
+            meta: document.getElementById('printMeta')?.checked ?? true
+        }
+    };
+}
+
+// 打开打印设置弹窗
+function openPrintSettings() {
+    document.querySelectorAll('.print-category-filter').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-filter') === currentPrintFilter) {
+            btn.classList.add('active');
+        }
+    });
+    
+    document.getElementById('printStartDate').value = '';
+    document.getElementById('printEndDate').value = '';
+    document.getElementById('printSortBy').value = 'date_desc';
+    setTimeout(bindPrintModalButtonsForce, 50); 
+    updatePrintCategoryDetail();
+    updatePrintStats();
+    document.getElementById('printSettingsModal').classList.add('active');
+}
+
+function closePrintSettings() {
+    document.getElementById('printSettingsModal').classList.remove('active');
+}
+
+// ========== generatePrintCard 函数（供其他分类使用） ==========
+function generatePrintCard(item, idx, options) {
+    const isMath = item.id && item.id.startsWith('math');
+    
+    let html = '<div class="print-card" style="margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">';
+    html += '<div class="card-header" style="font-size: 11px; color: #999; margin-bottom: 8px;">';
+    html += '第' + idx + '题 ' + (item.date || '无日期');
+    if(item.source) html += ' | ' + escapeHtml(item.source);
+    html += '</div>';
+    
+    // 原题
+    if (options.question) {
+        if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
+            var chars = item.question.split('');
+            html += '<div class="special-content" style="background: #f8f9fc; border-radius: 16px; padding: 20px; margin: 12px 0;">';
+            html += '<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">';
+            for (var i = 0; i < chars.length; i++) {
+                html += '<div style="text-align: center;">';
+                html += '<div class="four-line-grid" style="display: inline-block; width: 80px; margin: 10px 0;">';
+                html += '<div class="grid-line-1" style="border-top: 1px solid #333; margin-bottom: 8px;"></div>';
+                html += '<div class="grid-line-2" style="border-top: 1px solid #999; margin-bottom: 8px;"></div>';
+                html += '<div class="grid-line-3" style="border-top: 1px solid #999; margin-bottom: 8px;"></div>';
+                html += '<div class="grid-line-4" style="border-top: 1px solid #333; margin-bottom: 8px;"></div>';
+                html += '<div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>';
+                html += '</div>';
+                html += '<div style="font-size: 40px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">' + escapeHtml(chars[i]) + '</div>';
+                html += '</div>';
+            }
+            html += '</div></div>';
+        }
+        else if (item.question) {
+            html += '<div style="font-size: 14px; line-height: 1.5; margin: 12px 0;">' + escapeHtml(item.question) + '</div>';
+        }
+        
+        if (item.questionImages && item.questionImages.length > 0) {
+            for (var i = 0; i < item.questionImages.length; i++) {
+                html += '<img src="' + item.questionImages[i] + '" style="max-width:100%; max-height:150px;">';
+            }
+        }
+    }
+    
+    // 错误答案
+    if (options.wrong && item.wrongAnswer) {
+        html += '<div style="margin-top: 8px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; font-size: 12px;">';
+        html += '<strong style="color:#ff3b30;">❌ 错误：</strong> ' + escapeHtml(item.wrongAnswer);
+        if (item.wrongImages && item.wrongImages.length > 0) {
+            for (var i = 0; i < item.wrongImages.length; i++) {
+                html += '<img src="' + item.wrongImages[i] + '" style="max-width:100%; max-height:100px;">';
+            }
+        }
+        html += '</div>';
+    }
+    
+    // 正确答案（拼音不重复显示）
+    var skipCorrect = (item.tag === "基础知识" && item.subTag === "拼音");
+    if (options.correct && !skipCorrect && item.correctAnswer) {
+        html += '<div style="margin-top: 6px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; font-size: 12px;">';
+        html += '<strong style="color:#34c759;">✅ 正确：</strong> ' + escapeHtml(item.correctAnswer);
+        if (item.correctImages && item.correctImages.length > 0) {
+            for (var i = 0; i < item.correctImages.length; i++) {
+                html += '<img src="' + item.correctImages[i] + '" style="max-width:100%; max-height:100px;">';
+            }
+        }
+        html += '</div>';
+    }
+    
+    // 错误原因
+    if (options.reason && item.reasons && item.reasons.length) {
+        html += '<div style="font-size: 10px; color: #888; margin-top: 6px;">📌 原因：' + escapeHtml(item.reasons.join('、')) + '</div>';
+    }
+    
+    // 元信息
+    if (options.meta) {
+        html += '<div style="font-size: 10px; color: #aaa; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #ddd;">';
+        if(item.unit) html += '单元：' + escapeHtml(item.unit);
+        if(item.reviewCount) html += ' | 复习：' + item.reviewCount + '次';
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+
+
+
+// 获取打印标题
+function getPrintTitle() {
+    if (currentPrintFilter === "current") {
+        let subjectName = currentSubject === "chinese" ? "语文" : "数学";
+        let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+        if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            categoryName += " · " + currentChineseSubTag;
+        }
+        return `${subjectName} · ${categoryName} 错题本`;
+    } else if (currentPrintFilter === "all") {
+        return "全部错题本";
+    } else if (currentPrintFilter === "chinese") {
+        return "语文错题本";
+    } else {
+        return "数学错题本";
+    }
+}
+
+// 生成完整打印 HTML
+function generateFullPrintHtml(list, title, now, settings) {
+    const orientationCSS = settings.orientation === 'landscape' ? '@page { size: landscape; }' : '@page { size: portrait; }';
+    const marginCSS = `
+        @page {
+            margin: ${settings.margin.top}cm ${settings.margin.right}cm ${settings.margin.bottom}cm ${settings.margin.left}cm;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+    `;
+    
+    const gridStyle = settings.columns > 1 ? `
+        .print-grid {
+        display: grid;
+        grid-template-columns: repeat(${settings.columns}, 1fr);
+        gap: 16px;
+    }
+    .print-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+` : `
+    .print-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+    }
+`;
+    
+    let cardsHtml = '';
+    if (settings.columns > 1) {
+        cardsHtml = `<div class="print-grid">`;
+        list.forEach((item, idx) => { cardsHtml += generatePrintCard(item, idx + 1, settings.options); });
+        cardsHtml += `</div>`;
+    } else {
+        list.forEach((item, idx) => { cardsHtml += generatePrintCard(item, idx + 1, settings.options); });
+    }
+    
+    const startDate = document.getElementById('printStartDate')?.value;
+    const endDate = document.getElementById('printEndDate')?.value;
+    let dateRangeText = "";
+    if (startDate && endDate) dateRangeText = `（${startDate} 至 ${endDate}）`;
+    else if (startDate) dateRangeText = `（${startDate} 之后）`;
+    else if (endDate) dateRangeText = `（${endDate} 之前）`;
+    
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="UTF-8"><title>${escapeHtml(title)}</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            ${orientationCSS}
+            ${marginCSS}
+            ${gridStyle}
+            .print-header { text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #333; }
+            .print-header h1 { font-size: 22px; margin-bottom: 6px; }
+            .print-header p { font-size: 12px; color: #666; }
+.print-card { 
+    border: none !important; 
+    border-radius: 0 !important; 
+    padding: 0 !important; 
+    margin-bottom: 20px;
+    box-shadow: none !important;
+}
+.print-card-header { 
+    border-bottom: none !important; 
+    margin-bottom: 8px; 
+    padding-bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+            .print-question { margin-bottom: 12px; }
+            .print-question-label { font-size: 12px; font-weight: bold; color: #007aff; margin-bottom: 6px; }
+            .print-wrong { margin-bottom: 10px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; border-radius: 6px; }
+            .print-correct { margin-bottom: 10px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; border-radius: 6px; }
+            .print-meta { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ddd; font-size: 11px; color: #888; }
+            .print-reason { font-size: 11px; color: #666; margin-top: 5px; }
+            .four-line-grid-print { display: inline-block; text-align: center; margin: 0 4px; }
+            .grid-line-print { width: 60px; }
+            .grid-line-print div { height: 0; width: 100%; margin-bottom: 6px; }
+            .line1, .line4 { border-top: 1px solid #333; }
+            .line2, .line3 { border-top: 1px solid #999; }
+            .tian-grid-print { display: inline-block; text-align: center; margin: 0 4px; }
+            .tian-box { width: 50px; height: 50px; border: 1px solid #333; position: relative; margin-top: 4px; }
+            .tian-box::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #ddd; }
+            .tian-box::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #ddd; }
+            img { max-width: 100%; max-height: 150px; border-radius: 6px; margin-top: 6px; }
+            .print-footer { margin-top: 20px; padding-top: 10px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #ddd; }
+        </style>
+        </head>
+        <body>
+            <div class="print-header">
+                <h1>📚 ${escapeHtml(title)}</h1>
+                <p>打印时间：${escapeHtml(now)} | 共 ${list.length} 道错题 ${dateRangeText}</p>
+            </div>
+            ${cardsHtml}
+            <div class="print-footer">错题本打印 | 温故而知新</div>
+            <script>window.onload = function() { window.print(); };<\/script>
+        </body>
+        </html>
+    `;
+}
+
+function generatePrintCard(item, idx, options) {
+    const isMath = item.id && item.id.startsWith('math');
+    
+    // 根据分类添加不同的 CSS 类
+    let cardClass = 'print-card';
+    if (item.tag === "基础知识") {
+        if (item.subTag === "拼音") {
+            cardClass += ' print-card-pinyin';
+        } else if (item.subTag === "生字") {
+            cardClass += ' print-card-shengzi';
+        } else if (item.subTag === "笔顺") {
+            cardClass += ' print-card-bishun';
+        }
+    } else if (isMath) {
+        cardClass += ' print-card-math';
+    }
+    
+    let html = '<div class="' + cardClass + '" style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px;">';
+    html += '<div class="print-card-header" style="display: flex; justify-content: flex-start; align-items: center; gap: 12px; margin-bottom: 4px;">';
+    html += '<span style="font-size: 10px; font-weight: normal; color: #999;">第 ' + idx + ' 题</span>';
+    html += '<span style="font-size: 10px; color: #bbb;">' + escapeHtml(item.date || '无日期') + '</span>';
+    html += '</div>';
+    
+    // 原题
+    if (options.question) {
+        html += '<div class="print-question" style="margin-top: 0;">';
+        
+        if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
+            var chars = item.question.split('');
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start;">';
+            for (var i = 0; i < chars.length; i++) {
+                html += '<div style="text-align: center;">';
+                html += '<div style="width: 50px;"><div style="border-top:1px solid #333;margin-bottom:6px;"></div>';
+                html += '<div style="border-top:1px solid #999;margin-bottom:6px;"></div>';
+                html += '<div style="border-top:1px solid #999;margin-bottom:6px;"></div>';
+                html += '<div style="border-top:1px solid #333;margin-bottom:6px;"></div></div>';
+                html += '<div style="font-size: 22px; margin-top:-22px;">' + escapeHtml(chars[i]) + '</div></div>';
+            }
+            html += '</div>';
+        }
+        else if (item.tag === "基础知识" && item.subTag === "生字" && item.question) {
+            var parts = item.question.trim().split(/\s+/);
+            var hanzi = '';
+            var pinyinParts = [];
+            for (var i = 0; i < parts.length; i++) {
+                if (/[\u4e00-\u9fa5]/.test(parts[i])) {
+                    hanzi += parts[i];
+                } else {
+                    pinyinParts.push(parts[i]);
+                }
+            }
+            html += '<div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">';
+            html += '<div style="font-size: 28px;">' + escapeHtml(hanzi) + '</div>';
+            html += '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
+            for (var i = 0; i < pinyinParts.length; i++) {
+                html += '<div style="text-align: center;">';
+                html += '<div style="font-size: 11px; color: #007aff;">' + escapeHtml(pinyinParts[i]) + '</div>';
+                html += '<div style="width: 45px; height: 45px; border:1px solid #999; position:relative;"></div></div>';
+            }
+            html += '</div></div>';
+        }
+        else if (item.question) {
+            html += '<div style="font-size: 14px; line-height: 1.5;">' + escapeHtml(item.question) + '</div>';
+        }
+        
+        if (item.questionImages && item.questionImages.length > 0) {
+            for (var i = 0; i < item.questionImages.length; i++) {
+                html += '<img src="' + item.questionImages[i] + '" style="max-width:100%; max-height:120px; margin-top:6px;">';
+            }
+        }
+        html += '</div>';
+    }
+    
+    // 错误答案
+    if (options.wrong) {
+        html += '<div style="margin-top: 8px; padding: 6px; background: #fff5f5; border-left: 3px solid #ff3b30; font-size: 11px;">';
+        html += '<strong style="color:#ff3b30;">❌ 错误：</strong> ' + escapeHtml(item.wrongAnswer || '未记录');
+        if (item.wrongImages && item.wrongImages.length > 0) {
+            for (var i = 0; i < item.wrongImages.length; i++) {
+                html += '<img src="' + item.wrongImages[i] + '" style="max-width:100%; max-height:80px; margin-top:4px;">';
+            }
+        }
+        html += '</div>';
+    }
+    
+    // 正确答案（拼音生字不重复）
+    var skipCorrect = (item.tag === "基础知识" && (item.subTag === "拼音" || item.subTag === "生字"));
+    if (options.correct && !skipCorrect && item.correctAnswer) {
+        html += '<div style="margin-top: 6px; padding: 6px; background: #f0fff0; border-left: 3px solid #34c759; font-size: 11px;">';
+        html += '<strong style="color:#34c759;">✅ 正确：</strong> ' + escapeHtml(item.correctAnswer);
+        if (item.correctImages && item.correctImages.length > 0) {
+            for (var i = 0; i < item.correctImages.length; i++) {
+                html += '<img src="' + item.correctImages[i] + '" style="max-width:100%; max-height:80px; margin-top:4px;">';
+            }
+        }
+        html += '</div>';
+    }
+    
+    // 错误原因
+    if (options.reason) {
+        var reasonText = (item.reasons && item.reasons.length) ? item.reasons.join("、") : "未标注";
+        html += '<div style="font-size: 10px; color: #888; margin-top: 4px;">📌 原因：' + escapeHtml(reasonText) + '</div>';
+    }
+    
+    // 元信息
+    if (options.meta) {
+        html += '<div style="font-size: 9px; color: #aaa; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #ddd;">';
+        html += '单元：' + escapeHtml(item.unit || '未标注') + ' | 复习：' + (item.reviewCount || 0) + '次';
+        if (item.source) html += ' | 来源：' + escapeHtml(item.source);
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+
+// ========== 打印设置弹窗按钮事件绑定（暴力修复版） ==========
+function bindPrintModalButtonsForce() {
+    console.log('bindPrintModalButtonsForce 执行');
+    
+    // ========== 绑定分类筛选按钮 ==========
+    const categoryFilters = document.querySelectorAll('.print-category-filter');
+    categoryFilters.forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const allBtns = document.querySelectorAll('.print-category-filter');
+            allBtns.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            currentPrintFilter = this.getAttribute('data-filter');
+            updatePrintCategoryDetail();
+            updatePrintStats();
+            console.log('分类筛选切换为:', currentPrintFilter);
+        });
+    });
+    
+    // ========== 修复取消按钮 ==========
+    const cancelBtn = document.getElementById('cancelPrintBtn');
+    if(cancelBtn) {
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        newCancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('取消按钮被点击');
+            const modal = document.getElementById('printSettingsModal');
+            if(modal) {
+                modal.classList.remove('active');
+            }
+        });
+    }
+    
+    // ========== 修复确认打印按钮 ==========
+    // 修复确认打印按钮
+const confirmBtn = document.getElementById('confirmPrintBtn');
+if(confirmBtn) {
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    newConfirmBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('打印按钮工作');
+        if(typeof executePrint === 'function') executePrint();  // ✅ 调用的是 executePrint
+    });
+}
+    
+    // ========== 修复预览按钮 ==========
+    const previewBtn = document.getElementById('previewPrintBtn');
+    if(previewBtn) {
+        const newPreviewBtn = previewBtn.cloneNode(true);
+        previewBtn.parentNode.replaceChild(newPreviewBtn, previewBtn);
+        newPreviewBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('预览按钮工作');
+            if(typeof previewPrint === 'function') previewPrint();
+        });
+    }
+    
+    // ========== 修复清除日期按钮 ==========
+    const clearBtn = document.getElementById('clearDateRange');
+    if(clearBtn) {
+        const newClearBtn = clearBtn.cloneNode(true);
+        clearBtn.parentNode.replaceChild(newClearBtn, clearBtn);
+        newClearBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const startDate = document.getElementById('printStartDate');
+            const endDate = document.getElementById('printEndDate');
+            if(startDate) startDate.value = '';
+            if(endDate) endDate.value = '';
+            if(typeof updatePrintStats === 'function') updatePrintStats();
+        });
+    }
+}
+
 function init() {
+// 确保预览按钮调用正确的函数
+var previewBtn = document.getElementById('previewPrintBtn');
+if(previewBtn) {
+    var newBtn = previewBtn.cloneNode(true);
+    previewBtn.parentNode.replaceChild(newBtn, previewBtn);
+    newBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        previewPrint();
+    });
+}
+    // 添加5列打印样式（放在 init 函数开头）
+    const printStyle = document.createElement('style');
+    printStyle.textContent = `
+        .print-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        @media print {
+            .print-grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 10px;
+            }
+            .print-card {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+    `;
+    document.head.appendChild(printStyle);
 
 
-// 绑定顶部取消按钮
-const cancelInModalBtn = document.getElementById('cancelInModalBtn');
-if (cancelInModalBtn) {
-    cancelInModalBtn.onclick = function() {
-        closeModal();
+const printBtn = document.getElementById('printBtn');
+if (printBtn) {
+    printBtn.onclick = function() {
+        console.log('打印按钮被点击');
+        const modal = document.getElementById('printSettingsModal');
+        if(modal) {
+            modal.classList.add('active');
+        }
+        setTimeout(function() {
+            // 修复所有按钮和表单元素
+            if(typeof bindPrintModalButtonsForce === 'function') {
+                bindPrintModalButtonsForce();
+            }
+            if(typeof fixPrintModalInputs === 'function') {
+                fixPrintModalInputs();
+            }
+        }, 50);
     };
 }
 
@@ -5312,9 +6844,9 @@ if (clearAllDataBtn) {
 // 页面加载时自动从云端恢复（静默）
 // 页面加载时从云端合并数据（不覆盖本地）
 // 页面加载时从云端合并数据（按更新时间判断）
+// 页面加载时从云端合并数据（每天仅一次）
 setTimeout(async () => {
     if (GITHUB_CONFIG.token && GIST_CONFIG.id) {
-        // ✅ 检查今天是否已经合并过
         const today = new Date().toISOString().split('T')[0];
         const lastMergeDate = localStorage.getItem(PAGE_ID + '_last_merge_date');
         
@@ -5323,10 +6855,11 @@ setTimeout(async () => {
             return;
         }
         
-        console.log('🔄 正在从云端合并数据...');
+        console.log('🔄 正在从云端合并数据（静默模式，不触发上传）...');
         startDownloadSpin();
         try {
-            await loadFromCloud();  // 合并模式
+            // ✅ 关键：使用 loadFromCloudSilent 而不是 loadFromCloud
+            await loadFromCloudSilent();
             // ✅ 记录今天已合并
             localStorage.setItem(PAGE_ID + '_last_merge_date', today);
             console.log('✅ 云端合并完成，已记录日期:', today);
@@ -5345,6 +6878,10 @@ setTimeout(async () => {
 
 
 init();
+
+
+
+
 </script>
 
 
@@ -5454,6 +6991,128 @@ init();
         </div>
     </div>
 </div>
+<!-- 打印设置弹窗 - 放在 body 末尾，</div class="app-wrapper"> 之后 -->
+<!-- 打印设置弹窗 - 放在月历弹窗之后，</body> 之前 -->
+<div id="printSettingsModal" class="modal-mask">
+    <div class="modal-container" style="max-width: 700px; max-height: 85vh; overflow-y: auto;">
+        <h4 style="text-align: center; margin-bottom: 20px;">🖨️ 打印设置</h4>
+        
+        <!-- 纸张设置 -->
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div style="flex: 1;">
+                <label style="font-size: 13px; font-weight: 500; color: #3a3a3e;">📄 纸张方向</label>
+                <select id="printOrientation" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; margin-top: 6px;">
+                    <option value="portrait">纵向（竖版）</option>
+                    <option value="landscape">横向（横版）</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 13px; font-weight: 500; color: #3a3a3e;">📐 每行打印几题</label>
+                <select id="printColumns" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; margin-top: 6px;">
+                     <option value="1">1 题/行</option>
+    <option value="2">2 题/行</option>
+    <option value="3">3 题/行</option>
+    <option value="4">4 题/行</option>
+    <option value="5">5 题/行</option>
+    <option value="6">6 题/行</option>
+    <option value="7">7 题/行</option>
+    <option value="8">8 题/行</option>
+    <option value="9">9 题/行</option>
+    <option value="10">10 题/行</option>
+    <option value="11">11 题/行</option>
+    <option value="12" selected>12 题/行</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- 页边距设置 -->
+        <div class="form-group">
+            <label>📏 页边距（cm）</label>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <div style="flex: 1;">
+                    <input type="number" id="printMarginTop" value="0.5" step="0.1" min="0" max="3" style="width: 100%; padding: 8px 10px; border-radius: 10px; border: 0.5px solid #c6c6c8;">
+                    <div style="font-size: 11px; color: #888; margin-top: 4px;">上边距</div>
+                </div>
+                <div style="flex: 1;">
+                    <input type="number" id="printMarginRight" value="0.5" step="0.1" min="0" max="3" style="width: 100%; padding: 8px 10px; border-radius: 10px; border: 0.5px solid #c6c6c8;">
+                    <div style="font-size: 11px; color: #888; margin-top: 4px;">右边距</div>
+                </div>
+                <div style="flex: 1;">
+                    <input type="number" id="printMarginBottom" value="0.5" step="0.1" min="0" max="3" style="width: 100%; padding: 8px 10px; border-radius: 10px; border: 0.5px solid #c6c6c8;">
+                    <div style="font-size: 11px; color: #888; margin-top: 4px;">下边距</div>
+                </div>
+                <div style="flex: 1;">
+                    <input type="number" id="printMarginLeft" value="0.5" step="0.1" min="0" max="3" style="width: 100%; padding: 8px 10px; border-radius: 10px; border: 0.5px solid #c6c6c8;">
+                    <div style="font-size: 11px; color: #888; margin-top: 4px;">左边距</div>
+                </div>
+            </div>
+        </div>
+        
+     <div class="form-group">
+    <label>📋 打印内容</label>
+    <div style="display: flex; gap: 16px; flex-wrap: nowrap; margin-top: 8px; overflow-x: auto; padding-bottom: 4px;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;"><input type="checkbox" id="printQuestion" checked> 原题</label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;"><input type="checkbox" id="printWrong"> 错误答案</label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;"><input type="checkbox" id="printCorrect"> 正确答案</label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;"><input type="checkbox" id="printReason"> 错误原因</label>
+        <label style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;"><input type="checkbox" id="printMeta"> 日期/来源/单元</label>
+    </div>
+</div>
+        
+        <!-- 日期范围筛选 -->
+        <div class="form-group">
+            <label>📅 日期范围</label>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <input type="date" id="printStartDate" style="flex: 1; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8;">
+                <span>—</span>
+                <input type="date" id="printEndDate" style="flex: 1; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8;">
+                <button type="button" id="clearDateRange" style="background: #f2f2f6; border: none; padding: 8px 16px; border-radius: 20px; font-size: 12px; cursor: pointer;">清除</button>
+            </div>
+        </div>
+        
+        <!-- 分类筛选 -->
+        <div class="form-group">
+            <label>📂 分类筛选</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                <button type="button" class="print-category-filter active" data-filter="current">当前分类</button>
+                <button type="button" class="print-category-filter" data-filter="all">全部错题</button>
+                <button type="button" class="print-category-filter" data-filter="chinese">语文全部</button>
+                <button type="button" class="print-category-filter" data-filter="math">数学全部</button>
+            </div>
+            <div id="printCategoryDetail" style="margin-top: 10px; font-size: 12px; color: #007aff; background: #f2f2f6; padding: 8px 12px; border-radius: 12px;">
+                当前：语文 · 基础知识 · 拼音
+            </div>
+        </div>
+        
+        <!-- 排序方式 -->
+        <div class="form-group">
+            <label>🔄 排序方式</label>
+            <select id="printSortBy" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8;">
+                <option value="date_desc">按日期倒序（最新在前）</option>
+                <option value="date_asc">按日期正序（最早在前）</option>
+                <option value="review_desc">按复习次数最多</option>
+                <option value="review_asc">按复习次数最少</option>
+            </select>
+        </div>
+        
+        <!-- 统计和预览 -->
+        <div style="display: flex; gap: 12px; margin: 16px 0;">
+            <div id="printStats" style="flex: 1; background: #f8f9fc; border-radius: 16px; padding: 12px; font-size: 13px; text-align: center;">
+                📊 将打印 <span id="printCount">0</span> 道错题
+            </div>
+        </div>
+        
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel" id="cancelPrintBtn">取消</button>
+            <button type="button" class="btn-save" id="confirmPrintBtn">🖨️ 开始打印</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
 
 </body>
 </html>
