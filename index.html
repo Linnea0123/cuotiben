@@ -5314,11 +5314,22 @@ if (clearAllDataBtn) {
 // 页面加载时从云端合并数据（按更新时间判断）
 setTimeout(async () => {
     if (GITHUB_CONFIG.token && GIST_CONFIG.id) {
+        // ✅ 检查今天是否已经合并过
+        const today = new Date().toISOString().split('T')[0];
+        const lastMergeDate = localStorage.getItem(PAGE_ID + '_last_merge_date');
+        
+        if (lastMergeDate === today) {
+            console.log('📅 今天已经合并过云端数据，跳过自动恢复');
+            return;
+        }
+        
         console.log('🔄 正在从云端合并数据...');
         startDownloadSpin();
         try {
-            await loadFromCloud();  // 使用合并模式，不是强制覆盖
-            console.log('✅ 云端数据已合并');
+            await loadFromCloud();  // 合并模式
+            // ✅ 记录今天已合并
+            localStorage.setItem(PAGE_ID + '_last_merge_date', today);
+            console.log('✅ 云端合并完成，已记录日期:', today);
         } catch(e) {
             console.log('⏭️ 云端无数据或合并失败:', e);
         } finally {
@@ -5326,6 +5337,7 @@ setTimeout(async () => {
         }
     }
 }, 500);
+
 }
 
 
