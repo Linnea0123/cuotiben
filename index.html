@@ -2040,6 +2040,9 @@ function renderNormalContent(question, wrongAnswer, correctAnswer) {
 }
 
 function renderSidebar() {
+
+
+
     const categoryTabs = document.getElementById('categoryTabs');
     if (!categoryTabs) return;
     
@@ -2065,24 +2068,37 @@ function renderSidebar() {
     html += `</div>`;
     categoryTabs.innerHTML = html;
         
-        document.querySelectorAll('.category-tab').forEach(el => {
+       document.querySelectorAll('.category-tab').forEach(el => {
     el.addEventListener('click', (e) => {
         const tag = e.target.getAttribute('data-tag');
         if (tag) {
             currentChineseTag = tag;
             currentChineseSubTag = "全部";
+            resetPrintColumnsByCategory();
             renderSidebar();
             renderContent();
-            updateBatchAddButtonVisibility();  //
-            // 保存状态
+            updateBatchAddButtonVisibility();
             localStorage.setItem('cuoti_chineseTag', currentChineseTag);
             localStorage.setItem('cuoti_subTag', currentChineseSubTag);
             localStorage.setItem('cuoti_subject', currentSubject);
+            
+            // ========== 同步更新打印弹窗 ==========
+            const modal = document.getElementById('printSettingsModal');
+            if (modal && modal.classList.contains('active')) {
+                const detailDiv = document.getElementById('printCategoryDetail');
+                if (detailDiv) {
+                    let subjectName = currentSubject === "chinese" ? "语文" : "数学";
+                    let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+                    if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                        categoryName += " · " + currentChineseSubTag;
+                    }
+                    detailDiv.innerHTML = `当前：${subjectName} · ${categoryName}`;
+                }
+                resetPrintColumnsByCategory();
+            }
         }
     });
 });
-    
-   
 } else {
     // 数学科目
     const categories = ["计算", "应用题", "图形", "概念"];
@@ -2362,11 +2378,20 @@ else if (hasTextContent) {
 function handleSubTabClick(e) {
     const subTag = e.currentTarget.getAttribute('data-subtag');
     currentChineseSubTag = subTag;
+    resetPrintColumnsByCategory();
     renderContent();
+    updateBatchAddButtonVisibility();
+    localStorage.setItem('cuoti_subTag', currentChineseSubTag);
     
-      updateBatchAddButtonVisibility(); 
-      localStorage.setItem('cuoti_subTag', currentChineseSubTag);
+    // ========== 直接修改打印弹窗中的分类显示 ==========
+    const detailDiv = document.getElementById('printCategoryDetail');
+    if (detailDiv) {
+        let categoryName = "基础知识 · " + currentChineseSubTag;
+        detailDiv.innerHTML = `当前：语文 · ${categoryName}`;
+        console.log('已更新分类显示为:', categoryName);
+    }
 }
+
 
 function getFilteredQuestionsForReview() {
     let baseList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
@@ -3746,21 +3771,40 @@ function deleteQuestion(id, subject) {
 }
 
     function switchSubject(subject) {
-        currentSubject = subject;
-        if (subject === "chinese") {
-            currentChineseTag = "基础知识";
-            currentChineseSubTag = "全部";  
-        }
-        reviewContextFilter = null;
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            if (btn.getAttribute('data-subject') === subject) btn.classList.add('active');
-            else btn.classList.remove('active');
-        });
-        renderSidebar(); 
-        renderContent();
-        updateBatchAddButtonVisibility();  
-        localStorage.setItem('cuoti_subject', currentSubject);
+    currentSubject = subject;
+    if (subject === "chinese") {
+        currentChineseTag = "基础知识";
+        currentChineseSubTag = "全部";
     }
+    resetPrintColumnsByCategory();
+    reviewContextFilter = null;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.getAttribute('data-subject') === subject) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+    renderSidebar();
+    renderContent();
+    updateBatchAddButtonVisibility();
+    localStorage.setItem('cuoti_subject', currentSubject);
+    
+    // ========== 同步更新打印弹窗中的分类详情 ==========
+    const modal = document.getElementById('printSettingsModal');
+    if (modal && modal.classList.contains('active')) {
+        const detailDiv = document.getElementById('printCategoryDetail');
+        if (detailDiv) {
+            let subjectName = currentSubject === "chinese" ? "语文" : "数学";
+            let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+            if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                categoryName += " · " + currentChineseSubTag;
+            }
+            detailDiv.innerHTML = `当前：${subjectName} · ${categoryName}`;
+        }
+        resetPrintColumnsByCategory();
+    }
+}
+
+
+
 
 
 
@@ -5349,14 +5393,47 @@ function printCurrentCategory() {
 
 // 更新打印统计数量
 function updatePrintStats() {
-    let list = getPrintFilteredList();
-    document.getElementById('printCount').innerText = list.length;
+    console.log('updatePrintStats 被调用');
+    const list = getPrintFilteredList();
+    console.log('getPrintFilteredList 返回数量:', list.length);
+    const countSpan = document.getElementById('printCount');
+    if (countSpan) {
+        countSpan.innerText = list.length;
+        console.log('已设置 printCount 为:', list.length);
+    } else {
+        console.error('找不到 printCount 元素！');
+    }
 }
 
+// 根据当前分类重置打印列数下拉框
+function resetPrintColumnsByCategory() {
+    const columnsSelect = document.getElementById('printColumns');
+    if (!columnsSelect) return;
+    
+    let defaultCols = 1;
+    
+    if (currentSubject === 'math') {
+        defaultCols = 2;
+        console.log('数学分类，重置列数为: 2');
+    } else if (currentSubject === 'chinese') {
+        if (currentChineseTag === '基础知识') {
+            if (currentChineseSubTag === '生字') {
+                defaultCols = 12;
+                console.log('生字分类，重置列数为: 12');
+            } else if (currentChineseSubTag === '拼音') {
+                defaultCols = 10;
+                console.log('拼音分类，重置列数为: 10');
+            } else {
+                defaultCols = 1;
+            }
+        } else {
+            defaultCols = 1;
+        }
+    }
+    
+    columnsSelect.value = defaultCols;
+}
 
-
-
-// 更新分类详情显示
 function updatePrintCategoryDetail() {
     const detailDiv = document.getElementById('printCategoryDetail');
     if (!detailDiv) return;
@@ -5377,36 +5454,17 @@ function updatePrintCategoryDetail() {
     }
 }
 
-// 打开打印设置弹窗
-// 找到这个函数定义，确保它包含 classList.add('active')
-function openPrintSettings() {
-    // 设置当前分类筛选按钮状态
-    document.querySelectorAll('.print-category-filter').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('data-filter') === currentPrintFilter) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // 清空日期范围
-    document.getElementById('printStartDate').value = '';
-    document.getElementById('printEndDate').value = '';
-    
-    // 重置排序为默认
-    document.getElementById('printSortBy').value = 'date_desc';
-    
-    // 更新详情和统计
-    updatePrintCategoryDetail();
-    updatePrintStats();
-    
-    // 显示弹窗 ← 这一行必须有！
-    document.getElementById('printSettingsModal').classList.add('active');
-}
+
 function closePrintSettings() {
-    console.log('closePrintSettings 执行');
     const modal = document.getElementById('printSettingsModal');
     if (modal) {
         modal.classList.remove('active');
+        // 强制重绘，确保下次打开时元素可交互
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.offsetHeight;
+            modal.style.display = '';
+        }, 100);
     }
 }
 
@@ -5418,6 +5476,7 @@ function executePrint() {
         alert("没有符合筛选条件的错题");
         return;
     }
+    
     // ========== 获取用户打印选项 ==========
     const options = {
         question: document.getElementById('printQuestion')?.checked ?? true,
@@ -5430,9 +5489,35 @@ function executePrint() {
     // ========== 判断是否为数学分类 ==========
     const isMathPrint = currentSubject === "math";
     
-    // ========== 读取用户在打印设置弹窗里选择的值 ==========
+    // ========== 读取纸张方向 ==========
     var pageOrientation = document.getElementById('printOrientation')?.value || 'portrait';
-    var gridColumns = parseInt(document.getElementById('printColumns')?.value) || 2;
+    
+    // ========== 根据当前分类强制设置列数 ==========
+    var gridColumns = 1;
+    
+    if (currentSubject === 'math') {
+        gridColumns = 2;
+        console.log('数学分类，列数: 2');
+    } else if (currentSubject === 'chinese') {
+        if (currentChineseTag === '基础知识' && currentChineseSubTag === '生字') {
+            gridColumns = 12;
+            console.log('生字分类，列数: 12');
+        } else if (currentChineseTag === '基础知识' && currentChineseSubTag === '拼音') {
+            gridColumns = 10;
+            console.log('拼音分类，列数: 10');
+        } else {
+            gridColumns = 1;
+            console.log('其他语文分类，列数: 1');
+        }
+    }
+    
+    // 同步下拉框显示
+    const columnsSelect = document.getElementById('printColumns');
+    if (columnsSelect) {
+        columnsSelect.value = gridColumns;
+    }
+    
+    console.log(`最终打印列数: ${gridColumns}`);
     
     // ========== 生成打印 HTML ==========
     var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>打印(' + gridColumns + '列)</title><style>';
@@ -5440,7 +5525,7 @@ function executePrint() {
     html += '@page{size:A4 ' + pageOrientation + ';margin:0.8cm;}';
     html += 'body{padding:5px;background:#fff;font-family:sans-serif;}';
     html += '.print-grid{display:grid;grid-template-columns:repeat(' + gridColumns + ',1fr);gap:16px;}';
-    html += '.print-card{padding:2px;border:1px solid #ddd;border-radius:8px;background:#fff;page-break-inside:avoid;break-inside:avoid;}';
+    html += '.print-card{border:none;box-shadow:none;background:transparent;page-break-inside:avoid;break-inside:avoid;}';
     html += '.card-header{font-size:10px;color:#999;margin-bottom:8px;text-align:center;}';
     
     // 数学专用样式
@@ -5465,12 +5550,12 @@ function executePrint() {
     html += '@media print{body{padding:0;margin:0;}}';
     html += '</style></head><body>';
     
-    // 添加提示文字（仅语文）
+    // 添加提示文字
     if (!isMathPrint && list.length > 0) {
         if (list[0].subTag === "拼音") {
-            html += '<div style="text-align: left; margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 16px; font-weight: bold; color: #000000;">写拼音</div>';
+            html += '<div style="text-align: left; margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 16px; font-weight: bold;">写拼音</div>';
         } else if (list[0].subTag === "生字") {
-            html += '<div style="text-align: left; margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 16px; font-weight: bold; color: #000000;">看拼音写汉字</div>';
+            html += '<div style="text-align: left; margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 16px; font-weight: bold;">看拼音写汉字</div>';
         }
     }
     
@@ -5485,7 +5570,6 @@ function executePrint() {
             html += '<div class="print-card">';
             html += '<div class="card-header">第 ' + (i+1) + ' 题 | ' + (item.date || '无日期') + ' | ' + escapeHtml(item.source || '未知来源') + '</div>';
             
-            // 原题
             if(options.question) {
                 html += '<div class="math-question">';
                 if(item.question && item.question.trim()) {
@@ -5499,7 +5583,6 @@ function executePrint() {
                 html += '</div>';
             }
             
-            // 错误答案
             if(options.wrong && ((item.wrongAnswer && item.wrongAnswer.trim()) || (item.wrongImages && item.wrongImages.length > 0))) {
                 html += '<div class="math-wrong">';
                 html += '<strong style="color:#ff3b30;">❌ 错误答案：</strong><br>';
@@ -5514,7 +5597,6 @@ function executePrint() {
                 html += '</div>';
             }
             
-            // 正确答案
             if(options.correct && ((item.correctAnswer && item.correctAnswer.trim()) || (item.correctImages && item.correctImages.length > 0))) {
                 html += '<div class="math-answer">';
                 html += '<strong style="color:#34c759;">✅ 正确答案：</strong><br>';
@@ -5529,7 +5611,6 @@ function executePrint() {
                 html += '</div>';
             }
             
-            // 元信息
             if(options.reason || options.meta) {
                 html += '<div class="math-meta">';
                 if(options.reason && item.reasons && item.reasons.length) {
@@ -5543,7 +5624,6 @@ function executePrint() {
                 }
                 html += '</div>';
             }
-            
             html += '</div>';
         }
         else if(item.subTag === "生字") {
@@ -5581,12 +5661,11 @@ function executePrint() {
                 html += '</div>';
                 html += '</div>';
             }
-            
             html += '</div></div>';
         }
         else {
-            // ========== 拼音渲染 ==========
-            var chars = item.question.split('');
+            // ========== 拼音渲染（以及默认情况） ==========
+            var chars = item.question ? item.question.split('') : [];
             for(var j = 0; j < chars.length; j++) {
                 html += '<div class="print-card">';
                 html += '<div class="card-header">' + (i+1) + ' ' + (item.date || '') + '</div>';
@@ -5614,13 +5693,11 @@ function executePrint() {
     
     printWindow.onload = function() {
         printWindow.print();
-        closePrintSettings();
+        printWindow.onafterprint = function() {
+            closePrintSettings();
+        };
     };
 }
-
-
-
-
 
 // ========== 打印设置功能 ==========
 let currentPrintFilter = "current"; // current, all, chinese, math
@@ -5629,6 +5706,7 @@ let currentPrintFilter = "current"; // current, all, chinese, math
 function getPrintFilteredList() {
     let list = [];
     
+    // 1. 根据分类筛选
     if (currentPrintFilter === "current") {
         if (currentSubject === "chinese") {
             list = chineseErrors.filter(item => item.tag === currentChineseTag);
@@ -5646,20 +5724,26 @@ function getPrintFilteredList() {
         list = [...mathErrors];
     }
     
-    // 日期范围筛选
+    // 2. 日期范围筛选（关键修复：正确判断空值）
     const startDate = document.getElementById('printStartDate')?.value;
     const endDate = document.getElementById('printEndDate')?.value;
-    if (startDate || endDate) {
+    
+    // 只有当至少有一个日期有值时才进行筛选
+    const hasStartDate = startDate && startDate !== '';
+    const hasEndDate = endDate && endDate !== '';
+    
+    if (hasStartDate || hasEndDate) {
         list = list.filter(item => {
             const itemDate = item.date || '';
-            if (!itemDate) return false;
-            if (startDate && itemDate < startDate) return false;
-            if (endDate && itemDate > endDate) return false;
+            if (!itemDate) return false;  // 没有日期的题目，在有日期筛选时排除
+            
+            if (hasStartDate && itemDate < startDate) return false;
+            if (hasEndDate && itemDate > endDate) return false;
             return true;
         });
     }
     
-    // 排序
+    // 3. 排序
     const sortBy = document.getElementById('printSortBy')?.value;
     if (sortBy === 'date_desc') {
         list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -5671,16 +5755,21 @@ function getPrintFilteredList() {
         list.sort((a, b) => (a.reviewCount || 0) - (b.reviewCount || 0));
     }
     
+    console.log('getPrintFilteredList 返回数量:', list.length);
     return list;
 }
 
-// 更新打印统计
+
+
+
 function updatePrintStats() {
     const list = getPrintFilteredList();
     const countSpan = document.getElementById('printCount');
-    if (countSpan) countSpan.innerText = list.length;
+    if (countSpan) {
+        countSpan.innerText = list.length;
+    }
+    console.log('更新打印统计，数量:', list.length);
 }
-
 // 更新分类详情显示
 function updatePrintCategoryDetail() {
     const detailDiv = document.getElementById('printCategoryDetail');
@@ -5723,23 +5812,62 @@ function getPrintSettings() {
     };
 }
 
-// 打开打印设置弹窗
 function openPrintSettings() {
-    document.querySelectorAll('.print-category-filter').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('data-filter') === currentPrintFilter) {
-            btn.classList.add('active');
-        }
-    });
+    // 显示弹窗
+    const modal = document.getElementById('printSettingsModal');
+    modal.classList.add('active');
     
-    document.getElementById('printStartDate').value = '';
-    document.getElementById('printEndDate').value = '';
-    document.getElementById('printSortBy').value = 'date_desc';
-    setTimeout(bindPrintModalButtonsForce, 50); 
-    updatePrintCategoryDetail();
-    updatePrintStats();
-    document.getElementById('printSettingsModal').classList.add('active');
+    // 延迟执行，确保DOM完全加载
+    setTimeout(function() {
+        // 计算数量
+        let count = 0;
+        if (currentPrintFilter === "current") {
+            if (currentSubject === "chinese") {
+                let filtered = chineseErrors.filter(item => item.tag === currentChineseTag);
+                if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                    filtered = filtered.filter(item => item.subTag === currentChineseSubTag);
+                }
+                count = filtered.length;
+            } else {
+                count = mathErrors.filter(item => item.tag === currentMathTag).length;
+            }
+        } else if (currentPrintFilter === "all") {
+            count = chineseErrors.length + mathErrors.length;
+        } else if (currentPrintFilter === "chinese") {
+            count = chineseErrors.length;
+        } else if (currentPrintFilter === "math") {
+            count = mathErrors.length;
+        }
+        
+        // 设置显示
+        const countSpan = document.getElementById('printCount');
+        if (countSpan) {
+            countSpan.innerText = count;
+            console.log('设置打印数量为:', count);
+        }
+        
+        // 设置分类详情
+        const detailDiv = document.getElementById('printCategoryDetail');
+        if (detailDiv) {
+            let subjectName = currentSubject === "chinese" ? "语文" : "数学";
+            let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+            if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                categoryName += " · " + currentChineseSubTag;
+            }
+            detailDiv.innerHTML = `当前：${subjectName} · ${categoryName}（${count}道）`;
+        }
+        
+        // 滚动到顶部
+        const modalContainer = modal.querySelector('.modal-container');
+        if (modalContainer) {
+            modalContainer.scrollTop = 0;
+        }
+    }, 100);
 }
+
+
+
+
 
 function closePrintSettings() {
     document.getElementById('printSettingsModal').classList.remove('active');
@@ -6073,90 +6201,124 @@ function generatePrintCard(item, idx, options) {
 }
 
 
-// ========== 打印设置弹窗按钮事件绑定（暴力修复版） ==========
 function bindPrintModalButtonsForce() {
-    console.log('bindPrintModalButtonsForce 执行');
+    console.log('bindPrintModalButtonsForce 执行（使用事件委托）');
     
-    // ========== 绑定分类筛选按钮 ==========
-    const categoryFilters = document.querySelectorAll('.print-category-filter');
-    categoryFilters.forEach(btn => {
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
+    const modal = document.getElementById('printSettingsModal');
+    if (!modal) return;
+    
+    // ========== 使用事件委托，避免重复绑定 ==========
+    // 移除旧的事件监听器（如果有）
+    if (modal._delegateHandler) {
+        modal.removeEventListener('click', modal._delegateHandler);
+        modal.removeEventListener('change', modal._delegateChangeHandler);
+    }
+    
+    // 创建委托处理器
+    modal._delegateHandler = function(e) {
+        const target = e.target;
         
-        newBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const allBtns = document.querySelectorAll('.print-category-filter');
-            allBtns.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            currentPrintFilter = this.getAttribute('data-filter');
-            updatePrintCategoryDetail();
-            updatePrintStats();
-            console.log('分类筛选切换为:', currentPrintFilter);
-        });
-    });
+        // 分类筛选按钮
+       // 在分类筛选按钮的点击事件中，修改为：
+if (target.classList && target.classList.contains('print-category-filter')) {
+    e.preventDefault();
+    e.stopPropagation();
     
-    // ========== 修复取消按钮 ==========
-    const cancelBtn = document.getElementById('cancelPrintBtn');
-    if(cancelBtn) {
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        newCancelBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('取消按钮被点击');
-            const modal = document.getElementById('printSettingsModal');
-            if(modal) {
-                modal.classList.remove('active');
-            }
-        });
+    document.querySelectorAll('.print-category-filter').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    target.classList.add('active');
+    currentPrintFilter = target.getAttribute('data-filter');
+    
+    // 更新分类详情（使用最新的 currentChineseSubTag）
+    const detailDiv = document.getElementById('printCategoryDetail');
+    if (detailDiv) {
+        let subjectName = currentSubject === "chinese" ? "语文" : "数学";
+        let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+        if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            categoryName += " · " + currentChineseSubTag;
+        }
+        detailDiv.innerHTML = `当前：${subjectName} · ${categoryName}`;
     }
     
-    // ========== 修复确认打印按钮 ==========
-    // 修复确认打印按钮
-const confirmBtn = document.getElementById('confirmPrintBtn');
-if(confirmBtn) {
-    const newConfirmBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-    newConfirmBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('打印按钮工作');
-        if(typeof executePrint === 'function') executePrint();  // ✅ 调用的是 executePrint
-    });
+    updatePrintStats();
+    return;
 }
-    
-    // ========== 修复预览按钮 ==========
-    const previewBtn = document.getElementById('previewPrintBtn');
-    if(previewBtn) {
-        const newPreviewBtn = previewBtn.cloneNode(true);
-        previewBtn.parentNode.replaceChild(newPreviewBtn, previewBtn);
-        newPreviewBtn.addEventListener('click', function(e) {
+        // 取消按钮
+        if (target.id === 'cancelPrintBtn' || target.closest('#cancelPrintBtn')) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('预览按钮工作');
-            if(typeof previewPrint === 'function') previewPrint();
-        });
-    }
-    
-    // ========== 修复清除日期按钮 ==========
-    const clearBtn = document.getElementById('clearDateRange');
-    if(clearBtn) {
-        const newClearBtn = clearBtn.cloneNode(true);
-        clearBtn.parentNode.replaceChild(newClearBtn, clearBtn);
-        newClearBtn.addEventListener('click', function(e) {
+            const m = document.getElementById('printSettingsModal');
+            if (m) m.classList.remove('active');
+            return;
+        }
+        
+        // 确认打印按钮
+        if (target.id === 'confirmPrintBtn' || target.closest('#confirmPrintBtn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof executePrint === 'function') executePrint();
+            return;
+        }
+        
+        // 清除日期范围按钮
+        if (target.id === 'clearDateRange' || target.closest('#clearDateRange')) {
             e.preventDefault();
             e.stopPropagation();
             const startDate = document.getElementById('printStartDate');
             const endDate = document.getElementById('printEndDate');
-            if(startDate) startDate.value = '';
-            if(endDate) endDate.value = '';
-            if(typeof updatePrintStats === 'function') updatePrintStats();
-        });
+            if (startDate) startDate.value = '';
+            if (endDate) endDate.value = '';
+            if (typeof updatePrintStats === 'function') updatePrintStats();
+            return;
+        }
+    };
+    
+    // 处理 change 事件（下拉框、日期选择）
+    modal._delegateChangeHandler = function(e) {
+        const target = e.target;
+        // 日期范围变化时更新统计
+        if (target.id === 'printStartDate' || target.id === 'printEndDate' ||
+            target.id === 'printSortBy' || target.id === 'printColumns' ||
+            target.id === 'printOrientation') {
+            if (typeof updatePrintStats === 'function') {
+                setTimeout(() => updatePrintStats(), 10);
+            }
+        }
+    };
+    
+    modal.addEventListener('click', modal._delegateHandler);
+    modal.addEventListener('change', modal._delegateChangeHandler);
+    
+    // 同时确保纸张方向和列数下拉框不受干扰
+    const orientationSelect = document.getElementById('printOrientation');
+    const columnsSelect = document.getElementById('printColumns');
+    const sortSelect = document.getElementById('printSortBy');
+    
+    // 移除可能的内联禁用属性
+    [orientationSelect, columnsSelect, sortSelect].forEach(select => {
+        if (select) {
+            select.removeAttribute('disabled');
+            select.style.pointerEvents = 'auto';
+            select.style.opacity = '1';
+        }
+    });
+    
+    // 日期输入框同样处理
+    const startDate = document.getElementById('printStartDate');
+    const endDate = document.getElementById('printEndDate');
+    if (startDate) {
+        startDate.removeAttribute('disabled');
+        startDate.style.pointerEvents = 'auto';
+    }
+    if (endDate) {
+        endDate.removeAttribute('disabled');
+        endDate.style.pointerEvents = 'auto';
     }
 }
+
+
+
 
 function init() {
 // 确保预览按钮调用正确的函数
@@ -6194,24 +6356,17 @@ if(previewBtn) {
 
 const printBtn = document.getElementById('printBtn');
 if (printBtn) {
+    printBtn.onclick = null;
     printBtn.onclick = function() {
         console.log('打印按钮被点击');
         const modal = document.getElementById('printSettingsModal');
         if(modal) {
             modal.classList.add('active');
         }
-        setTimeout(function() {
-            // 修复所有按钮和表单元素
-            if(typeof bindPrintModalButtonsForce === 'function') {
-                bindPrintModalButtonsForce();
-            }
-            if(typeof fixPrintModalInputs === 'function') {
-                fixPrintModalInputs();
-            }
-        }, 50);
+        // 每次打开弹窗只绑定按钮事件，不干扰下拉框
+        bindPrintModalButtonsForce();
     };
 }
-
 // 绑定月历按钮事件
 const prevBtn = document.getElementById('prevMonthBtn');
 const nextBtn = document.getElementById('nextMonthBtn');
@@ -7020,7 +7175,7 @@ init();
     <option value="9">9 题/行</option>
     <option value="10">10 题/行</option>
     <option value="11">11 题/行</option>
-    <option value="12" selected>12 题/行</option>
+    <option value="12">12 题/行</option>
                 </select>
             </div>
         </div>
@@ -7097,9 +7252,57 @@ init();
         
         <!-- 统计和预览 -->
         <div style="display: flex; gap: 12px; margin: 16px 0;">
-            <div id="printStats" style="flex: 1; background: #f8f9fc; border-radius: 16px; padding: 12px; font-size: 13px; text-align: center;">
-                📊 将打印 <span id="printCount">0</span> 道错题
-            </div>
+           <div id="printStats" style="flex: 1; background: #f8f9fc; border-radius: 16px; padding: 12px; font-size: 13px; text-align: center;">
+    📊 将打印 <span id="printCount">计算中...</span> 道错题
+</div>
+
+
+
+<script>
+(function() {
+    // 监听弹窗打开，自动更新数量
+    const modal = document.getElementById('printSettingsModal');
+    if (!modal) return;
+    
+    const observer = new MutationObserver(function(mutations) {
+        if (modal.classList.contains('active')) {
+            // 计算当前分类的错题数量
+            let count = 0;
+            if (currentPrintFilter === "current") {
+                if (currentSubject === "chinese") {
+                    let filtered = chineseErrors.filter(item => item.tag === currentChineseTag);
+                    if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                        filtered = filtered.filter(item => item.subTag === currentChineseSubTag);
+                    }
+                    count = filtered.length;
+                } else if (currentSubject === "math") {
+                    count = mathErrors.filter(item => item.tag === currentMathTag).length;
+                }
+            } else if (currentPrintFilter === "all") {
+                count = chineseErrors.length + mathErrors.length;
+            } else if (currentPrintFilter === "chinese") {
+                count = chineseErrors.length;
+            } else if (currentPrintFilter === "math") {
+                count = mathErrors.length;
+            }
+            
+            const countSpan = document.getElementById('printCount');
+            if (countSpan) {
+                countSpan.innerText = count;
+                console.log('自动更新打印数量为:', count);
+            }
+        }
+    });
+    
+    observer.observe(modal, { attributes: true });
+    console.log('打印数量自动更新脚本已启动');
+})();
+</script>
+
+
+
+
+
         </div>
         
         <div class="modal-actions">
