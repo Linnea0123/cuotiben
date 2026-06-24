@@ -1891,6 +1891,8 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
     // 提取括号前的汉字和括号内的注释（去掉括号）
     let mainHanzi = question;
     let noteText = '';
+    
+    // 处理中文括号 （）
     const bracketIndex = question.indexOf('（');
     if (bracketIndex > 0) {
         mainHanzi = question.substring(0, bracketIndex);
@@ -1900,7 +1902,7 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
         }
         noteText = tempNote;
     }
-    // 也处理英文括号
+    // 也处理英文括号 ()
     const englishBracketIndex = question.indexOf('(');
     if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
         mainHanzi = question.substring(0, englishBracketIndex);
@@ -1911,9 +1913,9 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
         noteText = tempNote;
     }
     
-    // 将主体汉字分开
+    // 将主体汉字分开（每个字单独显示四线格）
     const chars = mainHanzi.split('');
-    // 将注释文字也分开
+    // 注释文字也分开（但只显示汉字，无四线格）
     const noteChars = noteText ? noteText.split('') : [];
     
     let html = `
@@ -1921,7 +1923,7 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
             <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
     `;
     
-    // 主体汉字：正常显示拼音线
+    // 主体汉字：显示四线三格 + 汉字
     chars.forEach(char => {
         html += `
             <div style="text-align: center;">
@@ -1939,23 +1941,19 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
         `;
     });
     
-    // 注释文字：文字黑色，拼音线透明
-    noteChars.forEach(char => {
-        html += `
-            <div style="text-align: center;">
-                <div class="four-line-grid" style="width: 50px;">
-                    <div class="grid-line-1" style="border-top: 1px solid transparent;"></div>
-                    <div class="grid-line-2" style="border-top: 1px solid transparent;"></div>
-                    <div class="grid-line-3" style="border-top: 1px solid transparent;"></div>
-                    <div class="grid-line-4" style="border-top: 1px solid transparent;"></div>
-                    <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
-                </div>
-                <div style="font-size: 24px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">
+    // 注释文字：只显示汉字，没有四线格，也没有括号
+    // 加一个小间距分隔
+    if (noteChars.length > 0) {
+        html += `<div style="display: flex; align-items: flex-end; gap: 2px; margin-left: 4px;">`;
+        noteChars.forEach(char => {
+            html += `
+                <div style="font-size: 24px; font-weight: 500; color: #1c1c1e; padding-bottom: 4px;">
                     ${escapeHtml(char)}
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
+        html += `</div>`;
+    }
     
     html += `
             </div>
@@ -1964,8 +1962,6 @@ function renderPinyinContent(question, wrongAnswer, correctAnswer) {
     
     return html;
 }
-
-
 
 
 
@@ -2144,61 +2140,51 @@ function renderSidebar() {
 function renderContent() {
     const list = getCurrentDisplayList();
     
-    
-     list.sort((a, b) => {
+    list.sort((a, b) => {
         const timeA = a.createdAt || 0;
         const timeB = b.createdAt || 0;
         return timeB - timeA;
     });
     
+    const questionCountDisplay = document.getElementById('questionCountDisplay');
+    if (questionCountDisplay) {
+        const totalCount = currentSubject === "chinese" ? chineseErrors.length : mathErrors.length;
+        questionCountDisplay.textContent = `${totalCount} 道题`;
+    }
     
-    
-    const subjectName = currentSubject === "chinese" ? "语文" : "数学";
-// 更新学科标签行右侧的题目数量（显示当前学科的总错题数）
-const questionCountDisplay = document.getElementById('questionCountDisplay');
-if (questionCountDisplay) {
-    // 统计当前学科的总错题数
-    const totalCount = currentSubject === "chinese" ? chineseErrors.length : mathErrors.length;
-    questionCountDisplay.textContent = `${totalCount} 道题`;
-}
-    
-   let subTabsHtml = "";
-if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
-    // 统计拼音和生字的数量
-    const pinyinCount = chineseErrors.filter(item => 
-        item.tag === "基础知识" && item.subTag === "拼音"
-    ).length;
-    const shengziCount = chineseErrors.filter(item => 
-        item.tag === "基础知识" && item.subTag === "生字"
-    ).length;
-    const bishunCount = chineseErrors.filter(item => 
-    item.tag === "基础知识" && item.subTag === "笔顺"
-).length;
-    const totalCount = chineseErrors.filter(item => 
-        item.tag === "基础知识"
-    ).length;
-    
-    const subTags = [
-   
-    { name: "拼音", count: pinyinCount },
-    { name: "生字", count: shengziCount },
-    { name: "笔顺", count: bishunCount }
-];
-    
-    subTabsHtml = `
-       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
-           <div class="category-tabs" style="display: flex; gap: 8px;">
-                ${subTags.map(st => `
-                    <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}">
-                        ${st.name} <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 6px;">${st.count}</span>
-                    </div>
-                `).join('')}
+    let subTabsHtml = "";
+    if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
+        const pinyinCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && item.subTag === "拼音"
+        ).length;
+        const shengziCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && item.subTag === "生字"
+        ).length;
+        const bishunCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && item.subTag === "笔顺"
+        ).length;
+        
+        const subTags = [
+            { name: "拼音", count: pinyinCount },
+            { name: "生字", count: shengziCount },
+            { name: "笔顺", count: bishunCount }
+        ];
+        
+        subTabsHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
+                <div class="category-tabs" style="display: flex; gap: 8px;">
+                    ${subTags.map(st => `
+                        <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}">
+                            ${st.name} <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 6px;">${st.count}</span>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
-        </div>
-    `;
-}
+        `;
+    }
+    
     if (list.length === 0) { 
-        contentAreaDiv.innerHTML =  subTabsHtml + `<div class="empty-state">暂无错题记录</div>`; 
+        contentAreaDiv.innerHTML = subTabsHtml + `<div class="empty-state">暂无错题记录</div>`; 
         bindSubTabEvents();
         const addBtn = document.querySelector('.add-question-btn-header');
         if (addBtn) {
@@ -2219,75 +2205,117 @@ if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
         const reasonText = item.reasons?.length ? item.reasons.join("、") : "未分类";
         const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
         
-        // ========== 生成原题特殊内容（拼音/生字有四线三格/田字格） ==========
         let specialContent = "";
         const hasTextContent = item.question && item.question.trim();
         
-
-if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
-    const chars = item.question.split('');
-    let pinyinHtml = `
-        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 20px;">
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
-    `;
-    chars.forEach(char => {
-        pinyinHtml += `
-            <div style="text-align: center;">
-                <div class="four-line-grid" style="width: 80px;">
-                    <div class="grid-line-1"></div>
-                    <div class="grid-line-2"></div>
-                    <div class="grid-line-3"></div>
-                    <div class="grid-line-4"></div>
-                    <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
-                </div>
-                <div style="font-size: 40px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">
-                    ${escapeHtml(char)}
-                </div>
-            </div>
-        `;
-    });
-    pinyinHtml += `
-            </div>
-        </div>
-    `;
-    specialContent = pinyinHtml;
-    
-    // 准备正确答案（拼音）用于详情显示
-    const correctPinyin = item.correctAnswer || '';
-    const pinyinParts = correctPinyin ? correctPinyin.trim().split(/\s+/) : [];
-    let correctAnswerHtml = '';
-    for (let i = 0; i < pinyinParts.length; i++) {
-        correctAnswerHtml += `
-            <div style="font-size: 40px; font-weight: 500; color: #34c759; display: inline-block; margin: 0 10px;">
-                ${escapeHtml(pinyinParts[i])}
-            </div>
-        `;
-    }
-    if (!correctAnswerHtml) {
-        correctAnswerHtml = '未填写';
-    }
-    
-    // 存储正确答案到自定义属性，供详情显示使用
-    item._correctPinyinHtml = correctAnswerHtml;
-}
-        
-        else if (item.tag === "基础知识" && item.subTag === "生字") {
-    // 调用专门的生字渲染函数
-    specialContent = renderShengziContent(item.question, item.wrongAnswer, item.correctAnswer);
-}else if (item.tag === "基础知识" && item.subTag === "笔顺" && hasTextContent) {
-    // 笔顺显示：居中、加大
-    specialContent = `
-        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
-            <div style="font-size: 25px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
-                ${escapeHtml(item.question)}
-            </div>
+        // ========== 拼音分类：括号前汉字显示四线格（实线），括号内注释显示四线格（透明线） ==========
+        if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
+            // 提取括号前的汉字和括号内的注释
+            let mainHanzi = item.question;
+            let noteText = '';
             
-        </div>
-    `;
-}
-
-else if (hasTextContent) {
-            // 普通文字内容（只有有文字时才显示）
+            // 处理中文括号 （）
+            const bracketIndex = item.question.indexOf('（');
+            if (bracketIndex > 0) {
+                mainHanzi = item.question.substring(0, bracketIndex);
+                let tempNote = item.question.substring(bracketIndex + 1);
+                if (tempNote.endsWith('）')) {
+                    tempNote = tempNote.slice(0, -1);
+                }
+                noteText = tempNote;
+            }
+            // 处理英文括号 ()
+            const englishBracketIndex = item.question.indexOf('(');
+            if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
+                mainHanzi = item.question.substring(0, englishBracketIndex);
+                let tempNote = item.question.substring(englishBracketIndex + 1);
+                if (tempNote.endsWith(')')) {
+                    tempNote = tempNote.slice(0, -1);
+                }
+                noteText = tempNote;
+            }
+            
+            const chars = mainHanzi.split('');
+            const noteChars = noteText ? noteText.split('') : [];
+            
+            let pinyinHtml = `
+                <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 20px;">
+                    <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 8px;">
+            `;
+            
+            // 主体汉字：显示四线三格（实线）
+            chars.forEach(char => {
+                pinyinHtml += `
+                    <div style="text-align: center;">
+                        <div class="four-line-grid" style="width: 80px;">
+                            <div class="grid-line-1"></div>
+                            <div class="grid-line-2"></div>
+                            <div class="grid-line-3"></div>
+                            <div class="grid-line-4"></div>
+                            <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
+                        </div>
+                        <div style="font-size: 40px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">
+                            ${escapeHtml(char)}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // 注释文字：显示四线三格（透明线），只显示汉字，括号不显示
+            if (noteChars.length > 0) {
+                noteChars.forEach(char => {
+                    pinyinHtml += `
+                        <div style="text-align: center;">
+                            <div class="four-line-grid" style="width: 80px;">
+                                <div class="grid-line-1" style="border-top: 1px solid transparent;"></div>
+                                <div class="grid-line-2" style="border-top: 1px solid transparent;"></div>
+                                <div class="grid-line-3" style="border-top: 1px solid transparent;"></div>
+                                <div class="grid-line-4" style="border-top: 1px solid transparent;"></div>
+                                <div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>
+                            </div>
+                            <div style="font-size: 40px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">
+                                ${escapeHtml(char)}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            pinyinHtml += `
+                    </div>
+                </div>
+            `;
+            specialContent = pinyinHtml;
+            
+            // 准备正确答案（拼音）用于详情显示
+            const correctPinyin = item.correctAnswer || '';
+            const pinyinParts = correctPinyin ? correctPinyin.trim().split(/\s+/) : [];
+            let correctAnswerHtml = '';
+            for (let i = 0; i < pinyinParts.length; i++) {
+                correctAnswerHtml += `
+                    <div style="font-size: 40px; font-weight: 500; color: #34c759; display: inline-block; margin: 0 10px;">
+                        ${escapeHtml(pinyinParts[i])}
+                    </div>
+                `;
+            }
+            if (!correctAnswerHtml) {
+                correctAnswerHtml = '未填写';
+            }
+            item._correctPinyinHtml = correctAnswerHtml;
+        }
+        else if (item.tag === "基础知识" && item.subTag === "生字") {
+            specialContent = renderShengziContent(item.question, item.wrongAnswer, item.correctAnswer);
+        }
+        else if (item.tag === "基础知识" && item.subTag === "笔顺" && hasTextContent) {
+            specialContent = `
+                <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
+                    <div style="font-size: 25px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
+                        ${escapeHtml(item.question)}
+                    </div>
+                </div>
+            `;
+        }
+        else if (hasTextContent) {
             specialContent = `<div class="question-text" style="font-size: 16px; font-weight: 500; line-height: 1.5;">${escapeHtml(item.question)}</div>`;
         } else {
             specialContent = "";
@@ -2303,25 +2331,10 @@ else if (hasTextContent) {
                     <button class="edit-btn" data-id="${item.id}">编辑</button>
                 </div>
                 <div class="card-body">
-                    ${(() => {
-                        const hasText = item.question && item.question.trim();
-                        const hasImages = item.questionImages && item.questionImages.length > 0;
-                        let topDisplay = '';
-                        if (hasText) {
-                            topDisplay = specialContent;
-                        } else if (hasImages) {
-                            topDisplay = '';  // 什么都不显示，只显示下面的图片
-                        } else {
-                            topDisplay = `<div style="color: #ff3b30; font-size: 13px; padding: 8px 0;">⚠️ 原题内容缺失</div>`;
-                        }
-                        return `
-                            <div class="question-container">
-                                ${topDisplay}
-                                ${renderImagesInCard(item.questionImages, '', 'full')}
-                            </div>
-                        `;
-                    })()}
-                    
+                    <div class="question-container">
+                        ${specialContent}
+                        ${renderImagesInCard(item.questionImages, '', 'full')}
+                    </div>
                     <div class="meta-info" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #8e8e93; margin-top: 16px; padding-top: 12px; border-top: 0.5px solid #f0f0f4;">
                         <span>${escapeHtml(item.source || '未知来源')}</span>
                         <span>${escapeHtml(item.unit || '所属单元')}</span>
@@ -2355,8 +2368,6 @@ else if (hasTextContent) {
         gradeFilter.addEventListener('change', handleGradeChange);
     }
 }
-
- 
  
     function handleGradeChange() {
     renderContent();
@@ -6536,14 +6547,7 @@ if (savedGistId) {
     cancelBtn.addEventListener('click', closeModal);
     
    
-// 【修复】编辑弹窗保存按钮绑定事件
-const modalSaveBtn = document.getElementById('modalSaveBtn');
-if (modalSaveBtn) {
-    modalSaveBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        saveEdit();
-    });
-}
+
 
     // 绑定表单提交
     editForm.addEventListener('submit', (e) => {
@@ -7012,6 +7016,75 @@ setTimeout(async () => {
         }
     }
 }, 500);
+
+// ========== 修复编辑弹窗右上角"取消"按钮 ==========
+// 放在 init() 函数的最后，setTimeout 之后
+
+const cancelInModalBtn = document.getElementById('cancelInModalBtn');
+if (cancelInModalBtn) {
+    const newCancelBtn = cancelInModalBtn.cloneNode(true);
+    cancelInModalBtn.parentNode.replaceChild(newCancelBtn, cancelInModalBtn);
+    newCancelBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('✅ 取消按钮被点击');
+        closeModal();
+    });
+}
+
+// 同时修复底部的"取消"按钮
+const cancelEditBtn = document.getElementById('cancelEditBtn');
+if (cancelEditBtn) {
+    const newCancelBtn = cancelEditBtn.cloneNode(true);
+    cancelEditBtn.parentNode.replaceChild(newCancelBtn, cancelEditBtn);
+    newCancelBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('✅ 底部取消按钮被点击');
+        closeModal();
+    });
+}
+
+// 修复右上角的"保存"按钮
+const modalSaveBtn = document.getElementById('modalSaveBtn');
+if (modalSaveBtn) {
+    const newSaveBtn = modalSaveBtn.cloneNode(true);
+    modalSaveBtn.parentNode.replaceChild(newSaveBtn, modalSaveBtn);
+    newSaveBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        saveEdit();
+    });
+}
+
+// 修复右上角的"删除"按钮
+const deleteInModalBtn = document.getElementById('deleteInModalBtn');
+if (deleteInModalBtn) {
+    const newDeleteBtn = deleteInModalBtn.cloneNode(true);
+    deleteInModalBtn.parentNode.replaceChild(newDeleteBtn, deleteInModalBtn);
+    newDeleteBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (editingItem.id && confirm('确定要删除这道错题吗？删除后不可恢复！')) {
+            const id = editingItem.id;
+            const subject = editingItem.subject;
+            closeModal();
+            deleteQuestion(id, subject);
+        }
+    });
+}
+
+// 点击遮罩关闭弹窗
+const editModal = document.getElementById('editModal');
+if (editModal) {
+    editModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+}
+
+
 
 }
 
