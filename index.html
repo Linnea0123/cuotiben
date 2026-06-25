@@ -1494,10 +1494,12 @@ img[loading="lazy"] {
     <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 12px;">
 <div class="filter-group" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
     <div style="display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+          <button class="filter-btn" data-filter="all">全部 <span class="filter-count" id="allCount">(0)</span></button>
         <button class="filter-btn" data-filter="today">今日 <span class="filter-count" id="todayCount">(0)</span></button>
         <button class="filter-btn" data-filter="week">本周 <span class="filter-count" id="weekCount">(0)</span></button>
         <button class="filter-btn" data-filter="nextWeek">下周 <span class="filter-count" id="nextWeekCount">(0)</span></button>
         <button class="filter-btn" data-filter="month">本月 <span class="filter-count" id="monthCount">(0)</span></button>
+     <button class="filter-btn" data-filter="nextMonth">下月 <span class="filter-count" id="nextMonthCount">(0)</span></button>
     </div>
     <div style="display: flex; gap: 6px;">
         <button id="selectUnitBtn" class="filter-btn" onclick="openUnitModal(this)">选择单元 <span class="filter-count" id="unitCount">(0)</span></button>
@@ -1534,6 +1536,7 @@ img[loading="lazy"] {
                     <option value="拼音">拼音</option>
                     <option value="生字">生字</option>
                      <option value="笔顺">笔顺</option>
+                     <option value="标点">标点</option>
                 </select>
             </div>
 
@@ -1662,32 +1665,143 @@ img[loading="lazy"] {
 
 
 <script>
-    // ==================== 数据模型 ====================
-   
 
+
+// ==================== IndexedDB 管理 ====================
+class IndexedDBManager {
+    constructor(dbName = 'CuoTiBenDB', storeName = 'cuoti_data') {
+        this.dbName = dbName;
+        this.storeName = storeName;
+        this.db = null;
+        this.version = 2;
+    }
+
+    openDB() {
+        return new Promise((resolve, reject) => {
+            if (this.db && this.db.name === this.dbName) {
+                resolve(this.db);
+                return;
+            }
+            const request = indexedDB.open(this.dbName, this.version);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
+                    store.createIndex('version', 'version', { unique: false });
+                    store.createIndex('lastSaved', 'lastSaved', { unique: false });
+                }
+            };
+            request.onsuccess = (event) => {
+                this.db = event.target.result;
+                resolve(this.db);
+            };
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    async save(data) {
+        try {
+            const db = await this.openDB();
+            const transaction = db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            const record = {
+                id: 'main_data',
+                ...data,
+                lastSaved: data.lastSaved || new Date().toISOString()
+            };
+            const request = store.put(record);
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => reject(request.error);
+            });
+        } catch (error) {
+            console.error('❌ IndexedDB 保存失败:', error);
+            throw error;
+        }
+    }
+
+    async load() {
+        try {
+            const db = await this.openDB();
+            const transaction = db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.get('main_data');
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result || null);
+                request.onerror = () => reject(request.error);
+            });
+        } catch (error) {
+            console.error('❌ IndexedDB 加载失败:', error);
+            return null;
+        }
+    }
+
+    async clear() {
+        try {
+            const db = await this.openDB();
+            const transaction = db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.delete('main_data');
+            return new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => reject(request.error);
+            });
+        } catch (error) {
+            console.error('❌ IndexedDB 清空失败:', error);
+            throw error;
+        }
+    }
+
+    async getStorageInfo() {
+        try {
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                const estimate = await navigator.storage.estimate();
+                return {
+                    usage: estimate.usage || 0,
+                    quota: estimate.quota || 0,
+                    usagePercent: estimate.quota ? (estimate.usage / estimate.quota * 100) : 0
+                };
+            }
+            return null;
+        } catch { return null; }
+    }
+
+    static async migrateFromLocalStorage() {
+        const saved = localStorage.getItem('cuoti_data');
+        if (!saved) return false;
+        try {
+            const data = JSON.parse(saved);
+            const manager = new IndexedDBManager();
+            await manager.save(data);
+            console.log('✅ 数据已从 localStorage 迁移到 IndexedDB');
+            return true;
+        } catch (error) {
+            console.error('❌ 迁移失败:', error);
+            return false;
+        }
+    }
+}
+
+const dbManager = new IndexedDBManager();
+
+// ==================== 数据模型 ====================
 let chineseErrors = [
     { id: "ch_1", tag: "基础知识", subTag: "拼音", grade: "一下", unit: "第一单元", question: "汗", wrongAnswer: "我写成了'汉'", correctAnswer: "汗", reasons: ["粗心大意"], source: "听写本", date: "2026-05-12", reviewCount: 2, reviewHistory: [
         { time: "2026-06-01 19:30:00", result: "correct" },
         { time: "2026-05-30 10:15:00", result: "wrong" }
     ], questionImages: [], wrongImages: [], correctImages: [] },
-    
     { id: "ch_2", tag: "基础知识", subTag: "拼音", grade: "一下", unit: "第一单元", question: "晴", wrongAnswer: "我写成了'睛'", correctAnswer: "晴", reasons: ["粗心大意"], source: "听写本", date: "2026-05-15", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
-    
     { id: "ch_3", tag: "基础知识", subTag: "生字", grade: "一下", unit: "第二单元", question: "shi", wrongAnswer: "我写成了'是'", correctAnswer: "诗", reasons: ["概念模糊"], source: "生字本", date: "2026-05-18", reviewCount: 1, reviewHistory: [
         { time: "2026-05-28 09:30:00", result: "wrong" }
     ], questionImages: [], wrongImages: [], correctImages: [] },
-    
     { id: "ch_4", tag: "基础知识", subTag: "生字", grade: "一下", unit: "第二单元", question: "wang", wrongAnswer: "我写成了'忘'", correctAnswer: "望", reasons: ["思路错误"], source: "生字本", date: "2026-05-20", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
-    
     { id: "ch_5", tag: "阅读理解", grade: "一下", unit: "第二单元", question: "阅读短文《背影》片段：父亲爬过月台买橘子的动作描写，体现了什么情感？", wrongAnswer: "答：体现了父亲身体强壮，动作敏捷。", correctAnswer: "体现了父亲深沉的爱与关怀，尽管笨拙却充满父爱。", reasons: ["审题不清", "思路错误"], source: "月考", date: "2026-05-05", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] },
-    
     { id: "ch_6", tag: "作文表达", grade: "一下", unit: "第三单元", question: "请以\"春天的早晨\"写一个比喻句", wrongAnswer: "早晨非常新鲜", correctAnswer: "春天的早晨像一首轻快的钢琴曲", reasons: ["完全不会"], source: "课后练习", date: "2026-06-01", reviewCount: 0, reviewHistory: [], questionImages: [], wrongImages: [], correctImages: [] }
 ];
 
 let mathErrors = [
     { id: "math_1", tag: "计算", unit: "第一单元", question: "计算 25 × 4 ÷ 25 × 4 = ?", wrongAnswer: "1", correctAnswer: "16", reasons: ["粗心大意"], source: "口算练习", date: "2026-05-15", reviewCount: 1, reviewHistory: [{ time: "2026-05-30 14:20:00", result: "wrong" }], questionImages: [], wrongImages: [], correctImages: [] }
 ];
-
 
 
 // 修改后（安全）
@@ -1697,6 +1811,8 @@ const GITHUB_CONFIG = {
     repo: 'cuotiben',
     branch: 'main'
 };
+// 上传图片到 GitHub
+// 上传图片到 GitHub
 // 上传图片到 GitHub
 async function uploadToGitHub(base64Data, fileName) {
     const base64Content = base64Data.split(',')[1];
@@ -1719,17 +1835,9 @@ async function uploadToGitHub(base64Data, fileName) {
         throw new Error(error.message || '上传失败');
     }
     
-    const result = await response.json();
-       // 获取 GitHub 上的原始文件链接
-    const rawUrl = `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/${fileName}`;
-    // 使用 jsDelivr CDN 链接 (推荐)
-    const cdnUrl = `https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben@main/${fileName}`;
-    
-    // 返回 CDN 链接，它通常更快
-    return cdnUrl;
+    // 使用 gcore CDN（根据测试，当前网络环境下最快）
+    return `https://gcore.jsdelivr.net/gh/Linnea0123/cuotiben@main/${fileName}`;
 }
-
-
 
     let currentSubject = "chinese";
     let currentChineseTag = "基础知识";
@@ -1806,14 +1914,11 @@ const PAGE_ID = 'cuotiben_main';
     if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
         filtered = filtered.filter(item => item.subTag === currentChineseSubTag);
     }
-    // 年级学期筛选
-    const gradeFilter = document.getElementById('gradeFilter');
-    if (gradeFilter && gradeFilter.value !== '全部') {
-        filtered = filtered.filter(item => item.grade === gradeFilter.value);
+    if (currentGradeFilter !== '全部') {
+        filtered = filtered.filter(item => item.grade === currentGradeFilter);
     }
     return filtered;
 }
-
     // 头部年级下拉框联动
     const headerGradeFilter = document.getElementById('headerGradeFilter');
     if (headerGradeFilter) {
@@ -1842,29 +1947,66 @@ function recordReview(itemId, subject, result) {
     const list = subject === "chinese" ? chineseErrors : mathErrors;
     const item = list.find(i => i.id === itemId);
     if (item) {
+        // 增加复习次数
         item.reviewCount = (item.reviewCount || 0) + 1;
+        
+        // 记录复习历史
         const now = new Date();
         const timeStr = now.toLocaleString('zh-CN');
         if (!item.reviewHistory) item.reviewHistory = [];
         item.reviewHistory.unshift({ time: timeStr, result: result });
         if (item.reviewHistory.length > 30) item.reviewHistory.pop();
         
+        // 初始化连续做对计数器
+        if (item._consecutiveCorrect === undefined) {
+            item._consecutiveCorrect = 0;
+        }
+        
         if (result === 'correct') {
-            item._mastered = true;
-            item._nextReviewDate = null;
-            console.log(`✅ 做对，已掌握: ${item.question.substring(0, 20)}`);
-        } else if (result === 'wrong') {
-            // 做错了：推到下个月1号
-            const today = new Date();
-            let nextMonth = today.getMonth() + 1;
-            let nextYear = today.getFullYear();
-            if (nextMonth > 11) {
-                nextMonth = 0;
-                nextYear++;
+            // 做对了：连续做对次数 +1
+            item._consecutiveCorrect = (item._consecutiveCorrect || 0) + 1;
+            
+            // 检查是否连续做对3次
+            if (item._consecutiveCorrect >= 3) {
+                // 连续做对3次 → 永久掌握，不再出现
+                item._mastered = true;
+                item._nextReviewDate = null;
+                item._consecutiveCorrect = 0; // 重置计数器
+                console.log(`🎉 连续做对3次，永久掌握: ${item.question.substring(0, 20)}`);
+            } else {
+                // 做对了但未满3次 → 推到下个月1号
+                const today = new Date();
+                let nextMonth = today.getMonth() + 1;
+                let nextYear = today.getFullYear();
+                if (nextMonth > 11) {
+                    nextMonth = 0;
+                    nextYear++;
+                }
+                item._nextReviewDate = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01`;
+                item._mastered = false;
+                console.log(`✅ 做对第${item._consecutiveCorrect}次，推到下个月: ${item._nextReviewDate} - ${item.question.substring(0, 20)}`);
             }
-            item._nextReviewDate = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01`;
+            
+        } else if (result === 'wrong') {
+            // 做错了：重置连续做对计数器，推到下周
+            item._consecutiveCorrect = 0;
+            
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            let daysUntilNextMonday;
+            if (dayOfWeek === 0) {
+                daysUntilNextMonday = 1;
+            } else {
+                daysUntilNextMonday = 8 - dayOfWeek;
+            }
+            const nextMonday = new Date(today);
+            nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+            const year = nextMonday.getFullYear();
+            const month = String(nextMonday.getMonth() + 1).padStart(2, '0');
+            const day = String(nextMonday.getDate()).padStart(2, '0');
+            item._nextReviewDate = `${year}-${month}-${day}`;
             item._mastered = false;
-            console.log(`❌ 做错，推到下个月: ${item._nextReviewDate} - ${item.question.substring(0, 20)}`);
+            console.log(`❌ 做错，推到下周: ${item._nextReviewDate} - ${item.question.substring(0, 20)}`);
         }
         
         saveAllDataToLocalStorage();
@@ -1876,7 +2018,6 @@ function recordReview(itemId, subject, result) {
         updateFilterCounts();
     }
 }
-
 
 function escapeHtml(str) {
         if (!str) return '';
@@ -2169,7 +2310,8 @@ function renderContent() {
         const subTags = [
             { name: "拼音", count: pinyinCount },
             { name: "生字", count: shengziCount },
-            { name: "笔顺", count: bishunCount }
+            { name: "笔顺", count: bishunCount },
+             { name: "标点", count: 0 }
         ];
         
         subTabsHtml = `
@@ -2409,6 +2551,8 @@ function handleSubTabClick(e) {
 function getFilteredQuestionsForReview() {
     let baseList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
     
+
+
     // 分类筛选 - 使用 reviewContextFilter
     if (reviewContextFilter) {
         baseList = baseList.filter(q => q.tag === reviewContextFilter);
@@ -2433,6 +2577,31 @@ function getFilteredQuestionsForReview() {
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().slice(0, 10);
     
+// 【新增】下月筛选 - 显示下个月所有错题
+// 下月筛选 - 显示下个月需要复习的错题
+if (currentFilter === "nextMonth") {
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+    let nextMonth = currentMonth + 1;
+    let nextYear = currentYear;
+    if (nextMonth > 12) {
+        nextMonth = 1;
+        nextYear++;
+    }
+    const nextMonthStr = String(nextMonth).padStart(2, '0');
+    
+    baseList = baseList.filter(q => {
+        // 优先使用 _nextReviewDate，如果没有则使用 date
+        let checkDate = q._nextReviewDate || q.date;
+        if (!checkDate) return false;
+        const [year, month] = checkDate.split('-');
+        return year === String(nextYear) && month === nextMonthStr;
+    });
+    baseList.sort((a, b) => (b._nextReviewDate || b.date || '').localeCompare(a._nextReviewDate || a.date || ''));
+    console.log(`下月筛选结果: ${baseList.length} 条`);
+    return baseList;
+}
+
     // 调试：打印所有卡片的 _nextReviewDate
     console.log('=== 所有卡片的复习状态 ===');
     baseList.forEach(q => {
@@ -2447,7 +2616,8 @@ function getFilteredQuestionsForReview() {
    // 第一步过滤：只过滤已掌握的
 
 // 第一步过滤：只过滤已掌握的（今日和本月筛选除外）
-if (currentFilter !== "today" && currentFilter !== "month") {
+// 第一步过滤：只过滤已掌握的（全部、今日、本月、下月筛选除外）
+if (currentFilter !== "all" && currentFilter !== "today" && currentFilter !== "month" && currentFilter !== "nextMonth") {
     baseList = baseList.filter(q => {
         if (q._mastered === true) {
             console.log(`⏭️ 过滤(已掌握): ${q.question.substring(0, 20)}`);
@@ -2469,23 +2639,24 @@ if (currentFilter !== "today" && currentFilter !== "month") {
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
     
-// 今日筛选 - 不受复习状态影响
+// 今日筛选 - 只显示今天需要复习的
 if (currentFilter === "today") {
-    // 获取今天的日期
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
-    console.log('=== 今日筛选（不受复习状态影响）===');
+    console.log('=== 今日筛选 ===');
     console.log('今天日期:', todayStr);
     
-    // 注意：今日筛选不过滤 _mastered，只要有卡片的最新时间等于今天就显示
     baseList = baseList.filter(q => {
-        // 获取卡片的最新时间
-        let latestDate = q.date;
-        if (q._nextReviewDate && q._nextReviewDate <= todayStr) {
-            latestDate = q._nextReviewDate;
+        // 1. 如果有 _nextReviewDate 
+        if (q._nextReviewDate) {
+            // 只有 _nextReviewDate 等于今天才显示
+            // 如果 _nextReviewDate 是未来日期（如下个月），则不显示
+            return q._nextReviewDate === todayStr;
         }
-        return latestDate === todayStr;
+        
+        // 2. 没有 _nextReviewDate，使用原日期
+        return q.date === todayStr;
     });
     
     baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
@@ -2493,6 +2664,7 @@ if (currentFilter === "today") {
     return baseList;
 }
 
+// 本周筛选（周一到周日）
 // 本周筛选（周一到周日）
 if (currentFilter === "week") {
     const dayOfWeek = today.getDay();
@@ -2508,12 +2680,25 @@ if (currentFilter === "week") {
     console.log(`本周范围: ${mondayStr} ~ ${sundayStr}`);
     
     baseList = baseList.filter(q => {
-        // 优先使用 _nextReviewDate（如果存在且 <= 今天）
-        // 否则用原日期
-        let checkDate = q.date;
-        if (q._nextReviewDate && q._nextReviewDate <= todayStr) {
+        // 【修复】如果有 _nextReviewDate，就只用它判断
+        // 如果 _nextReviewDate 存在且大于今天（未来日期），则本周不显示
+        // 如果 _nextReviewDate 存在且在 <= 今天，则按它判断
+        // 如果没有 _nextReviewDate，才用原日期
+        let checkDate;
+        
+        if (q._nextReviewDate) {
+            // 有下次复习日期，使用它
             checkDate = q._nextReviewDate;
+            // 如果下次复习日期在未来（> 今天），本周不显示
+            if (checkDate > todayStr) {
+                console.log(`⏭️ 跳过(未来日期): ${q.question.substring(0, 20)} (下次复习: ${checkDate})`);
+                return false;
+            }
+        } else {
+            // 没有下次复习日期，使用原日期
+            checkDate = q.date;
         }
+        
         if (!checkDate) return false;
         const inRange = checkDate >= mondayStr && checkDate <= sundayStr;
         if (inRange) {
@@ -2524,8 +2709,7 @@ if (currentFilter === "week") {
     baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     console.log(`本周筛选结果: ${baseList.length} 条`);
     return baseList;
-}
-// 下周筛选
+}// 下周筛选
 if (currentFilter === "nextWeek") {
     const dayOfWeek = today.getDay();
     const diffToNextMonday = (dayOfWeek === 0 ? 1 : 8 - dayOfWeek);
@@ -2558,23 +2742,23 @@ if (currentFilter === "nextWeek") {
 
 
 // 本月筛选 - 按原始日期筛选，不过滤已掌握
+// 本月筛选 - 显示本月需要复习的错题
 if (currentFilter === "month") {
     const currentYear = today.getFullYear();
     const currentMonth = today.getMonth() + 1;
     const currentMonthStr = String(currentMonth).padStart(2, '0');
     
     baseList = baseList.filter(q => {
-        // 【修改】不过滤已掌握的卡片，本月筛选中全部显示
-        // 只按原始日期判断
-        if (!q.date) return false;
-        const [year, month] = q.date.split('-');
+        // 优先使用 _nextReviewDate，如果没有则使用 date
+        let checkDate = q._nextReviewDate || q.date;
+        if (!checkDate) return false;
+        const [year, month] = checkDate.split('-');
         return year === String(currentYear) && month === currentMonthStr;
     });
-    baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    console.log(`本月筛选结果: ${baseList.length} 条 (所有本月卡片)`);
+    baseList.sort((a, b) => (b._nextReviewDate || b.date || '').localeCompare(a._nextReviewDate || a.date || ''));
+    console.log(`本月筛选结果: ${baseList.length} 条`);
     return baseList;
 }
-
 
 // 单元筛选
     if (currentFilter === "unit" && customUnitKeyword) {
@@ -2583,6 +2767,21 @@ if (currentFilter === "month") {
         return baseList;
     }
     
+
+    // 全部筛选 - 显示所有错题（包括已掌握的）
+if (currentFilter === "all") {
+    // 不过滤 _mastered，显示全部
+    // 按日期倒序排序
+    baseList.sort((a, b) => {
+        const dateA = a.date || '';
+        const dateB = b.date || '';
+        return dateB.localeCompare(dateA);
+    });
+    console.log(`全部筛选结果: ${baseList.length} 条`);
+    return baseList;
+}
+
+
     // 默认：按日期倒序
     baseList.sort((a, b) => {
         const dateA = a.date || '';
@@ -2744,11 +2943,17 @@ function clearUnitFilter() {
     openReviewWithCurrentFilter();
 }
 
-// 更新所有筛选按钮的题目数量
 function updateFilterCounts() {
     // 保存当前筛选状态
     const previousFilter = currentFilter;
     const previousUnit = customUnitKeyword;
+    
+    // 【新增】统计全部数量
+    currentFilter = "all";
+    customUnitKeyword = "";
+    const allList = getFilteredQuestionsForReview();
+    const allCount = document.getElementById('allCount');
+    if (allCount) allCount.textContent = `(${allList.length})`;
     
     // 统计今日数量
     currentFilter = "today";
@@ -2775,14 +2980,20 @@ function updateFilterCounts() {
     const monthCount = document.getElementById('monthCount');
     if (monthCount) monthCount.textContent = `(${monthList.length})`;
     
+    // 【新增】统计下月数量
+    currentFilter = "nextMonth";
+    const nextMonthList = getFilteredQuestionsForReview();
+    const nextMonthCount = document.getElementById('nextMonthCount');
+    if (nextMonthCount) nextMonthCount.textContent = `(${nextMonthList.length})`;
+    
     // 统计单元数量
     currentFilter = "all";
     customUnitKeyword = "";
-    const allList = getFilteredQuestionsForReview();
+    const allListForUnit = getFilteredQuestionsForReview();
     
     // 按单元分组统计
     const unitMap = new Map();
-    allList.forEach(item => {
+    allListForUnit.forEach(item => {
         if (item.unit && item.unit.trim()) {
             const count = unitMap.get(item.unit) || 0;
             unitMap.set(item.unit, count + 1);
@@ -2806,8 +3017,6 @@ function updateFilterCounts() {
     currentFilter = previousFilter;
     customUnitKeyword = previousUnit;
 }
-
-
 
 function openReviewWithCurrentFilter() {
     updateFilterCounts();
@@ -2847,7 +3056,7 @@ function openReviewWithCurrentFilter() {
         let html = '';
         filtered.forEach((item, idx) => {
             const lastReview = item.reviewHistory && item.reviewHistory.length > 0 ? item.reviewHistory[0] : null;
-            const lastReviewText = lastReview ? `${lastReview.time} (${lastReview.result === 'correct' ? '✓ 做对' : '✗ 做错'})` : '从未';
+            const lastReviewText = lastReview ? `${lastReview.time} (${lastReview.result === 'correct' ? '✓' : '✗'})` : '从未';
             const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
             
             // 判断是数学还是语文
@@ -2992,7 +3201,7 @@ function openReviewWithCurrentFilter() {
                     
                     <div class="review-stats">
                         <span class="review-count-badge" onclick="showHistoryModal('${item.id}', '${currentSubject}')">📊 复习次数: ${item.reviewCount || 0}</span>
-                        <span class="last-review">🕐 最近复习: ${lastReviewText}</span>
+                        <span class="last-review">最近复习: ${lastReviewText}</span>
                         <div class="review-action-group">
                             <button class="review-correct-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="correct">✓ 做对了</button>
                             <button class="review-wrong-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="wrong">✗ 还是错了</button>
@@ -4455,8 +4664,7 @@ function stopDownloadSpin() {
     }
 }
 
-// 在函数外部添加防抖定时器变量（放在 saveAllDataToLocalStorage 函数之前）
-let syncTimer = null;
+
 
 // 静默保存（不触发云端上传，用于页面加载时的合并）
 function saveAllDataToLocalStorageSilent() {
@@ -4469,6 +4677,7 @@ function saveAllDataToLocalStorageSilent() {
         };
         localStorage.setItem('cuoti_data', JSON.stringify(dataToSave));
         console.log('✅ 数据已静默保存到本地（不触发云端上传）');
+        // 静默保存不触发任何云端同步
     } catch (e) {
         if (e.name === 'QuotaExceededError') {
             alert('存储空间不足！图片太多，请删除一些旧错题。');
@@ -4477,57 +4686,49 @@ function saveAllDataToLocalStorageSilent() {
         }
     }
 }
-
-function saveAllDataToLocalStorage() {
+async function saveAllDataToIndexedDB() {
     try {
         const dataToSave = {
             chineseErrors: chineseErrors,
             mathErrors: mathErrors,
-            version: '1.0',
+            version: '2.0',
             lastSaved: new Date().toISOString()
         };
-        localStorage.setItem('cuoti_data', JSON.stringify(dataToSave));
-        console.log('✅ 数据已保存到本地');
-        
-        // ========== 用户修改数据时才触发防抖静默同步 ==========
-        if (GITHUB_CONFIG.token && GIST_CONFIG.id) {
-            if (syncTimer) clearTimeout(syncTimer);
-            startUploadSpin();
-            syncTimer = setTimeout(() => {
-                console.log('🔄 用户修改数据，触发云端同步...');
-                saveToCloud().catch(e => console.log('云端同步失败:', e)).finally(() => {
-                    setTimeout(() => stopUploadSpin(), 500);
-                });
-                syncTimer = null;
-            }, 5000);
-        }
+        await dbManager.save(dataToSave);
+        console.log('✅ 数据已保存到 IndexedDB');
+        return true;
     } catch (e) {
-        if (e.name === 'QuotaExceededError') {
-            alert('存储空间不足！图片太多，请删除一些旧错题。');
+        if (e.name === 'QuotaExceededError' || e.code === 22) {
+            alert('⚠️ 存储空间不足！请删除一些旧错题或图片。');
         } else {
-            console.error('保存失败:', e);
+            console.error('❌ 保存失败:', e);
+            alert('❌ 数据保存失败，请检查浏览器存储空间。');
         }
+        return false;
     }
 }
 
-function loadAllDataFromLocalStorage() {
-    const saved = localStorage.getItem('cuoti_data');
-    if (saved) {
-        try {
-            const data = JSON.parse(saved);
-            console.log('从localStorage加载的原始数据:', data);
-            
+function saveAllDataToLocalStorage() {
+    saveAllDataToIndexedDB().catch(e => console.error('保存失败:', e));
+}
+
+async function saveAllDataToLocalStorageSilent() {
+    await saveAllDataToIndexedDB();
+}
+async function loadAllDataFromIndexedDB() {
+    try {
+        const data = await dbManager.load();
+        if (data) {
+            console.log('📂 从 IndexedDB 加载数据');
             if (data.chineseErrors) {
                 chineseErrors.length = 0;
-                data.chineseErrors.forEach((item, idx) => {
-                    const newItem = {
+                data.chineseErrors.forEach((item) => {
+                    chineseErrors.push({
                         ...item,
                         questionImages: item.questionImages || [],
                         wrongImages: item.wrongImages || [],
                         correctImages: item.correctImages || []
-                    };
-                    chineseErrors.push(newItem);
-                    console.log(`第${idx}条错题图片:`, newItem.questionImages);
+                    });
                 });
             }
             if (data.mathErrors) {
@@ -4541,21 +4742,52 @@ function loadAllDataFromLocalStorage() {
                     });
                 });
             }
-            console.log('✅ 已从本地加载数据，语文错题数量:', chineseErrors.length);
-            console.log('最后一条错题的图片:', chineseErrors[chineseErrors.length-1]?.questionImages);
+            console.log(`✅ 已从 IndexedDB 加载数据，语文: ${chineseErrors.length} 条，数学: ${mathErrors.length} 条`);
             return true;
-        } catch (e) {
-            console.error('加载失败:', e);
         }
+        return false;
+    } catch (e) {
+        console.error('❌ 加载失败:', e);
+        return false;
     }
-    return false;
 }
 
+const loadAllDataFromLocalStorage = loadAllDataFromIndexedDB;
+
+async function checkAndMigrateData() {
+    const hasIndexedDBData = await loadAllDataFromIndexedDB();
+    if (!hasIndexedDBData) {
+        console.log('🔄 IndexedDB 无数据，尝试从 localStorage 迁移...');
+        const migrated = await IndexedDBManager.migrateFromLocalStorage();
+        if (migrated) {
+            await loadAllDataFromIndexedDB();
+            console.log('✅ 数据迁移成功');
+        } else {
+            console.log('ℹ️ 没有可迁移的数据，使用默认数据');
+            if (chineseErrors.length > 0 || mathErrors.length > 0) {
+                await saveAllDataToIndexedDB();
+            }
+        }
+    }
+}
+
+async function clearAllIndexedDBData() {
+    try {
+        await dbManager.clear();
+        console.log('✅ IndexedDB 数据已清除');
+        return true;
+    } catch (e) {
+        console.error('❌ 清空失败:', e);
+        return false;
+    }
+}
+
+async function getStorageInfo() {
+    return await dbManager.getStorageInfo();
+}
 
 // 在 init() 函数中，找到 loadAllDataFromLocalStorage() 之后的位置
 
-const hasLocalData = loadAllDataFromLocalStorage();
-console.log('本地数据加载完成，是否有数据:', hasLocalData);
 
 // ========== 新增：让用户选择同步方式 ==========
 if (GITHUB_CONFIG.token && GIST_CONFIG.id) {
@@ -4686,12 +4918,12 @@ function updateBatchAddButtonVisibility() {
     if (batchBtn) {
         // 只在语文、基础知识、且二级分类为拼音或生字时显示
         if (currentSubject === 'chinese' && 
-            currentChineseTag === '基础知识' && 
-            (currentChineseSubTag === '拼音' || currentChineseSubTag === '生字')) {
-            batchBtn.style.display = 'inline-block';
-        } else {
-            batchBtn.style.display = 'none';
-        }
+    currentChineseTag === '基础知识' && 
+    (currentChineseSubTag === '拼音' || currentChineseSubTag === '生字' || currentChineseSubTag === '标点')) {
+    batchBtn.style.display = 'inline-block';
+} else {
+    batchBtn.style.display = 'none';
+}
     }
 }
 
@@ -6109,121 +6341,6 @@ function generateFullPrintHtml(list, title, now, settings) {
     `;
 }
 
-function generatePrintCard(item, idx, options) {
-    const isMath = item.id && item.id.startsWith('math');
-    
-    // 根据分类添加不同的 CSS 类
-    let cardClass = 'print-card';
-    if (item.tag === "基础知识") {
-        if (item.subTag === "拼音") {
-            cardClass += ' print-card-pinyin';
-        } else if (item.subTag === "生字") {
-            cardClass += ' print-card-shengzi';
-        } else if (item.subTag === "笔顺") {
-            cardClass += ' print-card-bishun';
-        }
-    } else if (isMath) {
-        cardClass += ' print-card-math';
-    }
-    
-    let html = '<div class="' + cardClass + '" style="page-break-inside: avoid; break-inside: avoid; margin-bottom: 16px;">';
-    html += '<div class="print-card-header" style="display: flex; justify-content: flex-start; align-items: center; gap: 12px; margin-bottom: 4px;">';
-    html += '<span style="font-size: 10px; font-weight: normal; color: #999;">第 ' + idx + ' 题</span>';
-    html += '<span style="font-size: 10px; color: #bbb;">' + escapeHtml(item.date || '无日期') + '</span>';
-    html += '</div>';
-    
-    // 原题
-    if (options.question) {
-        html += '<div class="print-question" style="margin-top: 0;">';
-        
-        if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
-            var chars = item.question.split('');
-            html += '<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start;">';
-            for (var i = 0; i < chars.length; i++) {
-                html += '<div style="text-align: center;">';
-                html += '<div style="width: 50px;"><div style="border-top:1px solid #333;margin-bottom:6px;"></div>';
-                html += '<div style="border-top:1px solid #999;margin-bottom:6px;"></div>';
-                html += '<div style="border-top:1px solid #999;margin-bottom:6px;"></div>';
-                html += '<div style="border-top:1px solid #333;margin-bottom:6px;"></div></div>';
-                html += '<div style="font-size: 22px; margin-top:-22px;">' + escapeHtml(chars[i]) + '</div></div>';
-            }
-            html += '</div>';
-        }
-        else if (item.tag === "基础知识" && item.subTag === "生字" && item.question) {
-            var parts = item.question.trim().split(/\s+/);
-            var hanzi = '';
-            var pinyinParts = [];
-            for (var i = 0; i < parts.length; i++) {
-                if (/[\u4e00-\u9fa5]/.test(parts[i])) {
-                    hanzi += parts[i];
-                } else {
-                    pinyinParts.push(parts[i]);
-                }
-            }
-            html += '<div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">';
-            html += '<div style="font-size: 28px;">' + escapeHtml(hanzi) + '</div>';
-            html += '<div style="display: flex; gap: 10px; flex-wrap: wrap;">';
-            for (var i = 0; i < pinyinParts.length; i++) {
-                html += '<div style="text-align: center;">';
-                html += '<div style="font-size: 11px; color: #007aff;">' + escapeHtml(pinyinParts[i]) + '</div>';
-                html += '<div style="width: 45px; height: 45px; border:1px solid #999; position:relative;"></div></div>';
-            }
-            html += '</div></div>';
-        }
-        else if (item.question) {
-            html += '<div style="font-size: 14px; line-height: 1.5;">' + escapeHtml(item.question) + '</div>';
-        }
-        
-        if (item.questionImages && item.questionImages.length > 0) {
-            for (var i = 0; i < item.questionImages.length; i++) {
-                html += '<img src="' + item.questionImages[i] + '" style="max-width:100%; max-height:120px; margin-top:6px;">';
-            }
-        }
-        html += '</div>';
-    }
-    
-    // 错误答案
-    if (options.wrong) {
-        html += '<div style="margin-top: 8px; padding: 6px; background: #fff5f5; border-left: 3px solid #ff3b30; font-size: 11px;">';
-        html += '<strong style="color:#ff3b30;">❌ 错误：</strong> ' + escapeHtml(item.wrongAnswer || '未记录');
-        if (item.wrongImages && item.wrongImages.length > 0) {
-            for (var i = 0; i < item.wrongImages.length; i++) {
-                html += '<img src="' + item.wrongImages[i] + '" style="max-width:100%; max-height:80px; margin-top:4px;">';
-            }
-        }
-        html += '</div>';
-    }
-    
-    // 正确答案（拼音生字不重复）
-    var skipCorrect = (item.tag === "基础知识" && (item.subTag === "拼音" || item.subTag === "生字"));
-    if (options.correct && !skipCorrect && item.correctAnswer) {
-        html += '<div style="margin-top: 6px; padding: 6px; background: #f0fff0; border-left: 3px solid #34c759; font-size: 11px;">';
-        html += '<strong style="color:#34c759;">✅ 正确：</strong> ' + escapeHtml(item.correctAnswer);
-        if (item.correctImages && item.correctImages.length > 0) {
-            for (var i = 0; i < item.correctImages.length; i++) {
-                html += '<img src="' + item.correctImages[i] + '" style="max-width:100%; max-height:80px; margin-top:4px;">';
-            }
-        }
-        html += '</div>';
-    }
-    
-    // 错误原因
-    if (options.reason) {
-        var reasonText = (item.reasons && item.reasons.length) ? item.reasons.join("、") : "未标注";
-        html += '<div style="font-size: 10px; color: #888; margin-top: 4px;">📌 原因：' + escapeHtml(reasonText) + '</div>';
-    }
-    
-    // 元信息
-    if (options.meta) {
-        html += '<div style="font-size: 9px; color: #aaa; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #ddd;">';
-        html += '单元：' + escapeHtml(item.unit || '未标注') + ' | 复习：' + (item.reviewCount || 0) + '次';
-        if (item.source) html += ' | 来源：' + escapeHtml(item.source);
-        html += '</div>';
-    }
-    
-    html += '</div>';
-    return html;
-}
 
 
 function bindPrintModalButtonsForce() {
@@ -6345,7 +6462,7 @@ if (target.classList && target.classList.contains('print-category-filter')) {
 
 
 
-function init() {
+async function init() {
 // 确保预览按钮调用正确的函数
 var previewBtn = document.getElementById('previewPrintBtn');
 if(previewBtn) {
@@ -6546,8 +6663,8 @@ if (savedGistId) {
 }
     
     // 【关键修复】先加载本地存储的数据
-    const hasLocalData = loadAllDataFromLocalStorage();
-    console.log('本地数据加载完成，是否有数据:', hasLocalData);
+    const hasLocalData = await checkAndMigrateData();
+console.log('本地数据加载完成，是否有数据:', hasLocalData);
     console.log('当前 chineseErrors 数量:', chineseErrors.length);
     console.log('最后一条错题图片:', chineseErrors[chineseErrors.length-1]?.questionImages);
     
@@ -6619,7 +6736,10 @@ filterBtns.forEach(btn => {
             filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            if (filter === 'today') {
+            if (filter === 'all') {
+                currentFilter = 'all';
+                customUnitKeyword = '';
+            } else if (filter === 'today') {
                 currentFilter = 'today';
                 customUnitKeyword = '';
             } else if (filter === 'week') {
@@ -6631,13 +6751,16 @@ filterBtns.forEach(btn => {
             } else if (filter === 'month') {
                 currentFilter = 'month';
                 customUnitKeyword = '';
+            }else if (filter === 'nextMonth') {  // ✅ 添加这一行
+                currentFilter = 'nextMonth';
+                customUnitKeyword = '';
             }
+
             
             openReviewWithCurrentFilter();
         }
     });
 });
-
 
 // ========== 批量添加功能事件绑定 ==========
 const batchAddBtn = document.getElementById('batchAddBtn');
@@ -6689,11 +6812,11 @@ if (batchConfirmBtn) {
                 tag: '基础知识',
                 subTag: currentChineseSubTag === '拼音' ? '拼音' : '生字',
                 grade: currentGradeFilter,
-                unit: '',
+                unit: document.getElementById('editUnit')?.value || '',
                 question: word,
-                wrongAnswer: '我写错了这个字',
+                wrongAnswer: '',
                 correctAnswer: word,
-                reasons: ['需要加强'],
+                reasons: [],
                 source: '批量添加',
                  createdAt: Date.now(),  
                 date: todayStr,
@@ -7080,10 +7203,10 @@ if (deleteInModalBtn) {
 const editModal = document.getElementById('editModal');
 if (editModal) {
     editModal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeModal();
-        }
-    });
+    if (e.target === this && !e.target.closest('.modal-container')) {
+        closeModal();
+    }
+});
 }
 
 
@@ -7227,145 +7350,12 @@ function showSyncChoiceModal() {
         }
     };
 }// ========== 同步选择弹窗 ==========
-function showSyncChoiceModal() {
-    // 创建遮罩
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        backdrop-filter: blur(4px);
-        z-index: 99999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    `;
-    
-    // 创建弹窗内容
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        background: white;
-        border-radius: 28px;
-        padding: 32px 28px;
-        max-width: 380px;
-        width: 90%;
-        text-align: center;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    `;
-    
-    modal.innerHTML = `
-        <div style="font-size: 48px; margin-bottom: 12px;">☁️</div>
-        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1c1c1e;">云端同步</h3>
-        <p style="font-size: 14px; color: #8e8e93; margin-bottom: 24px; line-height: 1.5;">
-            检测到云端配置，请选择同步方式
-        </p>
-        <div style="display: flex; gap: 12px;">
-            <button id="syncChoiceUpload" style="
-                flex: 1;
-                padding: 14px 0;
-                border: 2px solid #007aff;
-                border-radius: 16px;
-                background: white;
-                color: #007aff;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: 0.2s;
-            ">
-                ⬆️ 上传到云端<br>
-                <span style="font-size: 11px; font-weight: 400; color: #8e8e93;">（本地 → 云端）</span>
-            </button>
-            <button id="syncChoiceDownload" style="
-                flex: 1;
-                padding: 14px 0;
-                border: 2px solid #34c759;
-                border-radius: 16px;
-                background: white;
-                color: #34c759;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: 0.2s;
-            ">
-                ⬇️ 从云端恢复<br>
-                <span style="font-size: 11px; font-weight: 400; color: #8e8e93;">（云端 → 本地）</span>
-            </button>
-        </div>
-        <button id="syncChoiceSkip" style="
-            margin-top: 16px;
-            padding: 10px 32px;
-            background: transparent;
-            border: none;
-            color: #8e8e93;
-            font-size: 13px;
-            cursor: pointer;
-            text-decoration: underline;
-        ">
-            暂不处理，使用本地数据
-        </button>
-    `;
-    
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-    
-    // 记录今天已选择
-    const today = new Date().toISOString().split('T')[0];
-    
-    // 上传按钮
-    document.getElementById('syncChoiceUpload').onclick = async () => {
-        overlay.remove();
-        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
-        startUploadSpin();
-        try {
-            await saveToCloud();
-            alert('✅ 上传成功！');
-        } catch (err) {
-            alert('❌ 上传失败：' + err.message);
-        } finally {
-            stopUploadSpin();
-        }
-    };
-    
-    // 下载按钮
-    document.getElementById('syncChoiceDownload').onclick = async () => {
-        if (!confirm('⚠️ 从云端恢复将覆盖当前所有本地数据，确定继续吗？')) return;
-        overlay.remove();
-        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
-        startDownloadSpin();
-        try {
-            await loadFromCloudForce();
-            alert('✅ 恢复成功！');
-            renderSidebar();
-            renderContent();
-        } catch (err) {
-            alert('❌ 恢复失败：' + err.message);
-        } finally {
-            stopDownloadSpin();
-        }
-    };
-    
-    // 跳过按钮
-    document.getElementById('syncChoiceSkip').onclick = () => {
-        overlay.remove();
-        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
-        console.log('⏭️ 用户选择暂不同步');
-    };
-    
-    // 点击遮罩关闭（等同于跳过）
-    overlay.onclick = (e) => {
-        if (e.target === overlay) {
-            overlay.remove();
-            localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
-        }
-    };
-}
 
 
-init();
-
+// 使用 IIFE（立即执行函数）来支持顶层 await
+(async function() {
+    await init();
+})();
 
 
 
