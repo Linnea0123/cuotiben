@@ -2043,7 +2043,7 @@ function renderSidebar() {
     if (!categoryTabs) return;
     
     if (currentSubject === "chinese") {
-    const categories = ["基础知识", "阅读理解", "作文表达", "文学常识"];
+    const categories = ["基础知识", "阅读理解", "作文表达", "文学常识", "其他"];
     
     // 统计每个分类的数量
     const getCount = (tag) => {
@@ -3088,13 +3088,14 @@ function getCategoryOptions(subject, currentTag) {
     let optionsHtml = '';
     if (subject === 'chinese') {
         optionsHtml = `
-            <optgroup label="📖 语文">
-                <option value="基础知识" ${currentTag === '基础知识' ? 'selected' : ''}>基础知识</option>
-                <option value="阅读理解" ${currentTag === '阅读理解' ? 'selected' : ''}>阅读理解</option>
-                <option value="作文表达" ${currentTag === '作文表达' ? 'selected' : ''}>作文表达</option>
-                <option value="文学常识" ${currentTag === '文学常识' ? 'selected' : ''}>文学常识</option>
-            </optgroup>
-        `;
+    <optgroup label="📖 语文">
+        <option value="基础知识" ${currentTag === '基础知识' ? 'selected' : ''}>基础知识</option>
+        <option value="阅读理解" ${currentTag === '阅读理解' ? 'selected' : ''}>阅读理解</option>
+        <option value="作文表达" ${currentTag === '作文表达' ? 'selected' : ''}>作文表达</option>
+        <option value="文学常识" ${currentTag === '文学常识' ? 'selected' : ''}>文学常识</option>
+        <option value="其他" ${currentTag === '其他' ? 'selected' : ''}>其他</option>
+    </optgroup>
+`;
     } else {
         optionsHtml = `
             <optgroup label="🔢 数学">
