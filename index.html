@@ -4551,6 +4551,30 @@ function loadAllDataFromLocalStorage() {
     return false;
 }
 
+
+// 在 init() 函数中，找到 loadAllDataFromLocalStorage() 之后的位置
+
+const hasLocalData = loadAllDataFromLocalStorage();
+console.log('本地数据加载完成，是否有数据:', hasLocalData);
+
+// ========== 新增：让用户选择同步方式 ==========
+if (GITHUB_CONFIG.token && GIST_CONFIG.id) {
+    // 延迟一下，等界面渲染完成
+    setTimeout(() => {
+        // 检查今天是否已经选择过
+        const today = new Date().toISOString().split('T')[0];
+        const lastChoiceDate = localStorage.getItem(PAGE_ID + '_sync_choice_date');
+        
+        // 如果今天已经选择过，不再弹窗
+        if (lastChoiceDate === today) {
+            console.log('📅 今天已选择过同步方式，跳过');
+            return;
+        }
+        
+        // 创建自定义弹窗
+        showSyncChoiceModal();
+    }, 300);
+}
 // 批量添加功能
 function openBatchModal() {
     document.getElementById('batchModal').classList.add('active');
@@ -6990,35 +7014,10 @@ if (clearAllDataBtn) {
     };
 }
 
-// 页面加载时自动从云端恢复（静默）
-// 页面加载时从云端合并数据（不覆盖本地）
-// 页面加载时从云端合并数据（按更新时间判断）
-// 页面加载时从云端合并数据（每天仅一次）
-setTimeout(async () => {
-    if (GITHUB_CONFIG.token && GIST_CONFIG.id) {
-        const today = new Date().toISOString().split('T')[0];
-        const lastMergeDate = localStorage.getItem(PAGE_ID + '_last_merge_date');
-        
-        if (lastMergeDate === today) {
-            console.log('📅 今天已经合并过云端数据，跳过自动恢复');
-            return;
-        }
-        
-        console.log('🔄 正在从云端合并数据（静默模式，不触发上传）...');
-        startDownloadSpin();
-        try {
-            // ✅ 关键：使用 loadFromCloudSilent 而不是 loadFromCloud
-            await loadFromCloudSilent();
-            // ✅ 记录今天已合并
-            localStorage.setItem(PAGE_ID + '_last_merge_date', today);
-            console.log('✅ 云端合并完成，已记录日期:', today);
-        } catch(e) {
-            console.log('⏭️ 云端无数据或合并失败:', e);
-        } finally {
-            setTimeout(() => stopDownloadSpin(), 500);
-        }
-    }
-}, 500);
+
+
+
+
 
 // ========== 修复编辑弹窗右上角"取消"按钮 ==========
 // 放在 init() 函数的最后，setTimeout 之后
@@ -7092,7 +7091,277 @@ if (editModal) {
 }
 
 
-
+// ========== 同步选择弹窗 ==========
+function showSyncChoiceModal() {
+    // 创建遮罩
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    // 创建弹窗内容
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: white;
+        border-radius: 28px;
+        padding: 32px 28px;
+        max-width: 380px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    `;
+    
+    modal.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 12px;">☁️</div>
+        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1c1c1e;">云端同步</h3>
+        <p style="font-size: 14px; color: #8e8e93; margin-bottom: 24px; line-height: 1.5;">
+            检测到云端配置，请选择同步方式
+        </p>
+        <div style="display: flex; gap: 12px;">
+            <button id="syncChoiceUpload" style="
+                flex: 1;
+                padding: 14px 0;
+                border: 2px solid #007aff;
+                border-radius: 16px;
+                background: white;
+                color: #007aff;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: 0.2s;
+            ">
+                ⬆️ 上传到云端<br>
+                <span style="font-size: 11px; font-weight: 400; color: #8e8e93;">（本地 → 云端）</span>
+            </button>
+            <button id="syncChoiceDownload" style="
+                flex: 1;
+                padding: 14px 0;
+                border: 2px solid #34c759;
+                border-radius: 16px;
+                background: white;
+                color: #34c759;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: 0.2s;
+            ">
+                ⬇️ 从云端恢复<br>
+                <span style="font-size: 11px; font-weight: 400; color: #8e8e93;">（云端 → 本地）</span>
+            </button>
+        </div>
+        <button id="syncChoiceSkip" style="
+            margin-top: 16px;
+            padding: 10px 32px;
+            background: transparent;
+            border: none;
+            color: #8e8e93;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: underline;
+        ">
+            暂不处理，使用本地数据
+        </button>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // 记录今天已选择
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 上传按钮
+    document.getElementById('syncChoiceUpload').onclick = async () => {
+        overlay.remove();
+        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
+        startUploadSpin();
+        try {
+            await saveToCloud();
+            alert('✅ 上传成功！');
+        } catch (err) {
+            alert('❌ 上传失败：' + err.message);
+        } finally {
+            stopUploadSpin();
+        }
+    };
+    
+    // 下载按钮
+    document.getElementById('syncChoiceDownload').onclick = async () => {
+        if (!confirm('⚠️ 从云端恢复将覆盖当前所有本地数据，确定继续吗？')) return;
+        overlay.remove();
+        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
+        startDownloadSpin();
+        try {
+            await loadFromCloudForce();
+            alert('✅ 恢复成功！');
+            renderSidebar();
+            renderContent();
+        } catch (err) {
+            alert('❌ 恢复失败：' + err.message);
+        } finally {
+            stopDownloadSpin();
+        }
+    };
+    
+    // 跳过按钮
+    document.getElementById('syncChoiceSkip').onclick = () => {
+        overlay.remove();
+        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
+        console.log('⏭️ 用户选择暂不同步');
+    };
+    
+    // 点击遮罩关闭（等同于跳过）
+    overlay.onclick = (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+            localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
+        }
+    };
+}// ========== 同步选择弹窗 ==========
+function showSyncChoiceModal() {
+    // 创建遮罩
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    // 创建弹窗内容
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: white;
+        border-radius: 28px;
+        padding: 32px 28px;
+        max-width: 380px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    `;
+    
+    modal.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 12px;">☁️</div>
+        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1c1c1e;">云端同步</h3>
+        <p style="font-size: 14px; color: #8e8e93; margin-bottom: 24px; line-height: 1.5;">
+            检测到云端配置，请选择同步方式
+        </p>
+        <div style="display: flex; gap: 12px;">
+            <button id="syncChoiceUpload" style="
+                flex: 1;
+                padding: 14px 0;
+                border: 2px solid #007aff;
+                border-radius: 16px;
+                background: white;
+                color: #007aff;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: 0.2s;
+            ">
+                ⬆️ 上传到云端<br>
+                <span style="font-size: 11px; font-weight: 400; color: #8e8e93;">（本地 → 云端）</span>
+            </button>
+            <button id="syncChoiceDownload" style="
+                flex: 1;
+                padding: 14px 0;
+                border: 2px solid #34c759;
+                border-radius: 16px;
+                background: white;
+                color: #34c759;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: 0.2s;
+            ">
+                ⬇️ 从云端恢复<br>
+                <span style="font-size: 11px; font-weight: 400; color: #8e8e93;">（云端 → 本地）</span>
+            </button>
+        </div>
+        <button id="syncChoiceSkip" style="
+            margin-top: 16px;
+            padding: 10px 32px;
+            background: transparent;
+            border: none;
+            color: #8e8e93;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: underline;
+        ">
+            暂不处理，使用本地数据
+        </button>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // 记录今天已选择
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 上传按钮
+    document.getElementById('syncChoiceUpload').onclick = async () => {
+        overlay.remove();
+        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
+        startUploadSpin();
+        try {
+            await saveToCloud();
+            alert('✅ 上传成功！');
+        } catch (err) {
+            alert('❌ 上传失败：' + err.message);
+        } finally {
+            stopUploadSpin();
+        }
+    };
+    
+    // 下载按钮
+    document.getElementById('syncChoiceDownload').onclick = async () => {
+        if (!confirm('⚠️ 从云端恢复将覆盖当前所有本地数据，确定继续吗？')) return;
+        overlay.remove();
+        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
+        startDownloadSpin();
+        try {
+            await loadFromCloudForce();
+            alert('✅ 恢复成功！');
+            renderSidebar();
+            renderContent();
+        } catch (err) {
+            alert('❌ 恢复失败：' + err.message);
+        } finally {
+            stopDownloadSpin();
+        }
+    };
+    
+    // 跳过按钮
+    document.getElementById('syncChoiceSkip').onclick = () => {
+        overlay.remove();
+        localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
+        console.log('⏭️ 用户选择暂不同步');
+    };
+    
+    // 点击遮罩关闭（等同于跳过）
+    overlay.onclick = (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+            localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
+        }
+    };
+}
 
 
 init();
