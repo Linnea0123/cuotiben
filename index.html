@@ -444,17 +444,17 @@ body {
     gap: 4px;
     padding: 6px 12px 6px 20px;  
     background: white;
-    
+     justify-content: space-between;
     overflow-x: auto;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
 }
 .category-tab {
     display: inline-block;
-    padding: 4px 10px;
+    padding: 4px 8px;
     font-size: 12px;
     font-weight: 500;
-    border-radius: 20px;
+    border-radius: 16px;
     background: #f2f2f6;
     color: #3a3a3e;
     cursor: pointer;
@@ -1040,6 +1040,25 @@ body {
             background: #007aff;
             color: white;
         }
+
+/* 标签样式 */
+.label-tag {
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+    transition: 0.15s;
+    opacity: 0.5;
+}
+.label-tag.selected {
+    opacity: 1;
+    transform: scale(1.05);
+}
+.label-tag:active {
+    transform: scale(0.95);
+}
+
         .double-input {
             display: flex;
             gap: 14px;
@@ -1681,12 +1700,24 @@ img[loading="lazy"] {
     </div>
 </div>
         <form id="editForm">
-            <div class="form-group">
-                <label>类别</label>
-                <select id="editTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
-                    <!-- 选项会动态生成 -->
-                </select>
-            </div>
+            <div class="form-group" style="display: flex; gap: 12px; align-items: flex-end;">
+    <div style="flex: 1;">
+        <label>类别</label>
+        <select id="editTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
+            <!-- 选项会动态生成 -->
+        </select>
+    </div>
+    <div style="flex: 1;" id="subTagGroup" style="display: none;">
+        <label>二级分类</label>
+        <select id="editSubTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
+            <option value="拼音">拼音</option>
+            <option value="生字">生字</option>
+            <option value="笔顺">笔顺</option>
+            <option value="标点">标点</option>
+            <option value="其他">其他</option>
+        </select>
+    </div>
+</div>
             <div class="form-group" id="subTagGroup" style="display: none;">
                 <label>二级分类（基础知识专用）</label>
                 <select id="editSubTag" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
@@ -1730,6 +1761,19 @@ img[loading="lazy"] {
                     <div id="correctImgPreview" class="img-preview-area"></div>
                 </div>
             </div>
+
+<div class="form-group">
+    <label>🏷️ 标签</label>
+    <div id="labelTagsContainer" style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+        <div class="label-tag" data-label="重点" style="background: #ff3b30; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; user-select: none;">重要</div>
+        <div class="label-tag" data-label="很难" style="background: #ff9500; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; user-select: none;">很难</div>
+        <div class="label-tag" data-label="注意" style="background: #007aff; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; user-select: none;">注意</div>
+        <div class="label-tag" data-label="易错" style="background: #34c759; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; user-select: none;">易错</div>
+        
+    </div>
+    <div style="font-size: 11px; color: #8e8e93; margin-top: 4px;">点击标签切换选中状态，可多选</div>
+</div>
+
 
             <div class="form-group">
                 <label>错误原因</label>
@@ -1993,10 +2037,17 @@ async function uploadToGitHub(base64Data, fileName) {
         throw new Error(error.message || '上传失败');
     }
     
-    // 使用 gcore CDN（根据测试，当前网络环境下最快）
-    return `https://gcore.jsdelivr.net/gh/Linnea0123/cuotiben@main/${fileName}`;
+    // CDN 列表（按优先级排序）
+    const cdns = [
+        `https://raw.fastgit.org/Linnea0123/cuotiben/main/${fileName}`,
+        `https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben@main/${fileName}`,
+        `https://gcore.jsdelivr.net/gh/Linnea0123/cuotiben@main/${fileName}`,
+        `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/${fileName}`
+    ];
+    
+    // 返回第一个可用的 CDN（尝试快速检测）
+    return cdns[0];  // fastgit 在国内访问较快
 }
-
     let currentSubject = "chinese";
     let currentChineseTag = "基础知识";
 
@@ -2407,6 +2458,36 @@ function autoResizeTextarea(textarea) {
     textarea.style.height = textarea.scrollHeight + 'px';
 }
 
+
+// ========== 标签功能 ==========
+function initLabelTags() {
+    document.querySelectorAll('.label-tag').forEach(tag => {
+        tag.addEventListener('click', function() {
+            this.classList.toggle('selected');
+        });
+    });
+}
+
+function getSelectedLabels() {
+    const selected = [];
+    document.querySelectorAll('.label-tag.selected').forEach(tag => {
+        selected.push(tag.getAttribute('data-label'));
+    });
+    return selected;
+}
+
+function setSelectedLabels(labels) {
+    document.querySelectorAll('.label-tag').forEach(tag => {
+        const label = tag.getAttribute('data-label');
+        if (labels && labels.includes(label)) {
+            tag.classList.add('selected');
+        } else {
+            tag.classList.remove('selected');
+        }
+    });
+}
+
+
 function renderPinyinContent(question, wrongAnswer, correctAnswer) {
     // 提取括号前的汉字和括号内的注释（去掉括号）
     let mainHanzi = question;
@@ -2575,11 +2656,11 @@ function renderSidebar() {
         const activeClass = (currentChineseTag === cat) ? "active" : "";
         const count = getCount(cat);
         html += `
-            <div class="category-tab ${activeClass}" data-tag="${cat}" style="display: flex; align-items: center; gap: 6px;">
-                ${cat}
-                <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; font-size: 11px;">${count}</span>
-            </div>
-        `;
+    <div class="category-tab ${activeClass}" data-tag="${cat}" style="display: flex; align-items: center; gap: 4px;">
+        ${cat}
+        <span style="font-size: 11px; color: #8e8e93; font-weight: 400;">${count}</span>
+    </div>
+`;
     });
     html += `</div>`;
     categoryTabs.innerHTML = html;
@@ -2629,11 +2710,11 @@ function renderSidebar() {
         const activeClass = (currentMathTag === cat) ? "active" : "";
         const count = getCount(cat);
         html += `
-            <div class="category-tab ${activeClass}" data-tag="${cat}" style="display: flex; align-items: center; gap: 6px;">
-                ${cat}
-                <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; font-size: 11px;">${count}</span>
-            </div>
-        `;
+    <div class="category-tab ${activeClass}" data-tag="${cat}" style="display: flex; align-items: center; gap: 4px;">
+        ${cat}
+        <span style="font-size: 11px; color: #8e8e93; font-weight: 400;">${count}</span>
+    </div>
+`;
     });
     html += `</div>`;
     categoryTabs.innerHTML = html;
@@ -2702,10 +2783,11 @@ function renderContent() {
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
         <div class="category-tabs" style="display: flex; flex-wrap: wrap; gap: 8px;">
             ${subTags.map(st => `
-                <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}">
-                    ${st.name} <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 6px;">${st.count}</span>
-                </div>
-            `).join('')}
+    <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}" style="display: flex; align-items: center; gap: 4px;">
+        ${st.name}
+        <span style="font-size: 11px; color: #8e8e93; font-weight: 400;">${st.count}</span>
+    </div>
+`).join('')}
         </div>
     </div>
 `;
@@ -2733,6 +2815,9 @@ function renderContent() {
         const reasonText = item.reasons?.length ? item.reasons.join("、") : "未分类";
         const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
         
+
+
+
         let specialContent = "";
         const hasTextContent = item.question && item.question.trim();
         
@@ -2852,12 +2937,23 @@ function renderContent() {
         cardsHtml += `
             <div class="card">
                 <div class="card-header">
-                    <div class="tag-group">
-                        <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
-                        <span class="error-tag">${escapeHtml(reasonText)}</span>
-                    </div>
-                    <button class="edit-btn" data-id="${item.id}">编辑</button>
-                </div>
+    <div class="tag-group" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
+        ${item.labels && item.labels.length > 0 ? item.labels.map(label => {
+            const colors = {
+                '重点': '#ff3b30',
+                '很难': '#ff9500',
+                '注意': '#007aff',
+                '易错': '#34c759'
+            };
+            return `<span style="background: ${colors[label] || '#8e8e93'}; color: white; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 500; flex-shrink: 0;">${label}</span>`;
+        }).join('') : ''}
+        <span class="error-tag" style="margin-left: auto;">${escapeHtml(reasonText)}</span>
+    </div>
+    <button class="edit-btn" data-id="${item.id}">编辑</button>
+</div>
+
+
                 <div class="card-body">
                     <div class="question-container">
                         ${specialContent}
@@ -3442,7 +3538,7 @@ function openReviewWithCurrentFilter() {
             const lastReview = item.reviewHistory && item.reviewHistory.length > 0 ? item.reviewHistory[0] : null;
             const lastReviewText = lastReview ? `${lastReview.time} (${lastReview.result === 'correct' ? '✓' : '✗'})` : '从未';
             const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
-            
+            const reasonText = item.reasons?.length ? item.reasons.join("、") : "未分类";  // 👈 添加这行
             // 判断是数学还是语文
             const isMathItem = item.id && item.id.startsWith('math');
             
@@ -3612,6 +3708,9 @@ function openReviewWithCurrentFilter() {
                     </div>
                 </div>
             `;
+        
+        
+        
         });
         
         reviewListContainer.innerHTML = html;
@@ -3667,12 +3766,12 @@ function openReviewWithCurrentFilter() {
     reviewModal.classList.add('active');
 }
 
-// 控制二级分类显示/隐藏
 function toggleSubTagGroup() {
     const tagSelect = document.getElementById('editTag');
     const subTagGroup = document.getElementById('subTagGroup');
     if (tagSelect.value === '基础知识') {
-        subTagGroup.style.display = 'block';
+        subTagGroup.style.display = 'block';  // 改为 flex
+        subTagGroup.style.flex = '1';
     } else {
         subTagGroup.style.display = 'none';
     }
@@ -3834,6 +3933,14 @@ refreshCategorySelect(currentSubject, defaultTag);
         deleteInModalBtn.style.display = 'none';
     }
     scrollModalToTop('editModal');
+
+
+// 重置标签（全部取消选中）
+document.querySelectorAll('.label-tag').forEach(tag => {
+    tag.classList.remove('selected');
+});
+initLabelTags();
+
     editModal.classList.add('active');
     
     if (tagSelect) {
@@ -4227,6 +4334,16 @@ if (deleteInModalBtn) {
         modalContainer.scrollTop = 0;
     }
 
+// 加载已有标签
+if (editItem.labels && editItem.labels.length > 0) {
+    setSelectedLabels(editItem.labels);
+} else {
+    document.querySelectorAll('.label-tag').forEach(tag => {
+        tag.classList.remove('selected');
+    });
+}
+initLabelTags();
+
     // 显示模态框
     editModal.classList.add('active');
 }
@@ -4247,7 +4364,8 @@ function saveEdit() {
     const newGrade = document.getElementById("editGrade").value;
     const selected = document.querySelectorAll('#reasonTagsContainer .reason-tag.selected');
     const newReasons = Array.from(selected).map(div => div.getAttribute("data-reason"));
-    
+    // 获取选中的标签
+const selectedLabels = getSelectedLabels();
     // 获取图片数据（关键修复点）
     const newQuestionImages = (window._tempImages && window._tempImages.question) ? [...window._tempImages.question] : [];
     const newWrongImages = (window._tempImages && window._tempImages.wrong) ? [...window._tempImages.wrong] : [];
@@ -4299,6 +4417,7 @@ if (id === null) {
         wrongAnswer: newWrong,
         correctAnswer: newCorrect,
         reasons: newReasons,
+         labels: selectedLabels,
         source: newSource,
         date: finalDate,
         createdAt: Date.now(),
@@ -4323,6 +4442,7 @@ if (id === null) {
             unit: newUnit, 
             date: newDate, 
             reasons: newReasons,
+            labels: selectedLabels,
             tag: newTag,
             subTag: (newTag === "基础知识") ? newSubTag : undefined,
             grade: newGrade,
@@ -4363,7 +4483,9 @@ if (id === null) {
 function closeModal() { 
     editModal.classList.remove('active'); 
     editingItem = { id: null, subject: null };
-    // 可选：关闭时清空临时图片（避免下次打开残留）
+    
+   
+    
     if (window._tempImages) {
         window._tempImages = { question: [], wrong: [], correct: [] };
     }
@@ -4394,6 +4516,8 @@ function deleteQuestion(id, subject) {
         alert('❌ 删除失败：未找到该错题');
     }
 }
+
+
 
     function switchSubject(subject) {
     currentSubject = subject;
@@ -4612,25 +4736,34 @@ function renderImagesInCard(images, title = '', size = 'normal') {
         html += `<div style="font-size: 13px; color: #8e8e93; margin-bottom: 8px; font-weight: 500;">📷 ${title}：</div>`;
     }
     
-    // 全宽大图模式：图片占满卡片宽度
     if (size === 'full') {
         html += `<div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">`;
         images.forEach((img, idx) => {
+            // 为每个图片添加多个备用链接
+            const fallbackUrls = getFallbackUrls(img);
             html += `
                 <div style="width: 100%; border-radius: 12px; overflow: hidden; background: #f8f9fc; border: 0.5px solid #e9e9ef; cursor: pointer;" onclick="window.open('${img}')">
-                    <img src="${img}" style="width: 100%; max-height: 300px; object-fit: contain; display: block;" alt="图片${idx+1}">
+                    <img 
+                        src="${img}" 
+                        style="width: 100%; max-height: 300px; object-fit: contain; display: block;" 
+                        alt="图片${idx+1}"
+                        onerror="this.onerror=null; tryLoadFallback(this, '${img}')"
+                    >
                 </div>
             `;
         });
         html += `</div>`;
-    } 
-    // 正常模式：网格排列
-    else {
+    } else {
         html += `<div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
         images.forEach((img, idx) => {
             html += `
                 <div style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; border: 0.5px solid #e9e9ef; cursor: pointer;" onclick="window.open('${img}')">
-                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" alt="图片${idx+1}">
+                    <img 
+                        src="${img}" 
+                        style="width: 100%; height: 100%; object-fit: cover;" 
+                        alt="图片${idx+1}"
+                        onerror="this.onerror=null; tryLoadFallback(this, '${img}')"
+                    >
                 </div>
             `;
         });
@@ -4641,6 +4774,51 @@ function renderImagesInCard(images, title = '', size = 'normal') {
     return html;
 }
 
+// 获取图片的备用 CDN 链接
+function getFallbackUrls(originalUrl) {
+    const fileName = originalUrl.split('/').pop();
+    return [
+        `https://raw.fastgit.org/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/${fileName}`,
+        `https://gcore.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/${fileName}`
+    ];
+}
+
+// 图片加载失败时的重试函数
+function tryLoadFallback(imgElement, originalUrl) {
+    const fileName = originalUrl.split('/').pop();
+    const fallbacks = [
+        `https://raw.fastgit.org/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/${fileName}`,
+        `https://gcore.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/${fileName}`
+    ];
+    
+    let currentIndex = 0;
+    
+    function tryNext() {
+        if (currentIndex >= fallbacks.length) {
+            imgElement.src = '';
+            imgElement.alt = '图片加载失败';
+            imgElement.parentElement.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f0f0f0;color:#999;font-size:12px;">
+                    📷 加载失败
+                </div>
+            `;
+            return;
+        }
+        
+        imgElement.src = fallbacks[currentIndex];
+        imgElement.onerror = function() {
+            currentIndex++;
+            tryNext();
+        };
+        imgElement.onload = function() {
+            console.log('✅ 图片加载成功:', fallbacks[currentIndex]);
+        };
+    }
+    
+    tryNext();
+}
 
 async function saveToCloud() {
     console.log('📤 [saveToCloud] 开始执行');
@@ -5192,23 +5370,23 @@ async function getStorageInfo() {
 
 
 // ========== 新增：让用户选择同步方式 ==========
-if (GITHUB_CONFIG.token && GIST_CONFIG.id) {
-    // 延迟一下，等界面渲染完成
-    setTimeout(() => {
-        // 检查今天是否已经选择过
-        const today = new Date().toISOString().split('T')[0];
-        const lastChoiceDate = localStorage.getItem(PAGE_ID + '_sync_choice_date');
-        
-        // 如果今天已经选择过，不再弹窗
-        if (lastChoiceDate === today) {
-            console.log('📅 今天已选择过同步方式，跳过');
-            return;
-        }
-        
-        // 创建自定义弹窗
-        showSyncChoiceModal();
-    }, 300);
-}
+// ========== 显示同步选择弹窗（无论是否配置 Token） ==========
+setTimeout(() => {
+    // 检查今天是否已经选择过
+    const today = new Date().toISOString().split('T')[0];
+    const lastChoiceDate = localStorage.getItem(PAGE_ID + '_sync_choice_date');
+    
+    // 如果今天已经选择过，不再弹窗
+    if (lastChoiceDate === today) {
+        console.log('📅 今天已选择过同步方式，跳过');
+        return;
+    }
+    
+    // 显示同步选择弹窗
+    showSyncChoiceModal();
+}, 500);
+
+
 // 批量添加功能
 function openBatchModal() {
     document.getElementById('batchModal').classList.add('active');
@@ -7070,19 +7248,7 @@ console.log('本地数据加载完成，是否有数据:', hasLocalData);
     console.log('当前 chineseErrors 数量:', chineseErrors.length);
     console.log('最后一条错题图片:', chineseErrors[chineseErrors.length-1]?.questionImages);
     
-    // 然后从云端加载（合并数据，不覆盖本地已有的图片）
-    loadFromCloud().then(() => {
-        // 云端加载完成后，保存合并后的数据到本地
-        
-        renderSidebar();
-        renderContent();
-        console.log('云端数据加载完成，图片已保留');
-        console.log('最后一条错题图片:', chineseErrors[chineseErrors.length-1]?.questionImages);
-    }).catch((err) => {
-        console.log('云端加载失败或无数据，使用本地数据', err);
-        renderSidebar();
-        renderContent();
-    });
+
     
     // 绑定学科切换按钮事件
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -7622,7 +7788,14 @@ if (editModal) {
 
 
 // ========== 同步选择弹窗 ==========
+// ========== 同步选择弹窗 ==========
+// ========== 同步选择弹窗（简洁版） ==========
 function showSyncChoiceModal() {
+    // 检查是否已配置 Token 和 Gist ID
+    const hasToken = localStorage.getItem(PAGE_ID + '_github_token');
+    const hasGistId = localStorage.getItem(PAGE_ID + '_gist_id') || GIST_CONFIG.id;
+    const isConfigured = hasToken && hasGistId;
+    
     // 创建遮罩
     const overlay = document.createElement('div');
     overlay.style.cssText = `
@@ -7643,74 +7816,79 @@ function showSyncChoiceModal() {
     const modal = document.createElement('div');
     modal.style.cssText = `
         background: white;
-        border-radius: 28px;
-        padding: 32px 28px;
-        max-width: 380px;
+        border-radius: 24px;
+        padding: 32px 28px 24px;
+        max-width: 340px;
         width: 90%;
         text-align: center;
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     `;
     
+    // 未配置时的提示
+    let warningText = '';
+    if (!isConfigured) {
+        warningText = `
+            <div style="font-size: 12px; color: #ff9500; margin: -4px 0 14px 0; background: #fff8e6; padding: 6px 12px; border-radius: 10px;">
+                ⚠️ 请先点击右上角 ⚙️ 设置 Token
+            </div>
+        `;
+    }
+    
     modal.innerHTML = `
-        <div style="font-size: 48px; margin-bottom: 12px;">☁️</div>
-        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1c1c1e;">云端同步</h3>
-        <p style="font-size: 14px; color: #8e8e93; margin-bottom: 24px; line-height: 1.5;">
-            检测到云端配置，请选择同步方式
-        </p>
-        <div style="display: flex; gap: 12px;">
+        <div style="font-size: 40px; margin-bottom: 8px;">☁️</div>
+        <div style="font-size: 16px; font-weight: 600; color: #1c1c1e; margin-bottom: 4px;">云端同步</div>
+        ${warningText}
+        <div style="display: flex; gap: 12px; margin: 16px 0 8px;">
             <button id="syncChoiceUpload" style="
                 flex: 1;
-                padding: 14px 0;
-                border: 2px solid #007aff;
-                border-radius: 16px;
-                background: white;
-                color: #007aff;
+                padding: 12px 0;
+                border-radius: 14px;
+                border: 2px solid ${isConfigured ? '#007aff' : '#ddd'};
+                background: ${isConfigured ? 'white' : '#f5f5f5'};
+                color: ${isConfigured ? '#007aff' : '#bbb'};
                 font-size: 14px;
                 font-weight: 600;
-                cursor: pointer;
-                transition: 0.2s;
-            ">
-                ⬆️ 上传到云端<br>
-                <span style="font-size: 11px; font-weight: 400; color: #8e8e93;">（本地 → 云端）</span>
+                cursor: ${isConfigured ? 'pointer' : 'not-allowed'};
+                opacity: ${isConfigured ? '1' : '0.6'};
+            " ${isConfigured ? '' : 'disabled'}>
+                本地上传
             </button>
             <button id="syncChoiceDownload" style="
                 flex: 1;
-                padding: 14px 0;
-                border: 2px solid #34c759;
-                border-radius: 16px;
-                background: white;
-                color: #34c759;
+                padding: 12px 0;
+                border-radius: 14px;
+                border: 2px solid ${isConfigured ? '#34c759' : '#ddd'};
+                background: ${isConfigured ? 'white' : '#f5f5f5'};
+                color: ${isConfigured ? '#34c759' : '#bbb'};
                 font-size: 14px;
                 font-weight: 600;
-                cursor: pointer;
-                transition: 0.2s;
-            ">
-                ⬇️ 从云端恢复<br>
-                <span style="font-size: 11px; font-weight: 400; color: #8e8e93;">（云端 → 本地）</span>
+                cursor: ${isConfigured ? 'pointer' : 'not-allowed'};
+                opacity: ${isConfigured ? '1' : '0.6'};
+            " ${isConfigured ? '' : 'disabled'}>
+                云端下载
             </button>
         </div>
         <button id="syncChoiceSkip" style="
-            margin-top: 16px;
-            padding: 10px 32px;
+            margin-top: 6px;
+            padding: 6px 20px;
             background: transparent;
             border: none;
             color: #8e8e93;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
-            text-decoration: underline;
         ">
-            暂不处理，使用本地数据
+            ${isConfigured ? '暂不处理' : '稍后配置'}
         </button>
     `;
     
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     
-    // 记录今天已选择
     const today = new Date().toISOString().split('T')[0];
     
     // 上传按钮
     document.getElementById('syncChoiceUpload').onclick = async () => {
+        if (!isConfigured) return;
         overlay.remove();
         localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
         startUploadSpin();
@@ -7726,6 +7904,7 @@ function showSyncChoiceModal() {
     
     // 下载按钮
     document.getElementById('syncChoiceDownload').onclick = async () => {
+        if (!isConfigured) return;
         if (!confirm('⚠️ 从云端恢复将覆盖当前所有本地数据，确定继续吗？')) return;
         overlay.remove();
         localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
@@ -7746,20 +7925,18 @@ function showSyncChoiceModal() {
     document.getElementById('syncChoiceSkip').onclick = () => {
         overlay.remove();
         localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
-        console.log('⏭️ 用户选择暂不同步');
     };
     
-    // 点击遮罩关闭（等同于跳过）
+    // 点击遮罩关闭
     overlay.onclick = (e) => {
         if (e.target === overlay) {
             overlay.remove();
             localStorage.setItem(PAGE_ID + '_sync_choice_date', today);
         }
     };
-}// ========== 同步选择弹窗 ==========
+}
 
 
-// 使用 IIFE（立即执行函数）来支持顶层 await
 (async function() {
     await init();
 })();
@@ -8012,6 +8189,9 @@ function showSyncChoiceModal() {
 
         </div>
         
+
+
+
         <div class="modal-actions">
             <button type="button" class="btn-cancel" id="cancelPrintBtn">取消</button>
             <button type="button" class="btn-save" id="confirmPrintBtn">🖨️ 开始打印</button>
