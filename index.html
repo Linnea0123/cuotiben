@@ -12,6 +12,164 @@
             box-sizing: border-box;
         }
 
+        /* 自定义确认弹窗 */
+.confirm-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    visibility: hidden;
+    opacity: 0;
+    transition: 0.2s ease;
+}
+.confirm-dialog-overlay.active {
+    visibility: visible;
+    opacity: 1;
+}
+.confirm-dialog {
+    background: white;
+    border-radius: 24px;
+    padding: 28px 24px 20px;
+    max-width: 340px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.confirm-dialog .dialog-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+.confirm-dialog .dialog-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1c1c1e;
+    margin-bottom: 8px;
+}
+.confirm-dialog .dialog-message {
+    font-size: 14px;
+    color: #8e8e93;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+.confirm-dialog .dialog-actions {
+    display: flex;
+    gap: 12px;
+}
+.confirm-dialog .dialog-actions button {
+    flex: 1;
+    padding: 12px 0;
+    border-radius: 30px;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: 0.1s;
+}
+.confirm-dialog .dialog-actions button:active {
+    opacity: 0.7;
+}
+.confirm-dialog .dialog-cancel {
+    background: #f2f2f6;
+    color: #1c1c1e;
+}
+.confirm-dialog .dialog-confirm {
+    background: #ff3b30;
+    color: white;
+}
+
+/* 复习详情浮层 */
+.review-popover {
+    position: fixed;
+    background: white;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    z-index: 9999;
+    max-width: 380px;
+    width: 95vw;
+    display: none;
+    border: 0.5px solid #e9e9ef;
+}
+.review-popover.active {
+    display: block;
+}
+.review-popover .popover-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1c1c1e;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid #e9e9ef;
+}
+.review-popover .popover-item {
+    font-size: 13px;
+    padding: 6px 0;
+    color: #3a3a3e;
+    border-bottom: 0.5px solid #f0f0f4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+.review-popover .popover-item:last-child {
+    border-bottom: none;
+}
+.review-popover .popover-correct {
+    color: #34c759;
+    font-weight: 500;
+}
+.review-popover .popover-wrong {
+    color: #ff3b30;
+    font-weight: 500;
+}
+.review-popover .popover-empty {
+    font-size: 13px;
+    color: #8e8e93;
+    text-align: center;
+    padding: 12px 0;
+}
+.review-popover .popover-close {
+    margin-top: 12px;
+    padding: 6px 0;
+    background: #f2f2f6;
+    border: none;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    width: 100%;
+    color: #3a3a3e;
+}
+.review-popover .popover-close:active {
+    opacity: 0.7;
+}
+.review-popover .popover-stats {
+    font-size: 12px;
+    color: #8e8e93;
+    text-align: center;
+    margin-top: 6px;
+}
+.popover-undo-btn {
+    flex-shrink: 0;
+    background: #fff0f0;
+    border: none;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    cursor: pointer;
+    color: #ff3b30;
+}
+.popover-undo-btn:active {
+    opacity: 0.6;
+}
+
+
 
 /* 月历弹窗样式 */
 .calendar-modal {
@@ -239,7 +397,7 @@ body {
     font-size: 12px;
     font-weight: 500;
     border-radius: 20px;
-    background: #007aff;
+    background: #ff3b30;  
     color: white;
     border: none;
     cursor: pointer;
@@ -844,16 +1002,19 @@ body {
             margin-bottom: 6px;
         }
         .auto-height-textarea {
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: 14px;
-            border: 0.5px solid #c6c6c8;
-            font-size: 15px;
-            font-family: inherit;
-            resize: vertical;
-            line-height: 1.5;
-            min-height: 42px;
-        }
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    border: 0.5px solid #c6c6c8;
+    font-size: 15px;
+    font-family: inherit;
+    resize: none;
+    line-height: 1.5;
+    min-height: 42px;
+    overflow-y: hidden;
+    box-sizing: border-box;
+    height: auto;  /* 关键：让高度自动 */
+}
         .form-group input {
             width: 100%;
             padding: 10px 14px;
@@ -1472,8 +1633,7 @@ img[loading="lazy"] {
     <div style="display: flex; align-items: center; gap: 0px;">
         <span id="questionCountDisplay" style="font-size: 11px; color: #8e8e93;">0 道题</span>
         <button class="add-question-btn-header" style="background: transparent; border: none; padding: 4px 10px; border-radius: 20px; color: #707070; font-size: 18px; font-weight: 500; cursor: pointer;">+</button>
-        <button class="review-btn-header" id="openReviewBtn" style="background: #007aff; color: white; border: none; padding: 2px 8px; border-radius: 16px; font-size: 11px; font-weight: 500; cursor: pointer;">复习</button>
-        <button id="batchAddBtn" class="batch-add-btn" style="display: none; background: #5856d6; color: white; border: none; padding: 2px 8px; border-radius: 16px; font-size: 11px; font-weight: 500; cursor: pointer;">批量</button>
+<button class="review-btn-header" id="openReviewBtn" style="background: #ff3b30; color: white; border: none; padding: 2px 8px; border-radius: 16px; font-size: 11px; font-weight: 500; cursor: pointer;">复习</button>        <button id="batchAddBtn" class="batch-add-btn" style="display: none; background: #5856d6; color: white; border: none; padding: 2px 8px; border-radius: 16px; font-size: 11px; font-weight: 500; cursor: pointer;">批量</button>
     </div>
 </div>
     <div class="two-columns">
@@ -1492,22 +1652,19 @@ img[loading="lazy"] {
         <button class="close-review" id="closeReviewBtn">关闭复习</button>
     </div>
     <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 12px;">
-<div class="filter-group" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-    <div style="display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-          <button class="filter-btn" data-filter="all">全部 <span class="filter-count" id="allCount">(0)</span></button>
-        <button class="filter-btn" data-filter="today">今日 <span class="filter-count" id="todayCount">(0)</span></button>
-        <button class="filter-btn" data-filter="week">本周 <span class="filter-count" id="weekCount">(0)</span></button>
-        <button class="filter-btn" data-filter="nextWeek">下周 <span class="filter-count" id="nextWeekCount">(0)</span></button>
-        <button class="filter-btn" data-filter="month">本月 <span class="filter-count" id="monthCount">(0)</span></button>
-     <button class="filter-btn" data-filter="nextMonth">下月 <span class="filter-count" id="nextMonthCount">(0)</span></button>
-    </div>
-    <div style="display: flex; gap: 6px;">
-        <button id="selectUnitBtn" class="filter-btn" onclick="openUnitModal(this)">选择单元 <span class="filter-count" id="unitCount">(0)</span></button>
-        <button id="clearUnitBtn" class="filter-btn" style="display: none;" onclick="clearUnitFilter()">清除</button>
+        <div class="filter-group" style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 6px 12px;">
+            <button class="filter-btn" data-filter="all">全部 <span class="filter-count" id="allCount">(0)</span></button>
+            <button class="filter-btn" data-filter="today">今日 <span class="filter-count" id="todayCount">(0)</span></button>
+            <button class="filter-btn" data-filter="week">本周 <span class="filter-count" id="weekCount">(0)</span></button>
+            <button class="filter-btn" data-filter="nextWeek">下周 <span class="filter-count" id="nextWeekCount">(0)</span></button>
+            <button class="filter-btn" data-filter="month">本月 <span class="filter-count" id="monthCount">(0)</span></button>
+            <button class="filter-btn" data-filter="nextMonth">下月 <span class="filter-count" id="nextMonthCount">(0)</span></button>
+            <button id="selectUnitBtn" class="filter-btn" onclick="openUnitModal(this)">选择单元 <span class="filter-count" id="unitCount">(0)</span></button>
+            <button id="clearUnitBtn" class="filter-btn" style="display: none;" onclick="clearUnitFilter()">清除</button>
+        </div>
     </div>
 </div>
-    </div>
-</div>
+
     
     <div id="reviewListContainer" class="review-list"></div>
 </div>
@@ -1537,6 +1694,7 @@ img[loading="lazy"] {
                     <option value="生字">生字</option>
                      <option value="笔顺">笔顺</option>
                      <option value="标点">标点</option>
+                      <option value="其他">其他</option>
                 </select>
             </div>
 
@@ -1882,26 +2040,238 @@ const PAGE_ID = 'cuotiben_main';
     const historyModal = document.getElementById("historyModal");
     const historyOverlay = document.getElementById("historyOverlay");
 
-    function showHistoryModal(itemId, subject) {
-        const list = subject === "chinese" ? chineseErrors : mathErrors;
-        const item = list.find(i => i.id === itemId);
-        if (!item || !item.reviewHistory || item.reviewHistory.length === 0) {
-            alert("暂无复习记录");
-            return;
-        }
-        document.getElementById("historyModalTitle").innerHTML = ` ${item.question.substring(0, 20)} 的复习记录`;
-        let html = "";
-        item.reviewHistory.forEach((h, i) => {
-            const resultClass = h.result === 'correct' ? 'history-correct' : 'history-wrong';
-            const resultText = h.result === 'correct' ? '✓ 做对' : '✗ 做错';
-            html += `<div class="history-modal-item">${i+1}. ${h.time} <span class="${resultClass}">${resultText}</span></div>`;
+function showHistoryModal(itemId, subject, event) {
+    const list = subject === "chinese" ? chineseErrors : mathErrors;
+    const item = list.find(i => i.id === itemId);
+    if (!item) return;
+    
+    // 移除已有的浮层
+    const existingPopover = document.querySelector('.review-popover');
+    if (existingPopover) existingPopover.remove();
+    
+    // 创建浮层
+    const popover = document.createElement('div');
+    popover.className = 'review-popover active';
+    
+    let html = `<div class="popover-title">📊 ${item.question.substring(0, 20)}${item.question.length > 20 ? '...' : ''}</div>`;
+    
+    if (!item.reviewHistory || item.reviewHistory.length === 0) {
+        html += `<div class="popover-empty">暂无复习记录</div>`;
+    } else {
+        // 统计
+        const total = item.reviewHistory.length;
+        const correctCount = item.reviewHistory.filter(h => h.result === 'correct').length;
+        const wrongCount = item.reviewHistory.filter(h => h.result === 'wrong').length;
+        const correctRate = Math.round((correctCount / total) * 100);
+        
+        html += `<div class="popover-stats">共 ${total} 次复习 · 正确 ${correctCount} 次 · 错误 ${wrongCount} 次 · 正确率 ${correctRate}%</div>`;
+        html += `<div style="margin-top: 8px;">`;
+        
+        // 显示最近20条记录，带撤销按钮
+        const recent = item.reviewHistory.slice(0, 20);
+        recent.forEach((h, index) => {
+            const resultClass = h.result === 'correct' ? 'popover-correct' : 'popover-wrong';
+            const resultText = h.result === 'correct' ? '✅ 做对' : '❌ 做错';
+            // 记录在数组中的原始索引
+            const originalIndex = item.reviewHistory.indexOf(h);
+            html += `
+                <div class="popover-item" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                    <span style="flex: 1;">${h.time}</span>
+                    <span class="${resultClass}" style="flex-shrink: 0;">${resultText}</span>
+                    <button class="popover-undo-btn" data-index="${originalIndex}" data-id="${item.id}" data-subject="${subject}" style="flex-shrink: 0; background: #f2f2f6; border: none; padding: 2px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; color: #ff3b30;">撤销</button>
+                </div>
+            `;
         });
-        document.getElementById("historyModalList").innerHTML = html;
-        historyModal.classList.add("show");
-        historyOverlay.classList.add("show");
+        
+        if (item.reviewHistory.length > 20) {
+            html += `<div style="font-size: 11px; color: #8e8e93; text-align: center; padding-top: 4px;">... 还有 ${item.reviewHistory.length - 20} 条记录</div>`;
+        }
+        html += `</div>`;
     }
     
-    function closeHistoryModal() {
+    html += `<button class="popover-close">关闭</button>`;
+    popover.innerHTML = html;
+    document.body.appendChild(popover);
+    
+    // 绑定撤销按钮事件
+    popover.querySelectorAll('.popover-undo-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const index = parseInt(this.getAttribute('data-index'));
+            const id = this.getAttribute('data-id');
+            const subj = this.getAttribute('data-subject');
+            undoReviewRecord(id, subj, index, popover);
+        });
+    });
+    
+    // 定位浮层
+    let targetX, targetY;
+    if (event && event.target) {
+        const rect = event.target.getBoundingClientRect();
+        targetX = rect.left + rect.width / 2;
+        targetY = rect.bottom + 8;
+    } else {
+        targetX = window.innerWidth / 2;
+        targetY = window.innerHeight / 2 - 100;
+    }
+    
+    const popoverWidth = 380;
+    const popoverHeight = 450;
+    let left = targetX - popoverWidth / 2;
+    let top = targetY;
+    
+    if (left < 10) left = 10;
+    if (left + popoverWidth > window.innerWidth - 10) {
+        left = window.innerWidth - popoverWidth - 10;
+    }
+    if (top + popoverHeight > window.innerHeight - 10) {
+        top = window.innerHeight - popoverHeight - 10;
+    }
+    if (top < 10) top = 10;
+    
+    popover.style.left = left + 'px';
+    popover.style.top = top + 'px';
+    popover.style.maxHeight = '450px';
+    popover.style.overflowY = 'auto';
+    popover.style.width = '380px';
+    popover.style.maxWidth = '95vw';
+    
+    // 关闭浮层
+    popover.querySelector('.popover-close').addEventListener('click', function(e) {
+        e.stopPropagation();
+        popover.remove();
+    });
+    
+    // 点击其他地方关闭
+    setTimeout(() => {
+        document.addEventListener('click', function closePopover(e) {
+            if (!popover.contains(e.target) && !e.target.closest('.review-count-clickable') && !e.target.closest('.review-count-badge')) {
+                popover.remove();
+                document.removeEventListener('click', closePopover);
+            }
+        });
+    }, 100);
+}
+
+// ========== 撤销复习记录函数 ==========
+function undoReviewRecord(itemId, subject, recordIndex, popover) {
+    const list = subject === "chinese" ? chineseErrors : mathErrors;
+    const item = list.find(i => i.id === itemId);
+    if (!item) return;
+    
+    if (!item.reviewHistory || recordIndex >= item.reviewHistory.length) {
+        showToast('记录不存在');
+        return;
+    }
+    
+    // 获取要撤销的记录
+    const record = item.reviewHistory[recordIndex];
+    const resultText = record.result === 'correct' ? '做对' : '做错';
+    const timeText = record.time;
+    
+    // 显示自定义确认弹窗
+    showConfirmDialog(
+        `撤销 "${resultText}" 记录`,
+        `确定要撤销这条复习记录吗？<br><span style="font-size: 12px; color: #8e8e93;">${timeText}</span>`,
+        function() {
+            // 确认撤销 - 从数组中移除该记录
+            item.reviewHistory.splice(recordIndex, 1);
+            
+            // 更新复习次数
+            item.reviewCount = item.reviewHistory.length;
+            
+            // 如果连续做对计数器需要回退，重新计算
+            if (record.result === 'correct') {
+                let consecutive = 0;
+                for (let i = item.reviewHistory.length - 1; i >= 0; i--) {
+                    if (item.reviewHistory[i].result === 'correct') {
+                        consecutive++;
+                    } else {
+                        break;
+                    }
+                }
+                item._consecutiveCorrect = consecutive;
+                
+                if (consecutive < 3 && item._mastered) {
+                    item._mastered = false;
+                }
+            }
+            
+            if (item.reviewHistory.length === 0) {
+                item._nextReviewDate = null;
+                item._consecutiveCorrect = 0;
+                item._mastered = false;
+            }
+            
+            saveAllDataToLocalStorage();
+            
+            renderSidebar();
+            renderContent();
+            if (reviewModal && reviewModal.classList.contains('active')) {
+                openReviewWithCurrentFilter();
+                updateFilterCounts();
+            }
+            
+            // 刷新浮层
+            const newEvent = { target: document.querySelector(`[data-id="${itemId}"]`) };
+            if (popover) popover.remove();
+            setTimeout(() => {
+                showHistoryModal(itemId, subject, newEvent);
+            }, 200);
+            
+            showToast(`✅ 已撤销 ${resultText} 记录`);
+        }
+    );
+}
+
+// ========== 自定义确认弹窗 ==========
+let confirmDialogCallback = null;
+
+function showConfirmDialog(title, message, onConfirm) {
+    const overlay = document.getElementById('confirmDialog');
+    const titleEl = document.getElementById('confirmDialogTitle');
+    const messageEl = document.getElementById('confirmDialogMessage');
+    const confirmBtn = document.getElementById('confirmDialogConfirm');
+    const cancelBtn = document.getElementById('confirmDialogCancel');
+    
+    if (!overlay) return;
+    
+    titleEl.textContent = title;
+    messageEl.innerHTML = message;
+    confirmDialogCallback = onConfirm;
+    
+    overlay.classList.add('active');
+    
+    // 移除旧事件避免重复绑定
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    
+    newConfirmBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        overlay.classList.remove('active');
+        if (confirmDialogCallback) {
+            confirmDialogCallback();
+            confirmDialogCallback = null;
+        }
+    });
+    
+    newCancelBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        overlay.classList.remove('active');
+        confirmDialogCallback = null;
+    });
+    
+    // 点击遮罩关闭
+    overlay.onclick = function(e) {
+        if (e.target === overlay) {
+            overlay.classList.remove('active');
+            confirmDialogCallback = null;
+        }
+    };
+}
+function closeHistoryModal() {
         historyModal.classList.remove("show");
         historyOverlay.classList.remove("show");
     }
@@ -2029,6 +2399,13 @@ function escapeHtml(str) {
         }).replace(/\n/g, '<br>');
     }
     
+
+    // ========== 自动调整 textarea 高度 ==========
+function autoResizeTextarea(textarea) {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
 
 function renderPinyinContent(question, wrongAnswer, correctAnswer) {
     // 提取括号前的汉字和括号内的注释（去掉括号）
@@ -2306,25 +2683,32 @@ function renderContent() {
         const bishunCount = chineseErrors.filter(item => 
             item.tag === "基础知识" && item.subTag === "笔顺"
         ).length;
+        const biaodianCount = chineseErrors.filter(item => 
+        item.tag === "基础知识" && item.subTag === "标点"
+    ).length;
+    const qitaCount = chineseErrors.filter(item => 
+        item.tag === "基础知识" && item.subTag === "其他"
+    ).length;
         
         const subTags = [
             { name: "拼音", count: pinyinCount },
             { name: "生字", count: shengziCount },
             { name: "笔顺", count: bishunCount },
-             { name: "标点", count: 0 }
+             { name: "标点", count: biaodianCount },
+        { name: "其他", count: qitaCount }
         ];
         
         subTabsHtml = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
-                <div class="category-tabs" style="display: flex; gap: 8px;">
-                    ${subTags.map(st => `
-                        <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}">
-                            ${st.name} <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 6px;">${st.count}</span>
-                        </div>
-                    `).join('')}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
+        <div class="category-tabs" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            ${subTags.map(st => `
+                <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}">
+                    ${st.name} <span style="background: rgba(0,0,0,0.1); padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 6px;">${st.count}</span>
                 </div>
-            </div>
-        `;
+            `).join('')}
+        </div>
+    </div>
+`;
     }
     
     if (list.length === 0) { 
@@ -2483,7 +2867,7 @@ function renderContent() {
                         <span>${escapeHtml(item.source || '未知来源')}</span>
                         <span>${escapeHtml(item.unit || '所属单元')}</span>
                         <span>${item.date || '无日期'}</span>
-                        <span style="cursor: pointer; color: #007aff; background: #e9e9ef; padding: 4px 12px; border-radius: 20px;" onclick="showHistoryModal('${item.id}', '${currentSubject}')">复习 ${item.reviewCount || 0} 次</span>
+                        <span class="review-count-clickable" style="cursor: pointer; color: #007aff; background: #e9e9ef; padding: 4px 12px; border-radius: 20px;" onclick="showHistoryModal('${item.id}', '${currentSubject}', event)">复习 ${item.reviewCount || 0} 次</span>
                     </div>
                 </div>
             </div>
@@ -3200,7 +3584,7 @@ function openReviewWithCurrentFilter() {
                     ` : ''}
                     
                     <div class="review-stats">
-                        <span class="review-count-badge" onclick="showHistoryModal('${item.id}', '${currentSubject}')">📊 复习次数: ${item.reviewCount || 0}</span>
+                        <span class="review-count-badge" onclick="showHistoryModal('${item.id}', '${currentSubject}', event)">复习次数: ${item.reviewCount || 0}</span>
                         <span class="last-review">最近复习: ${lastReviewText}</span>
                         <div class="review-action-group">
                             <button class="review-correct-btn" data-id="${item.id}" data-subject="${currentSubject}" data-result="correct">✓ 做对了</button>
@@ -3334,8 +3718,8 @@ function openAddModal() {
     editingItem = { id: null, subject: currentSubject };
     
     // 清空表单 - 添加安全检查
-    const editQuestionEl = document.getElementById("editQuestion");
-  // 支持错误答案输入框粘贴图片
+const editQuestionEl = document.getElementById("editQuestion");
+// 支持错误答案输入框粘贴图片
 const editWrongEl = document.getElementById('editWrong');
 if (editWrongEl) {
     editWrongEl.addEventListener('paste', function(e) {
@@ -3371,14 +3755,23 @@ if (editCorrectEl) {
     const editGradeEl = document.getElementById("editGrade");
     const editDateEl = document.getElementById("editDate");
     
-    if (editQuestionEl) editQuestionEl.value = "";
-    if (editWrongEl) editWrongEl.value = "";
-    if (editCorrectEl) editCorrectEl.value = "";
-    if (editSourceEl) editSourceEl.value = "";
-    if (editUnitEl) editUnitEl.value = "";
-    if (editGradeEl) editGradeEl.value = currentGradeFilter || "一下";
-    if (editDateEl) editDateEl.value = new Date().toISOString().slice(0, 10);
-    
+  // ========== 清空并调整高度 ==========
+if (editQuestionEl) {
+    editQuestionEl.value = "";
+    autoResizeTextarea(editQuestionEl);
+}
+if (editWrongEl) {
+    editWrongEl.value = "";
+    autoResizeTextarea(editWrongEl);
+}
+if (editCorrectEl) {
+    editCorrectEl.value = "";
+    autoResizeTextarea(editCorrectEl);
+}
+if (editSourceEl) editSourceEl.value = "";
+if (editUnitEl) editUnitEl.value = "";
+if (editGradeEl) editGradeEl.value = currentGradeFilter || "一下";
+if (editDateEl) editDateEl.value = new Date().toISOString().slice(0, 10);
     // 清空临时图片
     tempImages = { question: [], wrong: [], correct: [] };
     window._tempImages = tempImages;
@@ -3429,8 +3822,9 @@ refreshCategorySelect(currentSubject, defaultTag);
     
     // 错误原因选项
     const opts = currentSubject === "chinese" ? chineseReasonOptions : mathReasonOptions;
-    let tagsHtml = "";
+    let tagsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 6px;">`;  // 👈 添加这行
     opts.forEach(opt => { tagsHtml += `<div class="reason-tag" data-reason="${opt}">${opt}</div>`; });
+    tagsHtml += `</div>`;  // 👈 添加这行
     reasonTagsContainer.innerHTML = tagsHtml;
     document.querySelectorAll('.reason-tag').forEach(tag => tag.addEventListener('click', (e) => tag.classList.toggle('selected')));
     
@@ -3726,14 +4120,23 @@ function openEditModal(errorId, subject) {
     const subTagGroup = document.getElementById('subTagGroup');
     const reasonTagsContainer = document.getElementById("reasonTagsContainer");
     
-    // 先填充表单字段（在刷新类别之前）
-    if (editQuestionEl) editQuestionEl.value = editItem.question || "";
-    if (editWrongEl) editWrongEl.value = editItem.wrongAnswer || "";
-    if (editCorrectEl) editCorrectEl.value = editItem.correctAnswer || "";
-    if (editSourceEl) editSourceEl.value = editItem.source || "";
-    if (editUnitEl) editUnitEl.value = editItem.unit || "";
-    if (editDateEl) editDateEl.value = editItem.date || "";
-    if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
+   // 先填充表单字段（在刷新类别之前）
+if (editQuestionEl) {
+    editQuestionEl.value = editItem.question || "";
+    autoResizeTextarea(editQuestionEl);
+}
+if (editWrongEl) {
+    editWrongEl.value = editItem.wrongAnswer || "";
+    autoResizeTextarea(editWrongEl);
+}
+if (editCorrectEl) {
+    editCorrectEl.value = editItem.correctAnswer || "";
+    autoResizeTextarea(editCorrectEl);
+}
+if (editSourceEl) editSourceEl.value = editItem.source || "";
+if (editUnitEl) editUnitEl.value = editItem.unit || "";
+if (editDateEl) editDateEl.value = editItem.date || "";
+if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
     
     // 设置二级分类的值（在刷新类别之前）
     if (editSubTagEl) {
@@ -3761,21 +4164,20 @@ function openEditModal(errorId, subject) {
     }
     
     // 设置错误原因选项
-    const opts = subject === "chinese" ? chineseReasonOptions : mathReasonOptions;
-    const selectedReasons = editItem.reasons || [];
-    let tagsHtml = "";
-    opts.forEach(opt => {
-        tagsHtml += `<div class="reason-tag ${selectedReasons.includes(opt) ? 'selected' : ''}" data-reason="${opt}">${opt}</div>`;
+    // 设置错误原因选项
+const opts = subject === "chinese" ? chineseReasonOptions : mathReasonOptions;
+const selectedReasons = editItem.reasons || [];
+let tagsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;  // 👈 修改
+opts.forEach(opt => {
+    tagsHtml += `<div class="reason-tag ${selectedReasons.includes(opt) ? 'selected' : ''}" data-reason="${opt}" style="margin: 0; padding: 4px 10px; font-size: 12px;">${opt}</div>`;
+});
+tagsHtml += `</div>`;
+reasonTagsContainer.innerHTML = tagsHtml;
+document.querySelectorAll('.reason-tag').forEach(tag => {
+    tag.addEventListener('click', (e) => {
+        e.currentTarget.classList.toggle('selected');
     });
-    
-    if (reasonTagsContainer) {
-        reasonTagsContainer.innerHTML = tagsHtml;
-        document.querySelectorAll('.reason-tag').forEach(tag => {
-            tag.addEventListener('click', (e) => {
-                e.currentTarget.classList.toggle('selected');
-            });
-        });
-    }
+});
     
     // 图片加载
     tempImages = {
@@ -7209,7 +7611,12 @@ if (editModal) {
 });
 }
 
-
+// ========== 绑定 textarea 输入事件 ==========  👈 在 init() 函数末尾添加
+    document.querySelectorAll('.auto-height-textarea').forEach(function(textarea) {
+        textarea.addEventListener('input', function() {
+            autoResizeTextarea(this);
+        });
+    });
 
 }
 
@@ -7608,6 +8015,20 @@ function showSyncChoiceModal() {
         <div class="modal-actions">
             <button type="button" class="btn-cancel" id="cancelPrintBtn">取消</button>
             <button type="button" class="btn-save" id="confirmPrintBtn">🖨️ 开始打印</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- 自定义确认弹窗 -->
+<div id="confirmDialog" class="confirm-dialog-overlay">
+    <div class="confirm-dialog">
+        <div class="dialog-icon">⚠️</div>
+        <div class="dialog-title" id="confirmDialogTitle">确认撤销</div>
+        <div class="dialog-message" id="confirmDialogMessage">确定要撤销这条复习记录吗？</div>
+        <div class="dialog-actions">
+            <button class="dialog-cancel" id="confirmDialogCancel">取消</button>
+            <button class="dialog-confirm" id="confirmDialogConfirm">确认撤销</button>
         </div>
     </div>
 </div>
