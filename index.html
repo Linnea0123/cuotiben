@@ -2241,8 +2241,6 @@ const GITHUB_CONFIG = {
     branch: 'main'
 };
 // 上传图片到 GitHub
-// 上传图片到 GitHub
-// 上传图片到 GitHub
 async function uploadToGitHub(base64Data, fileName) {
     const base64Content = base64Data.split(',')[1];
     
@@ -2264,10 +2262,9 @@ async function uploadToGitHub(base64Data, fileName) {
         throw new Error(error.message || '上传失败');
     }
     
-    // 直接用 cdn.jsdelivr.net（虽然警告但能加载）
+    // 返回原始 GitHub 地址（后续通过 fallback 机制加载）
     return `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/${fileName}`;
 }
-
 let currentSubject = "chinese";
     let currentChineseTag = "基础知识";
 
@@ -4968,6 +4965,46 @@ async function handleImageUpload(event, target) {
 
 
 // 渲染图片预览
+function renderImagesInCard(images, title = '', size = 'normal') {
+    if (!images || images.length === 0) return '';
+    
+    let html = `<div style="margin-top: 12px; width: 100%;">`;
+    if (title) {
+        html += `<div style="font-size: 13px; color: #8e8e93; margin-bottom: 8px; font-weight: 500;">📷 ${title}：</div>`;
+    }
+    
+    if (size === 'full') {
+        images.forEach((img, idx) => {
+            html += `
+                <div style="width:100%;position:relative;background:#f8f9fc;border-radius:12px;overflow:hidden;margin-bottom:8px;border:0.5px solid #e9e9ef;">
+                    <div style="width:100%;padding-bottom:30%;"></div>
+                    <img src="${img}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:block;" alt="图片${idx+1}">
+                </div>
+            `;
+        });
+    } else {
+        html += `<div style="display:flex;gap:10px;flex-wrap:wrap;">`;
+        images.forEach((img, idx) => {
+            html += `
+                <div style="width:100px;height:100px;flex-shrink:0;background:#f8f9fc;border-radius:8px;overflow:hidden;border:0.5px solid #e9e9ef;">
+                    <img src="${img}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="图片${idx+1}">
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    
+    html += `</div>`;
+    return html;
+}
+// 显示已有的图片（编辑时）
+function displayExistingImages(target, imageUrls) {
+    if (!tempImages[target]) tempImages[target] = [];
+    tempImages[target] = [...imageUrls];
+    renderImagePreview(target);
+}
+
+// 替换原来的 renderImagesInCard 函数
 function renderImagePreview(target) {
     const container = document.getElementById(`${target}ImgPreview`);
     if (!container) return;
@@ -5003,59 +5040,6 @@ function renderImagePreview(target) {
     });
 }
 
-// 显示已有的图片（编辑时）
-function displayExistingImages(target, imageUrls) {
-    if (!tempImages[target]) tempImages[target] = [];
-    tempImages[target] = [...imageUrls];
-    renderImagePreview(target);
-}
-
-function renderImagesInCard(images, title = '', size = 'normal') {
-    if (!images || images.length === 0) return '';
-    
-    let html = `<div style="margin-top: 12px; width: 100%;">`;
-    if (title) {
-        html += `<div style="font-size: 13px; color: #8e8e93; margin-bottom: 8px; font-weight: 500;">📷 ${title}：</div>`;
-    }
-    
-    if (size === 'full') {
-        html += `<div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">`;
-        images.forEach((img, idx) => {
-            // 为每个图片添加多个备用链接
-            const fallbackUrls = getFallbackUrls(img);
-            html += `
-                <div style="width: 100%; border-radius: 12px; overflow: hidden; background: #f8f9fc; border: 0.5px solid #e9e9ef; cursor: pointer;" onclick="window.open('${img}')">
-                    <img 
-                        src="${img}" 
-                        style="width: 100%; max-height: 300px; object-fit: contain; display: block;" 
-                        alt="图片${idx+1}"
-                        onerror="this.onerror=null; tryLoadFallback(this, '${img}')"
-                    >
-                </div>
-            `;
-        });
-        html += `</div>`;
-    } else {
-        html += `<div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
-        images.forEach((img, idx) => {
-            html += `
-                <div style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; border: 0.5px solid #e9e9ef; cursor: pointer;" onclick="window.open('${img}')">
-                    <img 
-                        src="${img}" 
-                        style="width: 100%; height: 100%; object-fit: cover;" 
-                        alt="图片${idx+1}"
-                        onerror="this.onerror=null; tryLoadFallback(this, '${img}')"
-                    >
-                </div>
-            `;
-        });
-        html += `</div>`;
-    }
-    
-    html += `</div>`;
-    return html;
-}
-
 function getFallbackUrls(originalUrl) {
     const fileName = originalUrl.split('/').pop();
     // 只保留可用的 CDN
@@ -5065,42 +5049,159 @@ function getFallbackUrls(originalUrl) {
     ];
 }
 
-// 图片加载失败时的重试函数
-function tryLoadFallback(imgElement, originalUrl) {
-    var fileName = originalUrl.split('/').pop();
-    // 按优先级排列：国内能访问的放在前面
-    var fallbacks = [
-        'https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/' + fileName,
-        'https://gcore.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/' + fileName,
-        'https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/' + fileName
+// ========== 图片加载优化（国内可用） ==========
+
+// IndexedDB 图片缓存
+class ImageCacheDB {
+    constructor() {
+        this.dbName = 'ImageCache';
+        this.storeName = 'images';
+        this.db = null;
+    }
+    
+    openDB() {
+        return new Promise((resolve, reject) => {
+            if (this.db) {
+                resolve(this.db);
+                return;
+            }
+            const request = indexedDB.open(this.dbName, 1);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    const store = db.createObjectStore(this.storeName, { keyPath: 'url' });
+                    store.createIndex('timestamp', 'timestamp', { unique: false });
+                }
+            };
+            request.onsuccess = (event) => {
+                this.db = event.target.result;
+                resolve(this.db);
+            };
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+    
+    async get(url) {
+        try {
+            const db = await this.openDB();
+            const transaction = db.transaction([this.storeName], 'readonly');
+            const store = transaction.objectStore(this.storeName);
+            const request = store.get(url);
+            return new Promise((resolve) => {
+                request.onsuccess = () => {
+                    const result = request.result;
+                    if (result && result.data) {
+                        console.log('📦 从缓存加载图片');
+                        resolve(result.data);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                request.onerror = () => resolve(null);
+            });
+        } catch (e) {
+            return null;
+        }
+    }
+    
+    async set(url, dataUrl) {
+        try {
+            const db = await this.openDB();
+            const transaction = db.transaction([this.storeName], 'readwrite');
+            const store = transaction.objectStore(this.storeName);
+            store.put({
+                url: url,
+                data: dataUrl,
+                timestamp: Date.now()
+            });
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+}
+
+const imageCacheDB = new ImageCacheDB();
+
+// 替换原来的 tryLoadFallback 函数
+async function tryLoadFallback(imgElement, originalUrl) {
+    // 1. 先检查缓存
+    const cached = await imageCacheDB.get(originalUrl);
+    if (cached) {
+        imgElement.src = cached;
+        imgElement.onerror = null;
+        // 移除加载提示
+        const loadingText = imgElement.parentElement?.querySelector('.loading-text');
+        if (loadingText) loadingText.remove();
+        console.log('✅ 使用缓存图片');
+        return;
+    }
+    
+    const fileName = originalUrl.split('/').pop();
+    
+    // 2. 国内可用 CDN（按速度排序）
+    const cdnList = [
+        `https://ghproxy.com/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://gitmirror.com/raw/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`
     ];
     
-    var currentIndex = 0;
+    let currentIndex = 0;
+    let timeoutId = null;
     
     function tryNext() {
-        if (currentIndex >= fallbacks.length) {
+        if (currentIndex >= cdnList.length) {
             imgElement.src = '';
             imgElement.alt = '图片加载失败';
+            const loadingText = imgElement.parentElement?.querySelector('.loading-text');
+            if (loadingText) loadingText.textContent = '📷 加载失败';
             imgElement.parentElement.innerHTML = `
-                <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f0f0f0;color:#999;font-size:12px;">
+                <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f0f0f0;color:#999;font-size:12px;min-height:100px;">
                     📷 加载失败
                 </div>
             `;
             return;
         }
         
-        imgElement.src = fallbacks[currentIndex];
+        const url = cdnList[currentIndex];
+        console.log(`🔄 尝试 CDN ${currentIndex + 1}/${cdnList.length}`);
+        
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            console.log(`⏰ CDN ${currentIndex + 1} 超时`);
+            currentIndex++;
+            tryNext();
+        }, 8000);
+        
+        imgElement.src = url;
         imgElement.onerror = function() {
+            clearTimeout(timeoutId);
+            console.log(`❌ CDN ${currentIndex + 1} 失败`);
             currentIndex++;
             tryNext();
         };
         imgElement.onload = function() {
-            console.log('✅ 图片加载成功:', fallbacks[currentIndex]);
+            clearTimeout(timeoutId);
+            console.log(`✅ 图片加载成功`);
+            // 移除加载提示
+            const loadingText = imgElement.parentElement?.querySelector('.loading-text');
+            if (loadingText) loadingText.remove();
+            // 缓存到 IndexedDB
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = imgElement.naturalWidth || 200;
+                canvas.height = imgElement.naturalHeight || 200;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imgElement, 0, 0);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                imageCacheDB.set(originalUrl, dataUrl);
+            } catch (e) {}
         };
     }
     
     tryNext();
 }
+
 
 async function saveToCloud() {
     console.log('📤 [saveToCloud] 开始执行');
