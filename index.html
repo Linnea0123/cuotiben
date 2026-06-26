@@ -1636,7 +1636,16 @@ img[loading="lazy"] {
 
 <div class="header">
     <div>
-       <h1 id="calendarTrigger" style="cursor: pointer;">错题本</h1>
+      <h1 id="calendarTrigger" style="cursor: pointer;"></h1>
+
+<script>
+const text = "毛语宸小朋友的错题本";
+const colors = ['#ff6b6b', '#feca57', '#ffd93d', '#6bcb77', '#4d96ff', '#9b59b6', '#ff6b6b', '#feca57', '#ffd93d', '#6bcb77'];
+const h1 = document.getElementById('calendarTrigger');
+h1.innerHTML = text.split('').map((char, i) => 
+    `<span style="color: ${colors[i % colors.length]}">${char}</span>`
+).join('');
+</script>
     </div>
     <div style="display: flex; gap: 2px; align-items: center;">
     <div style="display: flex; align-items: center; gap: 6px;">
