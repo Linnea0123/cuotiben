@@ -4674,7 +4674,8 @@ if (!hasQuestionText && !hasQuestionImages) {
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     
 
-// 重复检测（新增模式时）- 只检测当前分类下的重复
+
+ // 重复检测（新增模式时）- 只检测当前分类下的重复
 if (id === null && newQuestion && newQuestion.trim()) {
     // 构建当前分类的筛选条件
     let duplicateList = [];
@@ -4702,17 +4703,6 @@ if (id === null && newQuestion && newQuestion.trim()) {
         const duplicateItem = duplicateList.find(item => item.question === newQuestion);
         console.log('重复的题目:', duplicateItem);
         alert("⚠️ 这道题在当前分类中已经存在了！\n请勿重复添加。");
-        return;
-    }
-}
-    // 确保排除当前正在编辑的题目（虽然id=null时没有当前题目）
-    // 并且只检测非删除状态的题目
-    const isDuplicate = errorList.some(item => item.question === newQuestion);
-    if (isDuplicate) {
-        // 添加调试信息，看看是哪个题目重复了
-        const duplicateItem = errorList.find(item => item.question === newQuestion);
-        console.log('重复的题目:', duplicateItem);
-        alert("⚠️ 这道题已经存在错题本中了！\n请勿重复添加。");
         return;
     }
 }
