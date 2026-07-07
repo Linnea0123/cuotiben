@@ -4673,8 +4673,38 @@ if (!hasQuestionText && !hasQuestionImages) {
     
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     
-// 重复检测（新增模式时）- 只有填写了原题文字才检测重复
+
+// 重复检测（新增模式时）- 只检测当前分类下的重复
 if (id === null && newQuestion && newQuestion.trim()) {
+    // 构建当前分类的筛选条件
+    let duplicateList = [];
+    
+    if (subject === "chinese") {
+        // 语文：根据当前选中的分类筛选
+        duplicateList = chineseErrors.filter(item => {
+            // 首先匹配主分类
+            if (item.tag !== newTag) return false;
+            // 如果是基础知识，且有二级分类，则匹配二级分类
+            if (newTag === "基础知识" && newSubTag && newSubTag !== "全部") {
+                return item.subTag === newSubTag;
+            }
+            // 没有二级分类或二级分类为"全部"，只匹配一级分类
+            return true;
+        });
+    } else {
+        // 数学：根据当前选中的分类筛选
+        duplicateList = mathErrors.filter(item => item.tag === newTag);
+    }
+    
+    // 在筛选后的列表中检查重复
+    const isDuplicate = duplicateList.some(item => item.question === newQuestion);
+    if (isDuplicate) {
+        const duplicateItem = duplicateList.find(item => item.question === newQuestion);
+        console.log('重复的题目:', duplicateItem);
+        alert("⚠️ 这道题在当前分类中已经存在了！\n请勿重复添加。");
+        return;
+    }
+}
     // 确保排除当前正在编辑的题目（虽然id=null时没有当前题目）
     // 并且只检测非删除状态的题目
     const isDuplicate = errorList.some(item => item.question === newQuestion);
