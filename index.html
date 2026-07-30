@@ -1639,12 +1639,7 @@ img[loading="lazy"] {
       <h1 id="calendarTrigger" style="cursor: pointer;"></h1>
 
 <script>
-const text = "毛语宸小朋友的错题本";
-const colors = ['#ff6b6b', '#feca57', '#ffd93d', '#6bcb77', '#4d96ff', '#9b59b6', '#ff6b6b', '#feca57', '#ffd93d', '#6bcb77'];
-const h1 = document.getElementById('calendarTrigger');
-h1.innerHTML = text.split('').map((char, i) => 
-    `<span style="color: ${colors[i % colors.length]}">${char}</span>`
-).join('');
+document.getElementById('calendarTrigger').textContent = "错题本";
 </script>
     </div>
     <div style="display: flex; gap: 2px; align-items: center;">
@@ -1719,7 +1714,30 @@ h1.innerHTML = text.split('').map((char, i) =>
     <button class="review-btn-header" id="openReviewBtn" style="background: #ff3b30; color: white; border: none; padding: 4px 10px; border-radius: 16px; font-size: 11px; font-weight: 500; cursor: pointer;">复习</button>
 </div>
 </div>
+
+
+
     <div class="two-columns">
+<!-- 👇 筛选栏放在这里（category-tabs 上面） -->
+    <div class="filter-bar" style="display: flex; align-items: center; gap: 8px; padding: 8px 20px; background: #f8f9fc; border-bottom: 0.5px solid #e9e9ef; flex-wrap: wrap;">
+     
+        <select id="filterUnit" style="padding: 4px 10px; border-radius: 16px; border: 0.5px solid #c6c6c8; font-size: 12px; background: white;">
+            <option value="全部">全部单元</option>
+            <option value="第一单元">第一单元</option>
+            <option value="第二单元">第二单元</option>
+            <option value="第三单元">第三单元</option>
+            <option value="第四单元">第四单元</option>
+            <option value="第五单元">第五单元</option>
+            <option value="第六单元">第六单元</option>
+            <option value="第七单元">第七单元</option>
+            <option value="第八单元">第八单元</option>
+        </select>
+        <select id="filterText" style="padding: 4px 10px; border-radius: 16px; border: 0.5px solid #c6c6c8; font-size: 12px; background: white;">
+            <option value="全部">全部课文</option>
+        </select>
+        <button id="clearFilterBtn" style="padding: 4px 12px; border-radius: 16px; border: none; background: #ff3b30; color: white; font-size: 11px; cursor: pointer; display: none;">清除筛选</button>
+    </div>
+
     <div class="category-tabs" id="categoryTabs"></div>
     <div class="content-area" id="contentArea"></div>
 </div>
@@ -1792,13 +1810,13 @@ h1.innerHTML = text.split('').map((char, i) =>
         
         <!-- 来源筛选 -->
         <div style="margin-bottom: 14px;">
-            <label style="font-size: 12px; font-weight: 500; color: #3a3a3e; display: block; margin-bottom: 4px;">📚 来源</label>
+            <label style="font-size: 12px; font-weight: 500; color: #3a3a3e; display: block; margin-bottom: 4px;">来源</label>
             <input type="text" id="filterSource" placeholder="输入来源关键词" style="width: 100%; padding: 6px 10px; border-radius: 8px; border: 0.5px solid #ddd; font-size: 13px; box-sizing: border-box;">
         </div>
         
         <!-- 日期范围 -->
         <div style="margin-bottom: 14px;">
-            <label style="font-size: 12px; font-weight: 500; color: #3a3a3e; display: block; margin-bottom: 4px;">📅 日期</label>
+            <label style="font-size: 12px; font-weight: 500; color: #3a3a3e; display: block; margin-bottom: 4px;">日期</label>
             <div style="display: flex; gap: 8px; align-items: center;">
                 <input type="date" id="filterDateStart" style="flex: 1; padding: 6px 8px; border-radius: 8px; border: 0.5px solid #ddd; font-size: 12px;">
                 <span style="font-size: 12px; color: #999;">至</span>
@@ -1908,22 +1926,46 @@ h1.innerHTML = text.split('').map((char, i) =>
             </div>
 
             <!-- 三列布局：来源、所属单元、日期 -->
-            <div class="three-input">
-                <div><label>来源</label><input type="text" id="editSource" placeholder=""></div>
-                <div><label>年级学期</label>
-                    <select id="editGrade" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
-                        <option value="一上">一上</option>
-                        <option value="一下">一下</option>
-                        <option value="二上">二上</option>
-                        <option value="二下">二下</option>
-                        <option value="三上">三上</option>
-                        <option value="三下">三下</option>
-                        <option value="全部">全部（所有年级）</option>
-                    </select>
-                </div>
-                <div><label>所属单元</label><input type="text" id="editUnit" placeholder="如：第一单元"></div>
-                <div><label>日期</label><input type="date" id="editDate"></div>
-            </div>
+           <div class="three-input" style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 120px;">
+        <label>来源</label>
+        <input type="text" id="editSource" placeholder="如：听写本" style="width:100%;padding:10px 12px;border-radius:12px;border:0.5px solid #c6c6c8;font-size:14px;background:white;">
+    </div>
+    <div style="flex: 1; min-width: 120px;">
+        <label>年级学期</label>
+        <select id="editGrade" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px; background: white;">
+            <option value="一上">一上</option>
+            <option value="一下">一下</option>
+            <option value="二上" selected>二上</option>
+            <option value="二下">二下</option>
+            <option value="三上">三上</option>
+            <option value="三下">三下</option>
+            <option value="全部">全部（所有年级）</option>
+        </select>
+    </div>
+    <div style="flex: 1; min-width: 120px;">
+        <label>所属单元</label>
+        <select id="editUnit" style="width:100%;padding:10px 12px;border-radius:12px;border:0.5px solid #c6c6c8;font-size:14px;background:white;">
+            <option value="">请选择</option>
+            <option value="第一单元">第一单元</option>
+            <option value="第二单元">第二单元</option>
+            <option value="第三单元">第三单元</option>
+            <option value="第四单元">第四单元</option>
+            <option value="第五单元">第五单元</option>
+            <option value="第六单元">第六单元</option>
+            <option value="第七单元">第七单元</option>
+            <option value="第八单元">第八单元</option>
+        </select>
+    </div>
+    <div style="flex: 1; min-width: 120px;">
+        <label>课文</label>
+        <input type="text" id="editText" placeholder="如：秋天" style="width:100%;padding:10px 12px;border-radius:12px;border:0.5px solid #c6c6c8;font-size:14px;background:white;">
+    </div>
+    <div style="flex: 1; min-width: 120px;">
+        <label>日期</label>
+        <input type="date" id="editDate" style="width:100%;padding:10px 12px;border-radius:12px;border:0.5px solid #c6c6c8;font-size:14px;background:white;">
+    </div>
+</div>
 
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" id="cancelEditBtn">取消</button>
@@ -2868,14 +2910,22 @@ function renderSidebar() {
     const categoryTabs = document.getElementById('categoryTabs');
     if (!categoryTabs) return;
     
+    // ========== 获取当前选中的单元 ==========
+    const filterUnit = document.getElementById('filterUnit')?.value || '全部';
+    
     if (currentSubject === "chinese") {
         const categories = ["基础知识", "阅读理解", "作文表达", "文学常识", "其他"];
         
-        // 统计每个分类的数量（只统计当前年级）
+        // 统计每个分类的数量（包含年级和单元筛选）
         const getCount = (tag) => {
             let filtered = chineseErrors.filter(item => item.tag === tag);
+            // 年级筛选
             if (currentGradeFilter !== '全部') {
                 filtered = filtered.filter(item => item.grade === currentGradeFilter);
+            }
+            // ========== 单元筛选 ==========
+            if (filterUnit !== '全部') {
+                filtered = filtered.filter(item => item.unit === filterUnit);
             }
             return filtered.length;
         };
@@ -2894,6 +2944,7 @@ function renderSidebar() {
         html += `</div>`;
         categoryTabs.innerHTML = html;
         
+        // 绑定点击事件
         document.querySelectorAll('.category-tab').forEach(el => {
             el.addEventListener('click', (e) => {
                 const tag = e.target.getAttribute('data-tag');
@@ -2928,14 +2979,17 @@ function renderSidebar() {
         // 数学科目
         const categories = ["计算", "应用题", "图形", "概念"];
         
-        // 统计每个分类的数量（只统计当前年级）
         const getCount = (tag) => {
-    let filtered = chineseErrors.filter(item => item.tag === tag);
-    if (currentGradeFilter !== '全部') {
-        filtered = filtered.filter(item => item.grade === currentGradeFilter);
-    }
-    return filtered.length;
-};
+            let filtered = mathErrors.filter(item => item.tag === tag);
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(item => item.grade === currentGradeFilter);
+            }
+            // ========== 单元筛选 ==========
+            if (filterUnit !== '全部') {
+                filtered = filtered.filter(item => item.unit === filterUnit);
+            }
+            return filtered.length;
+        };
         
         let html = `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
         categories.forEach(cat => {
@@ -2969,28 +3023,49 @@ function renderSidebar() {
 
 
 function renderContent() {
+    // ========== 筛选逻辑 ==========
+    const filterUnit = document.getElementById('filterUnit')?.value || '全部';
+    const filterText = document.getElementById('filterText')?.value || '全部';
+    
+    let list = getCurrentDisplayList();
+    
+    if (filterUnit !== '全部') {
+        list = list.filter(item => item.unit === filterUnit);
+    }
+    if (filterText !== '全部') {
+        list = list.filter(item => item.text === filterText);
+    }
+    
+    // 更新课文下拉框
+    updateTextFilterOptions(list);
+    
+    // 显示/隐藏清除按钮
+    const clearBtn = document.getElementById('clearFilterBtn');
+    if (clearBtn) {
+        clearBtn.style.display = (filterUnit !== '全部' || filterText !== '全部') ? 'inline-block' : 'none';
+    }
+    // ========== 筛选逻辑结束 ==========
+    
     // ========== 错误原因颜色映射 ==========
-const reasonColorMap = {
-    '粗心大意': '#ff6b6b',
-    '审题不清': '#ffa94d',
-    '思路错误': '#ffd93d',
-    '完全不会': '#ff6b6b',
-    '前后鼻音': '#6bcb77',
-    '平翘舌音': '#4d96ff',
-    '边鼻音': '#9b59b6',
-    '计算错误': '#ff6b6b',
-    '概念模糊': '#ffa94d'
-};
+    const reasonColorMap = {
+        '粗心大意': '#ff6b6b',
+        '审题不清': '#ffa94d',
+        '思路错误': '#ffd93d',
+        '完全不会': '#ff6b6b',
+        '前后鼻音': '#6bcb77',
+        '平翘舌音': '#4d96ff',
+        '边鼻音': '#9b59b6',
+        '计算错误': '#ff6b6b',
+        '概念模糊': '#ffa94d'
+    };
 
-function getReasonColor(reasons) {
-    if (!reasons || reasons.length === 0) return '#8e8e93';
-    const firstReason = reasons[0];
-    // "未分类"返回灰色
-    if (firstReason === '未分类') return '#8e8e93';
-    return reasonColorMap[firstReason] || '#8e8e93';
-}
-// ========== 颜色映射结束 ==========
-    const list = getCurrentDisplayList();
+    function getReasonColor(reasons) {
+        if (!reasons || reasons.length === 0) return '#8e8e93';
+        const firstReason = reasons[0];
+        if (firstReason === '未分类') return '#8e8e93';
+        return reasonColorMap[firstReason] || '#8e8e93';
+    }
+    // ========== 颜色映射结束 ==========
     
     list.sort((a, b) => {
         const timeA = a.createdAt || 0;
@@ -2999,67 +3074,71 @@ function getReasonColor(reasons) {
     });
     
     const questionCountDisplay = document.getElementById('questionCountDisplay');
-if (questionCountDisplay) {
-    let totalCount = 0;
-    if (currentSubject === "chinese") {
-        // 只统计当前年级的语文错题
-        if (currentGradeFilter === '全部') {
-            totalCount = chineseErrors.length;
+    if (questionCountDisplay) {
+        let totalCount = 0;
+        if (currentSubject === "chinese") {
+            if (currentGradeFilter === '全部') {
+                totalCount = chineseErrors.length;
+            } else {
+                totalCount = chineseErrors.filter(item => item.grade === currentGradeFilter).length;
+            }
         } else {
-            totalCount = chineseErrors.filter(item => item.grade === currentGradeFilter).length;
+            if (currentGradeFilter === '全部') {
+                totalCount = mathErrors.length;
+            } else {
+                totalCount = mathErrors.filter(item => item.grade === currentGradeFilter).length;
+            }
         }
-    } else {
-        // 只统计当前年级的数学错题
-        if (currentGradeFilter === '全部') {
-            totalCount = mathErrors.length;
-        } else {
-            totalCount = mathErrors.filter(item => item.grade === currentGradeFilter).length;
-        }
+        questionCountDisplay.textContent = `${totalCount} 道题`;
     }
-    questionCountDisplay.textContent = `${totalCount} 道题`;
-}
     
     let subTabsHtml = "";
     if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
-        // 统计二级分类数量（只统计当前年级）
-const pinyinCount = chineseErrors.filter(item => 
-    item.tag === "基础知识" && 
-    item.subTag === "拼音" &&
-    (currentGradeFilter === '全部' || item.grade === currentGradeFilter)
-).length;
-const shengziCount = chineseErrors.filter(item => 
-    item.tag === "基础知识" && 
-    item.subTag === "生字" &&
-    (currentGradeFilter === '全部' || item.grade === currentGradeFilter)
-).length;
-const bishunCount = chineseErrors.filter(item => 
-    item.tag === "基础知识" && 
-    item.subTag === "笔顺" &&
-    (currentGradeFilter === '全部' || item.grade === currentGradeFilter)
-).length;
-const biaodianCount = chineseErrors.filter(item => 
-    item.tag === "基础知识" && 
-    item.subTag === "标点" &&
-    (currentGradeFilter === '全部' || item.grade === currentGradeFilter)
-).length;
-const duoyinziCount = chineseErrors.filter(item => 
-    item.tag === "基础知识" && 
-    item.subTag === "多音字" &&
-    (currentGradeFilter === '全部' || item.grade === currentGradeFilter)
-).length;
-const qitaCount = chineseErrors.filter(item => 
-    item.tag === "基础知识" && 
-    item.subTag === "其他" &&
-    (currentGradeFilter === '全部' || item.grade === currentGradeFilter)
-).length;
+        // ========== 二级分类统计（包含单元筛选） ==========
+        const pinyinCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && 
+            item.subTag === "拼音" &&
+            (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
+            (filterUnit === '全部' || item.unit === filterUnit)
+        ).length;
+        const shengziCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && 
+            item.subTag === "生字" &&
+            (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
+            (filterUnit === '全部' || item.unit === filterUnit)
+        ).length;
+        const bishunCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && 
+            item.subTag === "笔顺" &&
+            (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
+            (filterUnit === '全部' || item.unit === filterUnit)
+        ).length;
+        const biaodianCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && 
+            item.subTag === "标点" &&
+            (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
+            (filterUnit === '全部' || item.unit === filterUnit)
+        ).length;
+        const duoyinziCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && 
+            item.subTag === "多音字" &&
+            (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
+            (filterUnit === '全部' || item.unit === filterUnit)
+        ).length;
+        const qitaCount = chineseErrors.filter(item => 
+            item.tag === "基础知识" && 
+            item.subTag === "其他" &&
+            (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
+            (filterUnit === '全部' || item.unit === filterUnit)
+        ).length;
         
         const subTags = [
             { name: "拼音", count: pinyinCount },
             { name: "生字", count: shengziCount },
             { name: "笔顺", count: bishunCount },
-             { name: "标点", count: biaodianCount },
-             { name: "多音字", count: duoyinziCount },
-        { name: "其他", count: qitaCount }
+            { name: "标点", count: biaodianCount },
+            { name: "多音字", count: duoyinziCount },
+            { name: "其他", count: qitaCount }
         ];
         
         subTabsHtml = `
@@ -3095,24 +3174,18 @@ const qitaCount = chineseErrors.filter(item =>
     
     let cardsHtml = `<div class="questions-list">`;
     list.forEach(item => {
-         const isMathItem = item.id && item.id.startsWith('math');
+        const isMathItem = item.id && item.id.startsWith('math');
         const reasonText = item.reasons?.length ? item.reasons.join("、") : "未分类";
-       const reasonColor = getReasonColor(item.reasons);
+        const reasonColor = getReasonColor(item.reasons);
         const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
         
-
-
-
         let specialContent = "";
         const hasTextContent = item.question && item.question.trim();
         
-        // ========== 拼音分类：括号前汉字显示四线格（实线），括号内注释显示四线格（透明线） ==========
         if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
-            // 提取括号前的汉字和括号内的注释
             let mainHanzi = item.question;
             let noteText = '';
             
-            // 处理中文括号 （）
             const bracketIndex = item.question.indexOf('（');
             if (bracketIndex > 0) {
                 mainHanzi = item.question.substring(0, bracketIndex);
@@ -3122,7 +3195,6 @@ const qitaCount = chineseErrors.filter(item =>
                 }
                 noteText = tempNote;
             }
-            // 处理英文括号 ()
             const englishBracketIndex = item.question.indexOf('(');
             if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
                 mainHanzi = item.question.substring(0, englishBracketIndex);
@@ -3141,7 +3213,6 @@ const qitaCount = chineseErrors.filter(item =>
                     <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 8px;">
             `;
             
-            // 主体汉字：显示四线三格（实线）
             chars.forEach(char => {
                 pinyinHtml += `
                     <div style="text-align: center;">
@@ -3159,7 +3230,6 @@ const qitaCount = chineseErrors.filter(item =>
                 `;
             });
             
-            // 注释文字：显示四线三格（透明线），只显示汉字，括号不显示
             if (noteChars.length > 0) {
                 noteChars.forEach(char => {
                     pinyinHtml += `
@@ -3185,7 +3255,6 @@ const qitaCount = chineseErrors.filter(item =>
             `;
             specialContent = pinyinHtml;
             
-            // 准备正确答案（拼音）用于详情显示
             const correctPinyin = item.correctAnswer || '';
             const pinyinParts = correctPinyin ? correctPinyin.trim().split(/\s+/) : [];
             let correctAnswerHtml = '';
@@ -3213,52 +3282,24 @@ const qitaCount = chineseErrors.filter(item =>
                 </div>
             `;
         }
-        // 拼音特殊渲染（和错题卡保持一致）
-if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
-    // ... 拼音渲染代码保持不变 ...
-}
-// 生字特殊渲染
-else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
-    // ... 生字渲染代码保持不变 ...
-}
-// 笔顺特殊渲染
-else if (item.tag === "基础知识" && item.subTag === "笔顺" && hasTextContent) {
-    specialContent = `
-        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
-            <div style="font-size: 48px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
-                ${escapeHtml(item.question)}
-            </div>
-            <div style="font-size: 14px; color: #8e8e93; text-align: center; margin-top: 16px;">
-                按正确笔顺书写
-            </div>
-        </div>
-    `;
-}
-// 多音字特殊渲染（和笔顺样式一致）
-else if (item.tag === "基础知识" && item.subTag === "多音字" && hasTextContent) {
-    specialContent = `
-        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
-            <div style="font-size: 48px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
-                ${escapeHtml(item.question)}
-            </div>
-            
-        </div>
-    `;
-}
-// 数学题目：居中放大（与其他完全分开）
-else if (isMathItem && hasTextContent) {
-    specialContent = `
-        <div style="font-size: 32px; font-weight: 600; line-height: 1.4; margin: 12px 0; background: #f8f9fc; padding: 28px 20px; border-radius: 20px; text-align: center;">
-            ${escapeHtml(item.question)}
-        </div>
-    `;
-}
-// 语文其他分类（阅读理解、作文表达、文学常识）
-else if (hasTextContent) {
-    specialContent = `<div style="font-size: 16px; font-weight: 500; line-height: 1.5; margin: 12px 0; background: #f8f9fc; padding: 16px; border-radius: 16px;">${escapeHtml(item.question)}</div>`;
-}
+        else if (item.tag === "基础知识" && item.subTag === "多音字" && hasTextContent) {
+            specialContent = `
+                <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
+                    <div style="font-size: 48px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
+                        ${escapeHtml(item.question)}
+                    </div>
+                </div>
+            `;
+        }
+        else if (isMathItem && hasTextContent) {
+            specialContent = `
+                <div style="font-size: 32px; font-weight: 600; line-height: 1.4; margin: 12px 0; background: #f8f9fc; padding: 28px 20px; border-radius: 20px; text-align: center;">
+                    ${escapeHtml(item.question)}
+                </div>
+            `;
+        }
         else if (hasTextContent) {
-            specialContent = `<div class="question-text" style="font-size: 16px; font-weight: 500; line-height: 1.5;">${escapeHtml(item.question)}</div>`;
+            specialContent = `<div style="font-size: 16px; font-weight: 500; line-height: 1.5; margin: 12px 0; background: #f8f9fc; padding: 16px; border-radius: 16px;">${escapeHtml(item.question)}</div>`;
         } else {
             specialContent = "";
         }
@@ -3266,25 +3307,23 @@ else if (hasTextContent) {
         cardsHtml += `
             <div class="card">
                 <div class="card-header">
-    <div class="tag-group" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-        <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
-        ${item.labels && item.labels.length > 0 ? item.labels.map(label => {
-            const colors = {
-                '重点': '#ff3b30',
-                '很难': '#ff9500',
-                '注意': '#007aff',
-                '易错': '#34c759'
-            };
-            return `<span style="background: ${colors[label] || '#8e8e93'}; color: white; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 500; flex-shrink: 0;">${label}</span>`;
-        }).join('') : ''}
-      <span class="error-tag" style="margin-left: auto; background: ${reasonColor === '#8e8e93' ? '#f2f2f6' : reasonColor}; ${reasonColor === '#8e8e93' ? 'color: #5c5c5e;' : 'color: white;'} padding: ${reasonColor === '#8e8e93' ? '4px 12px' : '2px 10px'}; border-radius: 30px; font-size: 11px; font-weight: 500;">
-    ${escapeHtml(reasonText)}
-</span>
-    </div>
-    <button class="edit-btn" data-id="${item.id}">编辑</button>
-</div>
-
-
+                    <div class="tag-group" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
+                        ${item.labels && item.labels.length > 0 ? item.labels.map(label => {
+                            const colors = {
+                                '重点': '#ff3b30',
+                                '很难': '#ff9500',
+                                '注意': '#007aff',
+                                '易错': '#34c759'
+                            };
+                            return `<span style="background: ${colors[label] || '#8e8e93'}; color: white; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 500; flex-shrink: 0;">${label}</span>`;
+                        }).join('') : ''}
+                        <span class="error-tag" style="margin-left: auto; background: ${reasonColor === '#8e8e93' ? '#f2f2f6' : reasonColor}; ${reasonColor === '#8e8e93' ? 'color: #5c5c5e;' : 'color: white;'} padding: ${reasonColor === '#8e8e93' ? '4px 12px' : '2px 10px'}; border-radius: 30px; font-size: 11px; font-weight: 500;">
+                            ${escapeHtml(reasonText)}
+                        </span>
+                    </div>
+                    <button class="edit-btn" data-id="${item.id}">编辑</button>
+                </div>
                 <div class="card-body">
                     <div class="question-container">
                         ${specialContent}
@@ -3293,6 +3332,7 @@ else if (hasTextContent) {
                     <div class="meta-info" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #8e8e93; margin-top: 16px; padding-top: 12px; border-top: 0.5px solid #f0f0f4;">
                         <span>${escapeHtml(item.source || '未知来源')}</span>
                         <span>${escapeHtml(item.unit || '所属单元')}</span>
+                        ${item.text ? `<span>${escapeHtml(item.text)}</span>` : ''}
                         <span>${item.date || '无日期'}</span>
                         <span class="review-count-clickable" style="cursor: pointer; color: #007aff; background: #e9e9ef; padding: 4px 12px; border-radius: 20px;" onclick="showHistoryModal('${item.id}', '${currentSubject}', event)">复习 ${item.reviewCount || 0} 次</span>
                     </div>
@@ -3323,7 +3363,23 @@ else if (hasTextContent) {
         gradeFilter.addEventListener('change', handleGradeChange);
     }
 }
- 
+
+
+
+function updateTextFilterOptions(list) {
+    const textSelect = document.getElementById('filterText');
+    if (!textSelect) return;
+    
+    const currentValue = textSelect.value;
+    const texts = [...new Set(list.map(item => item.text).filter(t => t && t.trim()))];
+    
+    textSelect.innerHTML = `<option value="全部">全部课文</option>`;
+    texts.forEach(text => {
+        textSelect.innerHTML += `<option value="${text}">${text}</option>`;
+    });
+    textSelect.value = currentValue;
+}
+
  function handleGradeChange() {
     renderContent();
     renderSidebar();  // 确保这里调用了 renderSidebar
@@ -4222,7 +4278,7 @@ function refreshCategorySelect(subject, currentTag) {
 function openAddModal() {
     document.querySelector('#editModal .modal-container h4').innerText = "新增错题";
     editingItem = { id: null, subject: currentSubject };
-    
+    document.getElementById("editText").value = "";
     // 清空表单 - 添加安全检查
 const editQuestionEl = document.getElementById("editQuestion");
 // 支持错误答案输入框粘贴图片
@@ -4637,6 +4693,7 @@ async function handleReviewImageUpload(event, target) {
 
 
 function openEditModal(errorId, subject) {
+
     document.querySelector('#editModal .modal-container h4').innerText = "编辑错题";
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     const editItem = errorList.find(err => err.id === errorId);
@@ -4652,6 +4709,7 @@ function openEditModal(errorId, subject) {
     const editCorrectEl = document.getElementById("editCorrect");
     const editSourceEl = document.getElementById("editSource");
     const editUnitEl = document.getElementById("editUnit");
+    const editTextEl = document.getElementById("editText");  
     const editDateEl = document.getElementById("editDate");
     const editGradeEl = document.getElementById("editGrade");
     const editSubTagEl = document.getElementById("editSubTag");
@@ -4674,6 +4732,7 @@ if (editCorrectEl) {
 if (editSourceEl) editSourceEl.value = editItem.source || "";
 if (editUnitEl) editUnitEl.value = editItem.unit || "";
 if (editDateEl) editDateEl.value = editItem.date || "";
+if (editTextEl) editTextEl.value = editItem.text || "";  
 if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
     
     // 设置二级分类的值（在刷新类别之前）
@@ -4803,7 +4862,7 @@ function getSourceHistory() {
 }
 function saveEdit() {
 
-    
+    const newText = document.getElementById("editText").value;
     const { id, subject } = editingItem;
     const newQuestion = document.getElementById("editQuestion").value;
     const newWrong = document.getElementById("editWrong").value;
@@ -4884,6 +4943,7 @@ if (id === null) {
         subTag: (newTag === "基础知识") ? newSubTag : undefined,
         grade: newGrade,
         unit: newUnit,
+        text: newText,
         question: newQuestion,
         wrongAnswer: newWrong,
         correctAnswer: newCorrect,
@@ -4911,6 +4971,7 @@ if (id === null) {
             correctAnswer: newCorrect, 
             source: newSource, 
             unit: newUnit, 
+            text: newText,
             date: newDate, 
             reasons: newReasons,
             labels: selectedLabels,
@@ -6705,7 +6766,7 @@ function printCurrentCategory() {
         </head>
         <body>
             <div class="print-header">
-                <h1>📚 ${escapeHtml(title)}</h1>
+                <h1>${escapeHtml(title)}</h1>
                 <p>打印时间：${escapeHtml(now)} | 共 ${list.length} 道错题</p>
             </div>
     `;
@@ -6831,9 +6892,9 @@ else if (item.question) {
         const reasonText = item.reasons?.length ? item.reasons.join("、") : "未标注";
         printHtml += `
             <div class="print-meta">
-                <span>📌 错误原因：${escapeHtml(reasonText)}</span>
-                <span style="margin-left: 20px;">📚 单元：${escapeHtml(item.unit || '未标注')}</span>
-                <span style="margin-left: 20px;">🔄 复习次数：${item.reviewCount || 0}</span>
+                <span>错误原因：${escapeHtml(reasonText)}</span>
+                <span style="margin-left: 20px;">单元：${escapeHtml(item.unit || '未标注')}</span>
+                <span style="margin-left: 20px;">复习次数：${item.reviewCount || 0}</span>
             </div>
         `;
         
@@ -6941,6 +7002,7 @@ function closePrintSettings() {
     }
 }
 
+
 function executePrint() {
     console.log('开始打印');
     
@@ -6956,7 +7018,10 @@ function executePrint() {
         wrong: document.getElementById('printWrong')?.checked ?? false,
         correct: document.getElementById('printCorrect')?.checked ?? false,
         reason: document.getElementById('printReason')?.checked ?? false,
-        meta: document.getElementById('printMeta')?.checked ?? false
+        unit: document.getElementById('printUnit')?.checked ?? true,
+        text: document.getElementById('printText')?.checked ?? true,
+        date: document.getElementById('printDate')?.checked ?? true,
+        source: document.getElementById('printSource')?.checked ?? true
     };
     
     // ========== 判断是否为数学分类 ==========
@@ -6971,7 +7036,6 @@ var gridColumns = parseInt(document.getElementById('printColumns')?.value) || 2;
 // 如果是生字或拼音，自动调整列数（用户也可以手动覆盖）
 if (currentSubject === 'chinese' && currentChineseTag === '基础知识') {
     if (currentChineseSubTag === '生字') {
-        // 生字默认12列，但如果用户手动选择了其他值，尊重用户选择
         if (!document.getElementById('printColumns')?.value) {
             gridColumns = 12;
         }
@@ -7037,10 +7101,49 @@ html += '@page{margin:0.1cm !important;}';
     var item = list[i];
     var isMath = item.id && item.id.startsWith('math');
     
+    // ===== 卡片头部：日期和来源（居中） =====
+    var cardHeader = '';
+    cardHeader += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#aaa;margin-bottom:4px;padding:0 2px;">';
+    cardHeader += '<span>#' + (i+1) + '</span>';
+    cardHeader += '<span>';
+    var headerParts = [];
+    if (options.date && item.date) headerParts.push(escapeHtml(item.date));
+    if (options.source && item.source) headerParts.push(escapeHtml(item.source));
+    cardHeader += headerParts.join(' | ');
+    cardHeader += '</span>';
+    cardHeader += '</div>';
+    
+    // ===== 单元显示（居中） =====
+    var unitHtml = '';
+    if (options.unit) {
+        var unitValue = (item.unit && item.unit.trim()) ? escapeHtml(item.unit) : '未设置';
+        unitHtml = '<div style="font-size:10px;color:#666;margin-bottom:2px;text-align:center;">' + unitValue + '</div>';
+    }
+    
+    // ===== 课文显示（单元下一行，居中） =====
+    var textHtml = '';
+    if (options.text) {
+        var textValue = (item.text && item.text.trim()) ? escapeHtml(item.text) : '未设置';
+        textHtml = '<div style="font-size:10px;color:#666;margin-bottom:4px;text-align:center;">' + textValue + '</div>';
+    }
+    
+    // ===== 单元和课文合并 =====
+    var unitTextHtml = '';
+    if (unitHtml || textHtml) {
+        unitTextHtml = '<div style="margin-bottom:4px;">' + unitHtml + textHtml + '</div>';
+    }
+    
+    // ===== 错误原因（放在卡片底部，居中） =====
+    var reasonHtml = '';
+    if (options.reason && item.reasons && item.reasons.length) {
+        reasonHtml = '<div style="font-size:10px;color:#888;margin-top:4px;padding-top:4px;border-top:1px dashed #ddd;text-align:center;">错误原因: ' + escapeHtml(item.reasons.join('、')) + '</div>';
+    }
+    
     if(isMath) {
         // ========== 数学卡片渲染 ==========
         html += '<div class="print-card">';
-        html += '<div class="card-header">第 ' + (i+1) + ' 题 | ' + (item.date || '无日期') + ' | ' + escapeHtml(item.source || '未知来源') + '</div>';
+        html += cardHeader;
+        html += unitTextHtml;
         
         if(options.question) {
             html += '<div class="math-question">';
@@ -7057,7 +7160,7 @@ html += '@page{margin:0.1cm !important;}';
         
         if(options.wrong && ((item.wrongAnswer && item.wrongAnswer.trim()) || (item.wrongImages && item.wrongImages.length > 0))) {
             html += '<div class="math-wrong">';
-            html += '<strong style="color:#ff3b30;">❌ 错误答案：</strong><br>';
+            html += '<strong style="color:#ff3b30;">错误答案：</strong><br>';
             if(item.wrongAnswer && item.wrongAnswer.trim()) {
                 html += '<div>' + escapeHtml(item.wrongAnswer) + '</div>';
             }
@@ -7071,7 +7174,7 @@ html += '@page{margin:0.1cm !important;}';
         
         if(options.correct && ((item.correctAnswer && item.correctAnswer.trim()) || (item.correctImages && item.correctImages.length > 0))) {
             html += '<div class="math-answer">';
-            html += '<strong style="color:#34c759;">✅ 正确答案：</strong><br>';
+            html += '<strong style="color:#34c759;">正确答案：</strong><br>';
             if(item.correctAnswer && item.correctAnswer.trim()) {
                 html += '<div>' + escapeHtml(item.correctAnswer) + '</div>';
             }
@@ -7083,19 +7186,7 @@ html += '@page{margin:0.1cm !important;}';
             html += '</div>';
         }
         
-        if(options.reason || options.meta) {
-            html += '<div class="math-meta">';
-            if(options.reason && item.reasons && item.reasons.length) {
-                html += '<span>📌 错误原因：' + escapeHtml(item.reasons.join('、')) + '</span>';
-            }
-            if(options.meta && item.unit) {
-                html += '<span>📚 单元：' + escapeHtml(item.unit) + '</span>';
-            }
-            if(options.meta) {
-                html += '<span>🔄 复习次数：' + (item.reviewCount || 0) + '</span>';
-            }
-            html += '</div>';
-        }
+        html += reasonHtml;
         html += '</div>';
     }
     else if(item.subTag === "生字") {
@@ -7113,8 +7204,10 @@ html += '@page{margin:0.1cm !important;}';
         
         var cardSpan = Math.min(pinyinParts.length + (hanzi ? 1 : 0), gridColumns);
         html += '<div class="print-card" style="grid-column:span ' + cardSpan + ';">';
+        html += cardHeader;
+        html += unitTextHtml;
         
-        html += '<div style="display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:8px;">';
+        html += '<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;">';
         
         if(hanzi) {
             html += '<div style="text-align:center;">';
@@ -7133,7 +7226,10 @@ html += '@page{margin:0.1cm !important;}';
             html += '</div>';
             html += '</div>';
         }
-        html += '</div></div>';
+        html += '</div>';
+        
+        html += reasonHtml;
+        html += '</div>';
     }
     else if(item.subTag === "拼音") {
         // ========== 拼音渲染 ==========
@@ -7165,6 +7261,32 @@ html += '@page{margin:0.1cm !important;}';
         
         chars.forEach(function(char) {
             html += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin-bottom: 10px; display: inline-block;">';
+            
+            // ===== 拼音卡片显示单元和课文（居中） =====
+            var pinyinUnitHtml = '';
+            var pinyinUnitValue = '';
+            if (options.unit) {
+                var unitVal = (item.unit && item.unit.trim()) ? escapeHtml(item.unit) : '未设置';
+                pinyinUnitValue = '<div style="font-size:8px;color:#888;text-align:center;">' + unitVal + '</div>';
+            }
+            var pinyinTextValue = '';
+            if (options.text) {
+                var textVal = (item.text && item.text.trim()) ? escapeHtml(item.text) : '未设置';
+                pinyinTextValue = '<div style="font-size:8px;color:#888;text-align:center;">' + textVal + '</div>';
+            }
+            if (pinyinUnitValue || pinyinTextValue) {
+                pinyinUnitHtml = '<div style="margin-bottom:2px;">' + pinyinUnitValue + pinyinTextValue + '</div>';
+            }
+            html += pinyinUnitHtml;
+            
+            // 日期和来源（居中）
+            html += '<div style="display: flex; justify-content: center; font-size: 8px; color: #ccc; margin-bottom: 2px;">';
+            var headerParts2 = [];
+            if (options.date && item.date) headerParts2.push(escapeHtml(item.date));
+            if (options.source && item.source) headerParts2.push(escapeHtml(item.source));
+            html += headerParts2.join(' | ');
+            html += '</div>';
+            
             html += '<div class="flex-row">';
             html += '<div class="char-box">';
             html += '<div class="four-line-grid">';
@@ -7198,10 +7320,8 @@ html += '@page{margin:0.1cm !important;}';
     else {
     // ========== 笔顺、标点、其他：直接显示原题文字 ==========
     html += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin-bottom: 10px;">';
-    html += '<div style="display: flex; justify-content: space-between; font-size: 11px; color: #999; margin-bottom: 8px;">';
-    html += '<span>第 ' + (i+1) + ' 题</span>';
-    html += '<span>' + (item.date || '无日期') + ' | ' + escapeHtml(item.source || '未知来源') + '</span>';
-    html += '</div>';
+    html += cardHeader;
+    html += unitTextHtml;
     
     // 显示原题文字
     if(item.question && item.question.trim()) {
@@ -7222,7 +7342,7 @@ html += '@page{margin:0.1cm !important;}';
     // ========== 显示错误答案（文字） ==========
     if(options.wrong && item.wrongAnswer && item.wrongAnswer.trim()) {
         html += '<div style="margin-top: 8px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; border-radius: 6px;">';
-        html += '<strong style="color:#ff3b30;">❌ 错误答案：</strong><br>';
+        html += '<strong style="color:#ff3b30;">错误答案：</strong><br>';
         html += '<div style="font-size: 14px; line-height: 1.5;">' + escapeHtml(item.wrongAnswer) + '</div>';
         html += '</div>';
     }
@@ -7230,7 +7350,7 @@ html += '@page{margin:0.1cm !important;}';
     // ========== 显示错误答案图片 ==========
     if(item.wrongImages && item.wrongImages.length > 0) {
         html += '<div style="margin-top: 8px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; border-radius: 6px;">';
-        html += '<strong style="color:#ff3b30;">❌ 错误答案图片：</strong><br>';
+        html += '<strong style="color:#ff3b30;">错误答案图片：</strong><br>';
         for(var wi = 0; wi < item.wrongImages.length; wi++) {
             html += '<div style="margin:4px 0;text-align:center;">';
             html += '<img src="' + item.wrongImages[wi] + '" style="max-width:100%; max-height:200px; border-radius:8px;">';
@@ -7242,7 +7362,7 @@ html += '@page{margin:0.1cm !important;}';
     // ========== 显示正确答案（文字） ==========
     if(options.correct && item.correctAnswer && item.correctAnswer.trim()) {
         html += '<div style="margin-top: 8px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; border-radius: 6px;">';
-        html += '<strong style="color:#34c759;">✅ 正确答案：</strong><br>';
+        html += '<strong style="color:#34c759;">正确答案：</strong><br>';
         html += '<div style="font-size: 14px; line-height: 1.5;">' + escapeHtml(item.correctAnswer) + '</div>';
         html += '</div>';
     }
@@ -7250,7 +7370,7 @@ html += '@page{margin:0.1cm !important;}';
     // ========== 显示正确答案图片 ==========
     if(item.correctImages && item.correctImages.length > 0) {
         html += '<div style="margin-top: 8px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; border-radius: 6px;">';
-        html += '<strong style="color:#34c759;">✅ 正确答案图片：</strong><br>';
+        html += '<strong style="color:#34c759;">正确答案图片：</strong><br>';
         for(var ci = 0; ci < item.correctImages.length; ci++) {
             html += '<div style="margin:4px 0;text-align:center;">';
             html += '<img src="' + item.correctImages[ci] + '" style="max-width:100%; max-height:200px; border-radius:8px;">';
@@ -7259,20 +7379,7 @@ html += '@page{margin:0.1cm !important;}';
         html += '</div>';
     }
     
-    // ========== 错误原因（不显示复习次数） ==========
-    if(item.reasons && item.reasons.length) {
-        html += '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; font-size: 11px; color: #888;">';
-        html += '<span>📌 错误原因：' + escapeHtml(item.reasons.join('、')) + '</span>';
-        if(item.unit) {
-            html += '<span style="margin-left: 16px;">📚 单元：' + escapeHtml(item.unit) + '</span>';
-        }
-        html += '</div>';
-    } else if(item.unit) {
-        html += '<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; font-size: 11px; color: #888;">';
-        html += '<span>📚 单元：' + escapeHtml(item.unit) + '</span>';
-        html += '</div>';
-    }
-    
+    html += reasonHtml;
     html += '</div>';
 }
 }
@@ -7295,6 +7402,7 @@ html += '@page{margin:0.1cm !important;}';
     };
 }
 
+
 // ========== 打印设置功能 ==========
 let currentPrintFilter = "current"; // current, all, chinese, math
 
@@ -7308,35 +7416,42 @@ function getPrintFilteredList() {
             if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
                 list = list.filter(item => item.subTag === currentChineseSubTag);
             }
-            // 年级筛选
             if (currentGradeFilter !== '全部') {
                 list = list.filter(item => item.grade === currentGradeFilter);
             }
         } else {
             list = mathErrors.filter(item => item.tag === currentMathTag);
-            // 年级筛选
             if (currentGradeFilter !== '全部') {
                 list = list.filter(item => item.grade === currentGradeFilter);
             }
         }
     } else if (currentPrintFilter === "all") {
         list = [...chineseErrors, ...mathErrors];
-        // 年级筛选
         if (currentGradeFilter !== '全部') {
             list = list.filter(item => item.grade === currentGradeFilter);
         }
     } else if (currentPrintFilter === "chinese") {
         list = [...chineseErrors];
-        // 年级筛选
         if (currentGradeFilter !== '全部') {
             list = list.filter(item => item.grade === currentGradeFilter);
         }
     } else if (currentPrintFilter === "math") {
         list = [...mathErrors];
-        // 年级筛选
         if (currentGradeFilter !== '全部') {
             list = list.filter(item => item.grade === currentGradeFilter);
         }
+    }
+    
+    // ========== 👇 添加单元筛选 ==========
+    const filterUnit = document.getElementById('printFilterUnit')?.value || '全部';
+    if (filterUnit !== '全部') {
+        list = list.filter(item => item.unit === filterUnit);
+    }
+    
+    // ========== 👇 添加课文筛选 ==========
+    const filterText = document.getElementById('printFilterText')?.value || '全部';
+    if (filterText !== '全部') {
+        list = list.filter(item => item.text === filterText);
     }
     
     // 2. 日期范围筛选
@@ -7371,6 +7486,48 @@ function getPrintFilteredList() {
     return list;
 }
 
+function updatePrintFilterTextOptions() {
+    const textSelect = document.getElementById('printFilterText');
+    if (!textSelect) return;
+    
+    // 注意：这里不要修改 printFilterUnit 的值！
+    
+    let list = [];
+    if (currentPrintFilter === "current") {
+        if (currentSubject === "chinese") {
+            list = chineseErrors.filter(item => item.tag === currentChineseTag);
+            if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                list = list.filter(item => item.subTag === currentChineseSubTag);
+            }
+        } else {
+            list = mathErrors.filter(item => item.tag === currentMathTag);
+        }
+    } else if (currentPrintFilter === "all") {
+        list = [...chineseErrors, ...mathErrors];
+    } else if (currentPrintFilter === "chinese") {
+        list = [...chineseErrors];
+    } else if (currentPrintFilter === "math") {
+        list = [...mathErrors];
+    }
+    
+    // 按单元筛选课文
+    var filterUnit = document.getElementById('printFilterUnit')?.value || '全部';
+    if (filterUnit !== '全部') {
+        list = list.filter(item => item.unit === filterUnit);
+    }
+    
+    var currentValue = textSelect.value;
+    var texts = [...new Set(list.map(item => item.text).filter(t => t && t.trim()))];
+    
+    textSelect.innerHTML = '<option value="全部">全部课文</option>';
+    texts.forEach(function(text) {
+        textSelect.innerHTML += '<option value="' + text + '">' + text + '</option>';
+    });
+    textSelect.value = currentValue;
+}
+
+
+
 function updatePrintStats() {
     const list = getPrintFilteredList();
     const countSpan = document.getElementById('printCount');
@@ -7401,24 +7558,25 @@ function updatePrintCategoryDetail() {
 }
 
 function openPrintSettings() {
+    // ========== 在函数开头立即保存主界面的值 ==========
+    const savedUnit = document.getElementById('filterUnit')?.value || '全部';
+    const savedText = document.getElementById('filterText')?.value || '全部';
+    
+    console.log('保存的单元值:', savedUnit);
+    
     currentPrintFilter = "current";
     
     const modal = document.getElementById('printSettingsModal');
     const container = modal.querySelector('.modal-container');
     
-    // ========== 方法：先让弹窗不可见，重置滚动，再显示 ==========
-    // 1. 先设置 display: none 彻底隐藏
     modal.style.display = 'none';
     modal.classList.remove('active');
     
-    // 2. 重置滚动位置
     if (container) {
         container.scrollTop = 0;
-        // 强制浏览器重新计算布局
         void container.offsetHeight;
     }
     
-    // 3. 更新分类筛选按钮状态
     document.querySelectorAll('.print-category-filter').forEach(function(btn) {
         btn.classList.remove('active');
         if (btn.getAttribute('data-filter') === 'current') {
@@ -7427,74 +7585,121 @@ function openPrintSettings() {
     });
     
     updatePrintCategoryDetail();
+    updatePrintFilterTextOptions();
     
-    // 4. 重新显示弹窗
     modal.style.display = 'flex';
     modal.classList.add('active');
     
-    // 5. 再次强制滚动到顶部
     if (container) {
         container.scrollTop = 0;
         void container.offsetHeight;
     }
     
-    // 6. 等浏览器渲染完成后再次滚动
     setTimeout(function() {
         if (container) {
             container.scrollTop = 0;
         }
     }, 10);
     
-    // 更新统计数据
     requestAnimationFrame(function() {
-        var count = 0;
-        if (currentSubject === "chinese") {
-            var filtered = chineseErrors.filter(function(item) { 
-                return item.tag === currentChineseTag; 
-            });
-            if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-                filtered = filtered.filter(function(item) { 
-                    return item.subTag === currentChineseSubTag; 
-                });
-            }
-            if (currentGradeFilter !== '全部') {
-                filtered = filtered.filter(function(item) { 
-                    return item.grade === currentGradeFilter; 
-                });
-            }
-            count = filtered.length;
-        } else {
-            var filtered = mathErrors.filter(function(item) { 
-                return item.tag === currentMathTag; 
-            });
-            if (currentGradeFilter !== '全部') {
-                filtered = filtered.filter(function(item) { 
-                    return item.grade === currentGradeFilter; 
-                });
-            }
-            count = filtered.length;
-        }
-        
-        var countSpan = document.getElementById('printCount');
-        if (countSpan) {
-            countSpan.innerText = count;
-        }
-        
-        var detailDiv = document.getElementById('printCategoryDetail');
-        if (detailDiv) {
-            var subjectName = currentSubject === "chinese" ? "语文" : "数学";
-            var categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
-            if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-                categoryName += " · " + currentChineseSubTag;
-            }
-            var gradeText = currentGradeFilter !== '全部' ? ' · ' + currentGradeFilter : '';
-            detailDiv.innerHTML = '当前：' + subjectName + ' · ' + categoryName + gradeText + '（' + count + '道）';
-        }
-    });
+    var count = 0;
     
+    // ========== 获取主界面选中的单元 ==========
+    var mainUnit = document.getElementById('filterUnit')?.value || '全部';
+    
+    if (currentSubject === "chinese") {
+        var filtered = chineseErrors.filter(function(item) { 
+            return item.tag === currentChineseTag; 
+        });
+        if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            filtered = filtered.filter(function(item) { 
+                return item.subTag === currentChineseSubTag; 
+            });
+        }
+        if (currentGradeFilter !== '全部') {
+            filtered = filtered.filter(function(item) { 
+                return item.grade === currentGradeFilter; 
+            });
+        }
+        // ========== 添加单元筛选 ==========
+        if (mainUnit !== '全部') {
+            filtered = filtered.filter(function(item) { 
+                return item.unit === mainUnit; 
+            });
+        }
+        count = filtered.length;
+    } else {
+        var filtered = mathErrors.filter(function(item) { 
+            return item.tag === currentMathTag; 
+        });
+        if (currentGradeFilter !== '全部') {
+            filtered = filtered.filter(function(item) { 
+                return item.grade === currentGradeFilter; 
+            });
+        }
+        // ========== 添加单元筛选 ==========
+        if (mainUnit !== '全部') {
+            filtered = filtered.filter(function(item) { 
+                return item.unit === mainUnit; 
+            });
+        }
+        count = filtered.length;
+    }
+    
+    var countSpan = document.getElementById('printCount');
+    if (countSpan) {
+        countSpan.innerText = count;
+    }
+    
+    var detailDiv = document.getElementById('printCategoryDetail');
+    if (detailDiv) {
+        var subjectName = currentSubject === "chinese" ? "语文" : "数学";
+        var categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+        if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+            categoryName += " · " + currentChineseSubTag;
+        }
+        var gradeText = currentGradeFilter !== '全部' ? ' · ' + currentGradeFilter : '';
+        // ========== 添加单元显示 ==========
+        var unitText = (mainUnit !== '全部') ? ' · ' + mainUnit : '';
+        detailDiv.innerHTML = '当前：' + subjectName + ' · ' + categoryName + gradeText + unitText + '（' + count + '道）';
+    }
+});
     bindPrintModalButtonsForce();
+    
+    // ========== 核心修复：使用 DOM 直接设置下拉框的值 ==========
+    // 在弹窗完全显示后，直接操作 DOM 设置下拉框
+    setTimeout(function() {
+        var unitSelect = document.getElementById('printFilterUnit');
+        if (unitSelect) {
+            // 遍历选项，找到匹配的并选中
+            for (var i = 0; i < unitSelect.options.length; i++) {
+                if (unitSelect.options[i].value === savedUnit) {
+                    unitSelect.selectedIndex = i;
+                    console.log('✅ 已选中单元:', savedUnit, '索引:', i);
+                    break;
+                }
+            }
+        }
+        
+        var textSelect = document.getElementById('printFilterText');
+        if (textSelect) {
+            for (var i = 0; i < textSelect.options.length; i++) {
+                if (textSelect.options[i].value === savedText) {
+                    textSelect.selectedIndex = i;
+                    console.log('✅ 已选中课文:', savedText);
+                    break;
+                }
+            }
+        }
+        
+        // 触发 change 事件更新统计
+        if (unitSelect) {
+            var evt = document.createEvent('HTMLEvents');
+            evt.initEvent('change', true, true);
+            unitSelect.dispatchEvent(evt);
+        }
+    }, 200);
 }
-
 
 function closePrintSettings() {
     const modal = document.getElementById('printSettingsModal');
@@ -7707,7 +7912,7 @@ const orientationCSS = settings.orientation === 'landscape' ? '@page { size: lan
         </head>
         <body>
             <div class="print-header">
-                <h1>📚 ${escapeHtml(title)}</h1>
+                <h1>${escapeHtml(title)}</h1>
                 <p>打印时间：${escapeHtml(now)} | 共 ${list.length} 道错题 ${dateRangeText}</p>
             </div>
             ${cardsHtml}
@@ -7877,53 +8082,17 @@ if(previewBtn) {
 
 
 // 打印按钮点击事件（修改 bindPrintModalButtonsForce 函数中的部分）
+
 const printBtn = document.getElementById('printBtn');
 if (printBtn) {
     printBtn.onclick = function() {
         console.log('打印按钮被点击');
-        const modal = document.getElementById('printSettingsModal');
-        if(modal) {
-            modal.classList.add('active');
-            
-            var count = 0;
-            if (currentSubject === "chinese") {
-                var filtered = chineseErrors.filter(function(item) { return item.tag === currentChineseTag; });
-                if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-                    filtered = filtered.filter(function(item) { return item.subTag === currentChineseSubTag; });
-                }
-                // 年级筛选
-                if (currentGradeFilter !== '全部') {
-                    filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
-                }
-                count = filtered.length;
-            } else {
-                var filtered = mathErrors.filter(function(item) { return item.tag === currentMathTag; });
-                // 年级筛选
-                if (currentGradeFilter !== '全部') {
-                    filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
-                }
-                count = filtered.length;
-            }
-            
-            var countSpan = document.getElementById('printCount');
-            if (countSpan) {
-                countSpan.innerText = count;
-            }
-            
-            var detailDiv = document.getElementById('printCategoryDetail');
-            if (detailDiv) {
-                var subjectName = currentSubject === "chinese" ? "语文" : "数学";
-                var categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
-                if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-                    categoryName += " · " + currentChineseSubTag;
-                }
-                var gradeText = currentGradeFilter !== '全部' ? ' · ' + currentGradeFilter : '';
-                detailDiv.innerHTML = '当前：' + subjectName + ' · ' + categoryName + gradeText + '（' + count + '道）';
-            }
-        }
-        bindPrintModalButtonsForce();
+        // ✅ 直接调用 openPrintSettings()
+        openPrintSettings();
     };
 }
+
+
 const prevBtn = document.getElementById('prevMonthBtn');
 const nextBtn = document.getElementById('nextMonthBtn');
 const closeBtn = document.getElementById('closeCalendarBtn');
@@ -8721,6 +8890,83 @@ if (editModal) {
         };
     });
 
+    // ========== 👇 筛选事件绑定 ==========
+    document.getElementById('filterUnit')?.addEventListener('change', function() {
+        renderContent();
+        renderSidebar(); 
+    });
+    
+    document.getElementById('filterText')?.addEventListener('change', function() {
+        renderContent();
+        renderSidebar(); 
+    });
+    
+    document.getElementById('clearFilterBtn')?.addEventListener('click', function() {
+        document.getElementById('filterUnit').value = '全部';
+        document.getElementById('filterText').value = '全部';
+        renderContent();
+        renderSidebar(); 
+    });
+    // ========== 👆 筛选事件绑定结束 ==========
+
+
+    // 打印快速筛选按钮
+document.querySelectorAll('.print-quick-filter').forEach(function(btn) {
+    btn.onclick = function() {
+        document.querySelectorAll('.print-quick-filter').forEach(function(b) {
+            b.classList.remove('active');
+            b.style.background = '#f2f2f6';
+            b.style.color = '#3a3a3e';
+        });
+        this.classList.add('active');
+        this.style.background = '#007aff';
+        this.style.color = 'white';
+        
+        const filter = this.dataset.filter;
+        const today = new Date();
+        let startDate = '';
+        let endDate = '';
+        
+        if (filter === 'week') {
+            // 本周（周一到周日）
+            const dayOfWeek = today.getDay();
+            const diffToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - diffToMonday);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            startDate = monday.toISOString().slice(0, 10);
+            endDate = sunday.toISOString().slice(0, 10);
+        } else if (filter === 'month') {
+            // 本月
+            startDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            endDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+        } else {
+            // 全部
+            document.getElementById('printStartDate').value = '';
+            document.getElementById('printEndDate').value = '';
+            updatePrintStats();
+            return;
+        }
+        
+        document.getElementById('printStartDate').value = startDate;
+        document.getElementById('printEndDate').value = endDate;
+        updatePrintStats();
+    };
+});
+
+// 打印筛选单元变化
+document.getElementById('printFilterUnit')?.addEventListener('change', function() {
+    updatePrintStats();
+});
+
+document.getElementById('printFilterText')?.addEventListener('change', function() {
+    updatePrintStats();
+});  
+
+
+
     // 搜索逻辑
     function performSearch2(keyword) {
         var scope = 'all';
@@ -8823,6 +9069,9 @@ if (editModal) {
         }, 500);
     };
     
+
+
+
 }
 
 
@@ -9296,8 +9545,10 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
 </div>
 
 <!-- 打印设置弹窗 -->
+<!-- 打印设置弹窗 -->
 <div id="printSettingsModal" class="modal-mask">
-<div class="modal-container" style="max-width: 700px; max-height: 85vh; overflow-y: auto; scroll-behavior: auto; padding: 20px 24px 24px;">        <h4 style="text-align: center; margin-bottom: 20px;">🖨️ 打印设置</h4>
+    <div class="modal-container" style="max-width: 700px; max-height: 85vh; overflow-y: auto; scroll-behavior: auto; padding: 20px 24px 24px;">
+        <h4 style="text-align: center; margin-bottom: 20px;">🖨️ 打印设置</h4>
         
         <!-- 纸张设置 -->
         <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;">
@@ -9309,7 +9560,7 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
                 </select>
             </div>
             <div style="flex: 1;">
-                <label style="font-size: 13px; font-weight: 500; color: #3a3a3e;"> 每行打印几题</label>
+                <label style="font-size: 13px; font-weight: 500; color: #3a3a3e;">每行打印几题</label>
                 <select id="printColumns" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; margin-top: 6px;">
                     <option value="1">1 题/行</option>
                     <option value="2">2 题/行</option>
@@ -9327,7 +9578,8 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
             </div>
         </div>
         
-        <!-- 打印内容 - 5个选项紧凑一行，文字不换行 -->
+        <!-- 打印内容 -->
+       <!-- 打印内容 -->
 <div class="form-group">
     <label style="font-size: 13px; font-weight: 500; color: #3a3a3e; display: block; margin-bottom: 6px;">打印内容</label>
     <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
@@ -9344,12 +9596,46 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
             <input type="checkbox" id="printReason" style="margin: 0;"> 错误原因
         </label>
         <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
-            <input type="checkbox" id="printMeta" style="margin: 0;"> 日期/来源/单元
+            <input type="checkbox" id="printUnit" checked style="margin: 0;"> 单元
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
+            <input type="checkbox" id="printText" checked style="margin: 0;"> 课文
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
+            <input type="checkbox" id="printDate" checked style="margin: 0;"> 日期
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
+            <input type="checkbox" id="printSource" checked style="margin: 0;"> 来源
         </label>
     </div>
 </div>
         
-        <!-- 日期范围 - 2个日期框一行显示 -->
+        <!-- ========== 👇 新增：快速筛选 ========== -->
+        <div class="form-group">
+            <label style="font-size: 13px; font-weight: 500; color: #3a3a3e; display: block; margin-bottom: 8px;">快速筛选</label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="print-quick-filter active" data-filter="all" style="background: #007aff; color: white; border: none; padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer;">全部</button>
+                <button type="button" class="print-quick-filter" data-filter="week" style="background: #f2f2f6; color: #3a3a3e; border: none; padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer;">本周</button>
+                <button type="button" class="print-quick-filter" data-filter="month" style="background: #f2f2f6; color: #3a3a3e; border: none; padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer;">本月</button>
+                <select id="printFilterUnit" style="padding: 6px 12px; border-radius: 20px; border: 0.5px solid #c6c6c8; font-size: 12px; background: white;">
+                    <option value="全部">全部单元</option>
+                    <option value="第一单元">第一单元</option>
+                    <option value="第二单元">第二单元</option>
+                    <option value="第三单元">第三单元</option>
+                    <option value="第四单元">第四单元</option>
+                    <option value="第五单元">第五单元</option>
+                    <option value="第六单元">第六单元</option>
+                    <option value="第七单元">第七单元</option>
+                    <option value="第八单元">第八单元</option>
+                </select>
+                <select id="printFilterText" style="padding: 6px 12px; border-radius: 20px; border: 0.5px solid #c6c6c8; font-size: 12px; background: white;">
+                    <option value="全部">全部课文</option>
+                </select>
+            </div>
+        </div>
+        <!-- ========== 👆 快速筛选结束 ========== -->
+        
+        <!-- 日期范围 -->
         <div class="form-group">
             <label style="font-size: 13px; font-weight: 500; color: #3a3a3e; display: block; margin-bottom: 8px;">日期范围</label>
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: nowrap;">
