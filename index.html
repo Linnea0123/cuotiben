@@ -1983,15 +1983,10 @@ document.getElementById('calendarTrigger').textContent = "错题本";
         <div class="form-group">
             <label>GitHub Token</label>
             <input type="text" id="settingsTokenInput" placeholder="输入你的 GitHub Token" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px;">
-            <div style="font-size: 12px; color: #8e8e93; margin-top: 6px;">
-                <a href="https://github.com/settings/tokens" target="_blank" style="color: #007aff;">👉 点击生成 Token</a>（需勾选 repo 和 gist）
-            </div>
+            
         </div>
         
-        <div class="form-group">
-            <label>Gist ID</label>
-            <input type="text" id="settingsGistIdInput" placeholder="Gist ID" style="width: 100%; padding: 10px 12px; border-radius: 12px; border: 0.5px solid #c6c6c8; font-size: 14px;">
-        </div>
+       
         
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
             <button type="button" id="syncNowBtn" style="background: #007aff; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">云端同步</button>
@@ -2003,7 +1998,6 @@ document.getElementById('calendarTrigger').textContent = "错题本";
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px;">
             <button type="button" id="clearAllDataBtn" style="background: #ff3b30; color: white; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer;">🗑️ 清除所有数据</button>
         </div>
-        <p style="font-size: 12px; color: #8e8e93; margin-top: 12px;">⚠️ 清除数据不可恢复，请谨慎操作</p>
         
         <div class="modal-actions" style="margin-top: 20px;">
             <button type="button" class="btn-cancel" id="closeSettingsBtn">关闭</button>
@@ -2293,31 +2287,100 @@ const GITHUB_CONFIG = {
     repo: 'cuotiben',
     branch: 'main'
 };
+
+
+// ==================== 单元配置 ====================
+const UNIT_CONFIG = {
+    chinese: {
+        '全部': [],
+        '一上': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '一下': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '二上': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '二下': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '三上': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '三下': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元']
+    },
+    math: {
+        '全部': [],
+        '一上': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '一下': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '二上': [
+            '一、分类与整理',
+            '二、1~6的表内乘法',
+            '三、1~6的表内除法',
+            '校园小导游',
+            '四、厘米和米',
+            '身体上的尺子',
+            '五、7~9的表内乘、除法',
+            '六、复习与关联'
+        ],
+        '二下': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '三上': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'],
+        '三下': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元']
+    }
+};
 // 上传图片到 GitHub
+// ==================== 上传图片到 GitHub 仓库 ====================
 async function uploadToGitHub(base64Data, fileName) {
-    const base64Content = base64Data.split(',')[1];
+    const token = localStorage.getItem(PAGE_ID + '_github_token');
+    const owner = GITHUB_REPO_CONFIG.owner;
+    const repo = GITHUB_REPO_CONFIG.repo;
     
-    const response = await fetch(`https://api.github.com/repos/Linnea0123/cuotiben/contents/${fileName}`, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `token ${GITHUB_CONFIG.token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            message: `Upload ${fileName}`,
-            content: base64Content,
-            branch: 'main'
-        })
-    });
+    if (!token) {
+        alert('请先在设置中配置 GitHub Token');
+        throw new Error('Token 未配置');
+    }
+    
+    const base64Content = base64Data.split(',')[1];
+    const path = `images/${fileName}`;
+    
+    // 先检查文件是否存在
+    let sha = null;
+    try {
+        const checkRes = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        );
+        if (checkRes.ok) {
+            const fileData = await checkRes.json();
+            sha = fileData.sha;
+        }
+    } catch (e) {}
+    
+    const body = {
+        message: `上传图片 ${fileName}`,
+        content: base64Content,
+        branch: GITHUB_REPO_CONFIG.branch
+    };
+    if (sha) body.sha = sha;
+    
+    const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+        {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify(body)
+        }
+    );
     
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || '上传失败');
     }
     
-    // 返回原始 GitHub 地址（后续通过 fallback 机制加载）
-    return `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/${fileName}`;
+    // 返回原始 GitHub 地址
+    return `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
 }
+
 let currentSubject = "chinese";
     let currentChineseTag = "基础知识";
 
@@ -2337,12 +2400,21 @@ let customUnitKeyword = "";
     let reviewContextSubFilter = null;
 
 
-const GIST_CONFIG = {
-    id: '9fb733b006f81daa05b09f021b60d43d',
-    fileName: 'cuoti_data.json', 
-    token: ''  // 留空，从 localStorage 读取
+// ==================== GitHub 仓库配置 ====================
+const GITHUB_REPO_CONFIG = {
+    owner: 'Linnea0123',           // 你的 GitHub 用户名（改成你自己的）
+    repo: 'cuotiben',              // 仓库名
+    branch: 'main',                // 分支名
+    token: ''                      // 从 localStorage 读取
 };
-const PAGE_ID = 'cuotiben_main'; 
+
+const PAGE_ID = 'cuotiben_main';
+
+// 获取当前月份
+function getCurrentMonth() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
 
 
     const chineseReasonOptions = ["粗心大意", "审题不清", "思路错误", "完全不会", "前后鼻音"];
@@ -2627,11 +2699,14 @@ function closeHistoryModal() {
     if (currentSubject === "chinese") {
         return getFilteredChinese();
     } else {
-        // 数学：根据 currentMathTag 筛选
-        return mathErrors.filter(item => item.tag === currentMathTag);
+        // 数学：按分类和年级筛选
+        let filtered = mathErrors.filter(item => item.tag === currentMathTag);
+        if (currentGradeFilter !== '全部') {
+            filtered = filtered.filter(item => item.grade === currentGradeFilter);  // ✅ 添加年级筛选
+        }
+        return filtered;
     }
 }
-
 
 
 function recordReview(itemId, subject, result) {
@@ -2977,20 +3052,21 @@ function renderSidebar() {
         });
     } else {
         // 数学科目
-        const categories = ["计算", "应用题", "图形", "概念"];
+        const categories = ["计算", "应用题","长度单位", "图形", "概念"];
         
-        const getCount = (tag) => {
-            let filtered = mathErrors.filter(item => item.tag === tag);
-            if (currentGradeFilter !== '全部') {
-                filtered = filtered.filter(item => item.grade === currentGradeFilter);
-            }
-            // ========== 单元筛选 ==========
-            if (filterUnit !== '全部') {
-                filtered = filtered.filter(item => item.unit === filterUnit);
-            }
-            return filtered.length;
-        };
-        
+         const getCount = (tag) => {
+        let filtered = mathErrors.filter(item => item.tag === tag);
+        // ✅ 添加年级筛选
+        if (currentGradeFilter !== '全部') {
+            filtered = filtered.filter(item => item.grade === currentGradeFilter);
+        }
+        // ✅ 添加单元筛选
+        const filterUnit = document.getElementById('filterUnit')?.value || '全部';
+        if (filterUnit !== '全部') {
+            filtered = filtered.filter(item => item.unit === filterUnit);
+        }
+        return filtered.length;
+    };
         let html = `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
         categories.forEach(cat => {
             const activeClass = (currentMathTag === cat) ? "active" : "";
@@ -3038,7 +3114,7 @@ function renderContent() {
     
     // 更新课文下拉框
     updateTextFilterOptions(list);
-    
+    updateTextOptions();
     // 显示/隐藏清除按钮
     const clearBtn = document.getElementById('clearFilterBtn');
     if (clearBtn) {
@@ -3380,10 +3456,110 @@ function updateTextFilterOptions(list) {
     textSelect.value = currentValue;
 }
 
- function handleGradeChange() {
+
+// 更新课文下拉框
+// 更新课文下拉框
+function updateTextOptions() {
+    const textSelect = document.getElementById('filterText');
+    if (!textSelect) return;
+    
+    // ========== ✅ 如果是数学，隐藏或禁用课文下拉框 ==========
+    if (currentSubject === 'math') {
+        textSelect.style.display = 'none';
+        // 或者显示为"无课文"
+        // textSelect.innerHTML = '<option value="全部">无课文</option>';
+        return;
+    } else {
+        textSelect.style.display = 'inline-block';
+    }
+    
+    const currentValue = textSelect.value;
+    const filterUnit = document.getElementById('filterUnit')?.value || '全部';
+    
+    // 获取当前显示列表
+    let list = getCurrentDisplayList();
+    
+    // 如果选了单元，进一步筛选
+    if (filterUnit !== '全部') {
+        list = list.filter(item => item.unit === filterUnit);
+    }
+    
+    // 提取所有课文
+    const texts = [...new Set(list.map(item => item.text).filter(t => t && t.trim()))];
+    
+    // 重新生成下拉框
+    textSelect.innerHTML = '<option value="全部">全部课文</option>';
+    texts.forEach(text => {
+        const selected = text === currentValue ? 'selected' : '';
+        textSelect.innerHTML += `<option value="${text}" ${selected}>${text}</option>`;
+    });
+}
+// 更新单元下拉框
+function updateUnitOptions() {
+    const unitSelect = document.getElementById('filterUnit');
+    if (!unitSelect) return;
+    
+    const currentValue = unitSelect.value;
+    const grade = currentGradeFilter;
+    const subject = currentSubject;
+    
+    // 获取对应的单元列表
+    let units = [];
+    if (subject === 'chinese') {
+        units = UNIT_CONFIG.chinese[grade] || UNIT_CONFIG.chinese['二上'];
+    } else {
+        units = UNIT_CONFIG.math[grade] || UNIT_CONFIG.math['二上'];
+    }
+    
+    // 如果单元列表为空，使用默认
+    if (units.length === 0) {
+        units = ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'];
+    }
+    
+    // 重新生成下拉框
+    unitSelect.innerHTML = '<option value="全部">全部单元</option>';
+    units.forEach(unit => {
+        const selected = unit === currentValue ? 'selected' : '';
+        unitSelect.innerHTML += `<option value="${unit}" ${selected}>${unit}</option>`;
+    });
+}
+
+// ==================== ✅ 在下面添加这个新函数 ====================
+function updateUnitOptions() {
+    const unitSelect = document.getElementById('filterUnit');
+    if (!unitSelect) return;
+    
+    const currentValue = unitSelect.value;
+    const grade = currentGradeFilter;
+    const subject = currentSubject;
+    
+    let units = [];
+    if (subject === 'chinese') {
+        units = UNIT_CONFIG.chinese[grade] || UNIT_CONFIG.chinese['二上'];
+    } else {
+        units = UNIT_CONFIG.math[grade] || UNIT_CONFIG.math['二上'];
+    }
+    
+    if (units.length === 0) {
+        units = ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'];
+    }
+    
+    unitSelect.innerHTML = '<option value="全部">全部单元</option>';
+    units.forEach(unit => {
+        const selected = unit === currentValue ? 'selected' : '';
+        unitSelect.innerHTML += `<option value="${unit}" ${selected}>${unit}</option>`;
+    });
+}
+
+
+function handleGradeChange() {
     renderContent();
-    renderSidebar();  // 确保这里调用了 renderSidebar
+    renderSidebar();
     localStorage.setItem('cuoti_grade', currentGradeFilter);
+    
+    // ✅ 添加这两行
+    updateUnitOptions();
+    updateTextOptions();
 }
 
     function handleAddClick() {
@@ -5075,7 +5251,12 @@ function deleteQuestion(id, subject) {
     renderContent();
     updateBatchAddButtonVisibility();
     localStorage.setItem('cuoti_subject', currentSubject);
-    
+     // ✅ 添加这两行
+    updateUnitOptions();
+    updateTextOptions();
+
+
+
     const modal = document.getElementById('printSettingsModal');
     if (modal && modal.classList.contains('active')) {
         const detailDiv = document.getElementById('printCategoryDetail');
@@ -5464,25 +5645,21 @@ async function tryLoadFallback(imgElement, originalUrl) {
 async function saveToCloud() {
     console.log('📤 [saveToCloud] 开始执行');
     
-    if (!GIST_CONFIG.id) {
-        console.error('❌ [saveToCloud] Gist ID 未配置');
-        alert('请先在设置中配置 Gist ID');
-        return false;  // ✅ 返回 false
-    }
+    const token = localStorage.getItem(PAGE_ID + '_github_token');
+    const owner = GITHUB_REPO_CONFIG.owner;
+    const repo = GITHUB_REPO_CONFIG.repo;
     
-    if (!GIST_CONFIG.token) {
-        console.error('❌ [saveToCloud] GitHub Token 未配置');
+    if (!token) {
+        console.error('❌ GitHub Token 未配置');
         alert('请先在设置中配置 GitHub Token');
-        return false;  // ✅ 返回 false
+        return false;
     }
     
-    console.log('✅ [saveToCloud] 配置检查通过');
-    console.log(`📋 [saveToCloud] Gist ID: ${GIST_CONFIG.id}`);
-    console.log(`📁 [saveToCloud] 文件名: ${GIST_CONFIG.fileName}`);
-    console.log(`📊 [saveToCloud] 语文错题数: ${chineseErrors.length}`);
-    console.log(`📊 [saveToCloud] 数学错题数: ${mathErrors.length}`);
+    const month = getCurrentMonth();
+    const path = `data/errors/${month}.json`;
     
-    const data = {
+    // 构建数据
+    const dataToSave = {
         chineseErrors: chineseErrors.map(item => ({
             ...item,
             questionImages: item.questionImages || [],
@@ -5494,345 +5671,446 @@ async function saveToCloud() {
         version: '2.0'
     };
     
-    const content = JSON.stringify(data, null, 2);
+    const content = JSON.stringify(dataToSave, null, 2);
+    const base64Content = btoa(unescape(encodeURIComponent(content)));
     
-    // 先获取当前 Gist 中该文件的 sha（如果存在）
-    let sha = '';
+    // ========== ✅ 检查文件是否存在，并对比内容 ==========
+    let sha = null;
+    let needUpload = false;
+    
     try {
-        const getResponse = await fetch(`https://api.github.com/gists/${GIST_CONFIG.id}`, {
-            headers: { 'Authorization': `token ${GIST_CONFIG.token}` }
-        });
-        if (getResponse.ok) {
-            const gist = await getResponse.json();
-            if (gist.files && gist.files[GIST_CONFIG.fileName]) {
-    sha = gist.files[GIST_CONFIG.fileName].sha;
-    if (sha) {
-        console.log('找到已有文件，sha:', sha.substring(0, 8) + '...');
-    } else {
-        console.log('找到已有文件，但 sha 为空');
-    }
-}
+        const checkRes = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        );
+        
+        if (checkRes.ok) {
+            const fileData = await checkRes.json();
+            sha = fileData.sha;
+            
+            // ✅ 解码云端内容
+            const cloudContent = decodeURIComponent(escape(atob(fileData.content)));
+            
+            // ✅ 对比本地和云端内容
+            if (cloudContent === content) {
+                console.log(`⏭️ ${path} 内容一致，无需上传`);
+                // 内容一致，但还是要检查 meta.json
+                await saveMetaToGitHub(token, owner, repo);
+                return true;
+            } else {
+                console.log(`📂 ${path} 内容有变化，将强制覆盖`);
+                needUpload = true;
+            }
+        } else if (checkRes.status === 404) {
+            console.log(`📂 ${path} 不存在，将创建`);
+            needUpload = true;
+        } else {
+            console.log(`📂 检查 ${path} 状态码: ${checkRes.status}`);
+            needUpload = true;
         }
     } catch (e) {
-        console.log('获取 Gist 信息失败，将创建新文件', e);
+        console.log(`📂 检查 ${path} 失败: ${e.message}，将尝试创建`);
+        needUpload = true;
     }
     
+    // ========== ✅ 只有需要上传时才上传 ==========
+    if (!needUpload) {
+        console.log(`⏭️ ${path} 无需上传`);
+        return true;
+    }
+    
+    const body = {
+        message: `更新 ${month} 错题数据 - ${new Date().toLocaleString()}`,
+        content: base64Content,
+        branch: GITHUB_REPO_CONFIG.branch
+    };
+    if (sha) body.sha = sha;
+    
     try {
-        const response = await fetch(`https://api.github.com/gists/${GIST_CONFIG.id}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `token ${GIST_CONFIG.token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                files: {
-                    [GIST_CONFIG.fileName]: {
-                        content: content,
-                        sha: sha || undefined
-                    }
-                }
-            })
-        });
+        const response = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify(body)
+            }
+        );
         
         if (response.ok) {
-            console.log('✅ 文字数据已同步到 Gist');
-            return true;  // ✅ 返回 true
+            console.log(`✅ ${month} 错题数据已同步到 GitHub`);
+            
+            // 同时保存 meta.json
+            await saveMetaToGitHub(token, owner, repo);
+            
+            return true;
         } else {
             const error = await response.json();
-            console.error('❌ 同步失败:', error);
-            return false;  // ✅ 返回 false
-        }
-    } catch (err) {
-        console.error('❌ 网络错误:', err);
-        return false;  // ✅ 返回 false
-    }
-}
-
-
-async function loadFromCloud() {
-    if (!GIST_CONFIG.id) {
-        console.log('请先配置 GIST_CONFIG.id');
-        return false;
-    }
-    
-    try {
-        const rawUrl = `https://gist.githubusercontent.com/Linnea0123/${GIST_CONFIG.id}/raw/${GIST_CONFIG.fileName}`;
-        console.log('从云端加载:', rawUrl);
-        
-        const response = await fetch(rawUrl);
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('云端数据版本:', data.version);
-            
-            let addedCount = 0;
-            let updatedCount = 0;
-            
-            // ========== 合并语文错题（按更新时间判断） ==========
-            if (data.chineseErrors && data.chineseErrors.length > 0) {
-                for (const cloudItem of data.chineseErrors) {
-                    const existingIndex = chineseErrors.findIndex(local => local.id === cloudItem.id);
-                    
-                    if (existingIndex === -1) {
-                        // 本地没有，直接添加
-                        chineseErrors.push({
-                            ...cloudItem,
-                            questionImages: cloudItem.questionImages || [],
-                            wrongImages: cloudItem.wrongImages || [],
-                            correctImages: cloudItem.correctImages || []
-                        });
-                        addedCount++;
-                        console.log(`➕ 新增错题: ${cloudItem.question?.substring(0, 30)}`);
-                    } else {
-                        // 本地已有，比较更新时间
-                        const localItem = chineseErrors[existingIndex];
-                        const localTime = new Date(localItem.updatedAt || localItem.date || '1970-01-01');
-                        const cloudTime = new Date(cloudItem.updatedAt || cloudItem.date || '1970-01-01');
-                        
-                        if (cloudTime > localTime) {
-                            // 云端版本更新，覆盖本地
-                            chineseErrors[existingIndex] = {
-                                ...cloudItem,
-                                questionImages: cloudItem.questionImages || [],
-                                wrongImages: cloudItem.wrongImages || [],
-                                correctImages: cloudItem.correctImages || []
-                            };
-                            updatedCount++;
-                            console.log(`🔄 更新错题: ${cloudItem.question?.substring(0, 30)} (云端更新)`);
-                        } else {
-                            console.log(`⏭️ 保留本地: ${localItem.question?.substring(0, 30)} (本地更新)`);
-                        }
-                    }
-                }
-            }
-            
-            // ========== 合并数学错题（按更新时间判断） ==========
-            if (data.mathErrors && data.mathErrors.length > 0) {
-                for (const cloudItem of data.mathErrors) {
-                    const existingIndex = mathErrors.findIndex(local => local.id === cloudItem.id);
-                    
-                    if (existingIndex === -1) {
-                        // 本地没有，直接添加
-                        mathErrors.push({
-                            ...cloudItem,
-                            questionImages: cloudItem.questionImages || [],
-                            wrongImages: cloudItem.wrongImages || [],
-                            correctImages: cloudItem.correctImages || []
-                        });
-                        addedCount++;
-                        console.log(`➕ 新增数学错题: ${cloudItem.question?.substring(0, 30)}`);
-                    } else {
-                        // 本地已有，比较更新时间
-                        const localItem = mathErrors[existingIndex];
-                        const localTime = new Date(localItem.updatedAt || localItem.date || '1970-01-01');
-                        const cloudTime = new Date(cloudItem.updatedAt || cloudItem.date || '1970-01-01');
-                        
-                        if (cloudTime > localTime) {
-                            // 云端版本更新，覆盖本地
-                            mathErrors[existingIndex] = {
-                                ...cloudItem,
-                                questionImages: cloudItem.questionImages || [],
-                                wrongImages: cloudItem.wrongImages || [],
-                                correctImages: cloudItem.correctImages || []
-                            };
-                            updatedCount++;
-                            console.log(`🔄 更新数学错题: ${cloudItem.question?.substring(0, 30)} (云端更新)`);
-                        } else {
-                            console.log(`⏭️ 保留本地数学错题: ${localItem.question?.substring(0, 30)} (本地更新)`);
-                        }
-                    }
-                }
-            }
-            
-            // 保存合并后的数据到本地
-            // 保存合并后的数据到本地（静默保存，不触发云端上传）
-saveAllDataToLocalStorageSilent();
-            
-            // 刷新界面
-            renderSidebar();
-            renderContent();
-            if (reviewModal.classList.contains('active')) {
-                openReviewWithCurrentFilter();
-                updateFilterCounts();
-            }
-            
-            console.log(`✅ 云端合并完成: 新增 ${addedCount} 条，更新 ${updatedCount} 条`);
-            if (addedCount > 0 || updatedCount > 0) {
-                showToast(`📦 已从云端同步: 新增 ${addedCount} 条，更新 ${updatedCount} 条`);
-            }
-            return true;
-        } else {
-            console.log('云端无数据，状态码:', response.status);
+            console.error('❌ 保存失败:', error);
+            alert('保存失败: ' + (error.message || '未知错误'));
             return false;
         }
-    } catch (err) {
-        console.error('加载失败:', err);
+    } catch (error) {
+        console.error('❌ 网络错误:', error);
+        alert('网络错误: ' + error.message);
         return false;
     }
 }
 
-// 静默合并云端数据（不触发上传）
-// 静默合并云端数据（不触发上传）- 用于页面刷新时自动合并
-async function loadFromCloudSilent() {
-    if (!GIST_CONFIG.id) {
-        console.log('请先配置 GIST_CONFIG.id');
+// ==================== 上传所有月份的数据 ====================
+async function uploadAllMonths() {
+    const token = localStorage.getItem(PAGE_ID + '_github_token');
+    const owner = GITHUB_REPO_CONFIG.owner;
+    const repo = GITHUB_REPO_CONFIG.repo;
+    
+    if (!token) {
+        alert('请先设置 GitHub Token');
         return false;
     }
     
-    try {
-        const rawUrl = `https://gist.githubusercontent.com/Linnea0123/${GIST_CONFIG.id}/raw/${GIST_CONFIG.fileName}`;
-        const response = await fetch(rawUrl);
-        
-        if (response.ok) {
-            const data = await response.json();
-            let addedCount = 0, updatedCount = 0;
-            
-            // 合并语文错题
-            if (data.chineseErrors && data.chineseErrors.length > 0) {
-                for (const cloudItem of data.chineseErrors) {
-                    const existingIndex = chineseErrors.findIndex(local => local.id === cloudItem.id);
-                    if (existingIndex === -1) {
-                        chineseErrors.push({
-                            ...cloudItem,
-                            questionImages: cloudItem.questionImages || [],
-                            wrongImages: cloudItem.wrongImages || [],
-                            correctImages: cloudItem.correctImages || []
-                        });
-                        addedCount++;
-                    } else {
-                        const localItem = chineseErrors[existingIndex];
-                        const localTime = new Date(localItem.updatedAt || localItem.date || '1970-01-01');
-                        const cloudTime = new Date(cloudItem.updatedAt || cloudItem.date || '1970-01-01');
-                        if (cloudTime > localTime) {
-                            chineseErrors[existingIndex] = {
-                                ...cloudItem,
-                                questionImages: cloudItem.questionImages || [],
-                                wrongImages: cloudItem.wrongImages || [],
-                                correctImages: cloudItem.correctImages || []
-                            };
-                            updatedCount++;
-                        }
-                    }
-                }
-            }
-            
-            // 合并数学错题
-            if (data.mathErrors && data.mathErrors.length > 0) {
-                for (const cloudItem of data.mathErrors) {
-                    const existingIndex = mathErrors.findIndex(local => local.id === cloudItem.id);
-                    if (existingIndex === -1) {
-                        mathErrors.push({
-                            ...cloudItem,
-                            questionImages: cloudItem.questionImages || [],
-                            wrongImages: cloudItem.wrongImages || [],
-                            correctImages: cloudItem.correctImages || []
-                        });
-                        addedCount++;
-                    } else {
-                        const localItem = mathErrors[existingIndex];
-                        const localTime = new Date(localItem.updatedAt || localItem.date || '1970-01-01');
-                        const cloudTime = new Date(cloudItem.updatedAt || cloudItem.date || '1970-01-01');
-                        if (cloudTime > localTime) {
-                            mathErrors[existingIndex] = {
-                                ...cloudItem,
-                                questionImages: cloudItem.questionImages || [],
-                                wrongImages: cloudItem.wrongImages || [],
-                                correctImages: cloudItem.correctImages || []
-                            };
-                            updatedCount++;
-                        }
-                    }
-                }
-            }
-            
-            // 使用静默保存（不触发上传）
-            saveAllDataToLocalStorageSilent();
-            
-            renderSidebar();
-            renderContent();
-            
-            console.log(`✅ 云端合并完成: 新增 ${addedCount} 条，更新 ${updatedCount} 条`);
-            if (addedCount > 0 || updatedCount > 0) {
-                showToast(`📦 已从云端同步: 新增 ${addedCount} 条，更新 ${updatedCount} 条`);
-            }
-            return true;
+    // 按月份分组
+    const monthsData = {};
+    
+    // 合并所有错题
+    const allErrors = [...chineseErrors, ...mathErrors];
+    
+    allErrors.forEach(item => {
+        const date = item.date || '2026-07';
+        const month = date.substring(0, 7);  // 取 "2026-07"
+        if (!monthsData[month]) {
+            monthsData[month] = { chineseErrors: [], mathErrors: [] };
         }
-        return false;
-    } catch (err) {
-        console.error('加载失败:', err);
-        return false;
+        // 判断是语文还是数学
+        if (item.id && item.id.startsWith('math')) {
+            monthsData[month].mathErrors.push(item);
+        } else {
+            monthsData[month].chineseErrors.push(item);
+        }
+    });
+    
+    // 上传每个月份
+    for (const [month, data] of Object.entries(monthsData)) {
+        if (data.chineseErrors.length === 0 && data.mathErrors.length === 0) continue;
+        
+        const path = `data/errors/${month}.json`;
+        const content = JSON.stringify(data, null, 2);
+        const base64Content = btoa(unescape(encodeURIComponent(content)));
+        
+        // 检查文件是否存在
+        let sha = null;
+        try {
+            const checkRes = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }
+            );
+            if (checkRes.ok) {
+                const fileData = await checkRes.json();
+                sha = fileData.sha;
+                console.log(`📂 ${path} 已存在，将覆盖`);
+            } else if (checkRes.status === 404) {
+                console.log(`📂 ${path} 不存在，将创建`);
+            }
+        } catch (e) {
+            console.log(`📂 检查 ${path} 失败:`, e);
+        }
+        
+        const body = {
+            message: `更新 ${month} 错题数据 - ${new Date().toLocaleString()}`,
+            content: base64Content,
+            branch: GITHUB_REPO_CONFIG.branch
+        };
+        if (sha) body.sha = sha;
+        
+        try {
+            const response = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify(body)
+                }
+            );
+            if (response.ok) {
+                console.log(`✅ ${month} 数据已同步 (语文 ${data.chineseErrors.length} 条，数学 ${data.mathErrors.length} 条)`);
+            } else {
+                console.error(`❌ ${month} 同步失败`);
+            }
+        } catch (e) {
+            console.error(`❌ ${month} 同步失败:`, e);
+        }
+    }
+    
+    // 最后上传 meta.json
+    await saveMetaToGitHub(token, owner, repo);
+    
+    alert('✅ 所有月份数据已上传！');
+    return true;
+}
+// ==================== 保存元数据到 GitHub ====================
+async function saveMetaToGitHub(token, owner, repo) {
+    const path = 'data/meta.json';
+    
+    const metaData = {
+        gradeFilter: currentGradeFilter,
+        subject: currentSubject,
+        chineseTag: currentChineseTag,
+        chineseSubTag: currentChineseSubTag,
+        mathTag: currentMathTag,
+        
+        lastUpdate: new Date().toISOString(),
+        version: '2.0'
+    };
+    
+    const content = JSON.stringify(metaData, null, 2);
+    const base64Content = btoa(unescape(encodeURIComponent(content)));
+    
+    // ========== ✅ 关键：每次都重新获取最新的 sha ==========
+    let sha = null;
+    try {
+        const checkRes = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        );
+        if (checkRes.ok) {
+            const fileData = await checkRes.json();
+            sha = fileData.sha;  // ✅ 获取最新 sha
+            console.log(`📂 ${path} 已存在，使用最新 sha 强制覆盖`);
+        } else if (checkRes.status === 404) {
+            console.log(`📂 ${path} 不存在，将创建`);
+        }
+    } catch (e) {
+        console.log(`📂 检查 ${path} 失败:`, e);
+    }
+    
+    const body = {
+        message: `更新元数据 - ${new Date().toLocaleString()}`,
+        content: base64Content,
+        branch: GITHUB_REPO_CONFIG.branch
+    };
+    if (sha) body.sha = sha;  // ✅ 使用最新 sha 强制覆盖
+    
+    try {
+        const response = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify(body)
+            }
+        );
+        if (response.ok) {
+            console.log('✅ meta.json 已同步');
+        } else {
+            const error = await response.json();
+            console.error('❌ meta.json 同步失败:', error);
+        }
+    } catch (e) {
+        console.warn('⚠️ meta.json 同步失败:', e);
     }
 }
+
+
+
+
+// ==================== 从 GitHub 仓库恢复数据（按月） ====================
 async function loadFromCloudForce() {
     console.log('📥 [loadFromCloudForce] 开始执行');
     
-    if (!GIST_CONFIG.id) {
-        console.error('❌ [loadFromCloudForce] Gist ID 未配置');
-        alert('请先配置 Gist ID');
-        return false;
-    }
+    const token = localStorage.getItem(PAGE_ID + '_github_token');
+    const owner = GITHUB_REPO_CONFIG.owner;
+    const repo = GITHUB_REPO_CONFIG.repo;
     
-    if (!GIST_CONFIG.token) {
-        console.error('❌ [loadFromCloudForce] GitHub Token 未配置');
-        alert('请先在设置中填写 GitHub Token');
+    if (!token) {
+        console.error('❌ GitHub Token 未配置');
+        alert('请先在设置中配置 GitHub Token');
         return false;
     }
     
     try {
-        const rawUrl = `https://gist.githubusercontent.com/Linnea0123/${GIST_CONFIG.id}/raw/${GIST_CONFIG.fileName}`;
-        console.log('从云端强制加载:', rawUrl);
+        console.log('📥 从 GitHub 仓库恢复数据...');
         
-        const response = await fetch(rawUrl);
+        // 1. 获取所有月份的数据文件
+        const listRes = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/data/errors`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        );
         
-        if (response.ok) {
-            const data = await response.json();
-            console.log('云端数据:', data);
-            
-            // ========== 强制覆盖，不清空数组直接替换 ==========
-            // 直接替换整个数组，而不是 push
-            if (data.chineseErrors) {
-                // 清空数组再添加（触发响应式更新）
-                chineseErrors.length = 0;
-                data.chineseErrors.forEach(item => {
-                    chineseErrors.push({
-                        ...item,
-                        questionImages: item.questionImages || [],
-                        wrongImages: item.wrongImages || [],
-                        correctImages: item.correctImages || []
-                    });
-                });
-                console.log(`✅ 强制覆盖语文错题，新数量: ${chineseErrors.length}`);
+        if (!listRes.ok) {
+            if (listRes.status === 404) {
+                alert('❌ 云端没有数据文件夹，请先上传数据！');
+                return false;
             }
-            
-            if (data.mathErrors) {
-                mathErrors.length = 0;
-                data.mathErrors.forEach(item => {
-                    mathErrors.push({
-                        ...item,
-                        questionImages: item.questionImages || [],
-                        wrongImages: item.wrongImages || [],
-                        correctImages: item.correctImages || []
-                    });
-                });
-                console.log(`✅ 强制覆盖数学错题，新数量: ${mathErrors.length}`);
-            }
-            
-            saveAllDataToLocalStorage();
-            renderSidebar();
-            renderContent();
-            if (reviewModal.classList.contains('active')) {
-                openReviewWithCurrentFilter();
-            }
-            console.log('✅ 已从云端强制恢复数据，语文错题数:', chineseErrors.length);
-            return true;
-        } else {
-            throw new Error(`HTTP ${response.status}: 云端无数据或获取失败`);
+            throw new Error(`获取文件列表失败: ${listRes.status}`);
         }
-    } catch (err) {
-        console.error('恢复失败:', err);
-        throw err;
+        
+        const files = await listRes.json();
+        const monthFiles = files.filter(file => 
+            file.name && file.name.match(/^\d{4}-\d{2}\.json$/)
+        );
+        
+        console.log(`📂 找到 ${monthFiles.length} 个月份数据文件`);
+        
+        if (monthFiles.length === 0) {
+            alert('❌ 云端没有错题数据');
+            return false;
+        }
+        
+        // 2. 加载所有月份的数据并合并
+        let allChineseErrors = [];
+        let allMathErrors = [];
+        let loadedMonths = 0;
+        
+        for (const file of monthFiles) {
+            try {
+                const fileRes = await fetch(
+                    `https://api.github.com/repos/${owner}/${repo}/contents/data/errors/${file.name}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    }
+                );
+                
+                if (fileRes.ok) {
+                    const data = await fileRes.json();
+                    const content = decodeURIComponent(escape(atob(data.content)));
+                    const monthData = JSON.parse(content);
+                    
+                    if (monthData.chineseErrors) {
+                        allChineseErrors = allChineseErrors.concat(monthData.chineseErrors);
+                    }
+                    if (monthData.mathErrors) {
+                        allMathErrors = allMathErrors.concat(monthData.mathErrors);
+                    }
+                    loadedMonths++;
+                    console.log(`✅ 加载 ${file.name} (${monthData.chineseErrors?.length || 0} 条语文, ${monthData.mathErrors?.length || 0} 条数学)`);
+                }
+            } catch (e) {
+                console.warn(`⚠️ 加载 ${file.name} 失败:`, e);
+            }
+        }
+        
+        if (loadedMonths === 0) {
+            alert('❌ 无法加载任何数据文件');
+            return false;
+        }
+        
+        // 3. 去重（保留最新的）
+        const chineseMap = new Map();
+        const mathMap = new Map();
+        
+        allChineseErrors.forEach(item => {
+            if (!chineseMap.has(item.id) || 
+                (item.updatedAt && chineseMap.get(item.id)?.updatedAt < item.updatedAt)) {
+                chineseMap.set(item.id, item);
+            }
+        });
+        
+        allMathErrors.forEach(item => {
+            if (!mathMap.has(item.id) || 
+                (item.updatedAt && mathMap.get(item.id)?.updatedAt < item.updatedAt)) {
+                mathMap.set(item.id, item);
+            }
+        });
+        
+        const mergedChinese = Array.from(chineseMap.values());
+        const mergedMath = Array.from(mathMap.values());
+        
+        console.log(`📊 合并后: 语文 ${mergedChinese.length} 条, 数学 ${mergedMath.length} 条`);
+        
+        // 4. 替换本地数据
+        chineseErrors.length = 0;
+        mergedChinese.forEach(item => chineseErrors.push(item));
+        
+        mathErrors.length = 0;
+        mergedMath.forEach(item => mathErrors.push(item));
+        
+        // 5. 加载元数据
+        try {
+            const metaRes = await fetch(
+                `https://api.github.com/repos/${owner}/${repo}/contents/data/meta.json`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }
+            );
+            if (metaRes.ok) {
+                const metaData = await metaRes.json();
+                const content = decodeURIComponent(escape(atob(metaData.content)));
+                const meta = JSON.parse(content);
+                
+                if (meta.gradeFilter) currentGradeFilter = meta.gradeFilter;
+                if (meta.subject) currentSubject = meta.subject;
+                if (meta.chineseTag) currentChineseTag = meta.chineseTag;
+                if (meta.chineseSubTag) currentChineseSubTag = meta.chineseSubTag;
+                if (meta.mathTag) currentMathTag = meta.mathTag;
+                 // ✅ 添加这行：恢复 Token
+        if (meta.githubToken) {
+            localStorage.setItem(PAGE_ID + '_github_token', meta.githubToken);
+            GITHUB_REPO_CONFIG.token = meta.githubToken;
+            console.log('✅ Token 已从云端恢复');
+        }
+                console.log('✅ 元数据已加载');
+            }
+        } catch (e) {
+            console.warn('⚠️ 元数据加载失败，使用本地设置');
+        }
+        
+        // 6. 保存到本地
+        await saveAllDataToIndexedDB();
+        renderSidebar();
+        renderContent();
+        if (reviewModal.classList.contains('active')) {
+            openReviewWithCurrentFilter();
+        }
+        
+        alert(`✅ 恢复成功！\n📊 语文 ${mergedChinese.length} 条，数学 ${mergedMath.length} 条\n📂 来自 ${loadedMonths} 个月份文件`);
+        return true;
+        
+    } catch (error) {
+        console.error('❌ 恢复失败:', error);
+        alert('恢复失败: ' + error.message);
+        return false;
     }
 }
+
+
+
+
 // 获取云朵元素
 const syncCloudUpload = document.getElementById('syncCloudUpload');
 const syncCloudDownload = document.getElementById('syncCloudDownload');
@@ -7003,6 +7281,8 @@ function closePrintSettings() {
 }
 
 
+
+
 function executePrint() {
     console.log('开始打印');
     
@@ -7012,7 +7292,6 @@ function executePrint() {
         return;
     }
     
-    // ========== 获取用户打印选项 ==========
     const options = {
         question: document.getElementById('printQuestion')?.checked ?? true,
         wrong: document.getElementById('printWrong')?.checked ?? false,
@@ -7024,373 +7303,244 @@ function executePrint() {
         source: document.getElementById('printSource')?.checked ?? true
     };
     
-    // ========== 判断是否为数学分类 ==========
-    const isMathPrint = currentSubject === "math";
+    var pageOrientation = document.getElementById('printOrientation')?.value || 'portrait';
     
-   // ========== 读取纸张方向 ==========
-var pageOrientation = document.getElementById('printOrientation')?.value || 'portrait';
-
-// ========== 读取用户选择的列数 ==========
-var gridColumns = parseInt(document.getElementById('printColumns')?.value) || 2;
-
-// 如果是生字或拼音，自动调整列数（用户也可以手动覆盖）
-if (currentSubject === 'chinese' && currentChineseTag === '基础知识') {
-    if (currentChineseSubTag === '生字') {
-        if (!document.getElementById('printColumns')?.value) {
-            gridColumns = 12;
+    // ========== 分组 ==========
+    var groups = {};
+    list.forEach(function(item) {
+        var groupKey = '';
+        if (currentSubject === 'chinese' && item.tag === '基础知识') {
+            groupKey = item.subTag || '其他';
+        } else if (currentSubject === 'chinese') {
+            groupKey = item.tag;
+        } else {
+            groupKey = item.tag || '其他';
         }
-    } else if (currentChineseSubTag === '拼音') {
-        if (!document.getElementById('printColumns')?.value) {
-            gridColumns = 10;
+        if (!groups[groupKey]) {
+            groups[groupKey] = [];
         }
+        groups[groupKey].push(item);
+    });
+    
+    function getColumnsForGroup(groupName) {
+        if (groupName === '拼音') return 10;
+        if (groupName === '生字') return 10;
+        if (groupName === '笔顺') return 10;
+        if (groupName === '标点') return 10;
+        if (groupName === '多音字') return 10;
+        return 2;
     }
-}
     
-    // 同步下拉框显示
-    const columnsSelect = document.getElementById('printColumns');
-    if (columnsSelect) {
-        columnsSelect.value = gridColumns;
-    }
-    
-    console.log(`最终打印列数: ${gridColumns}`);
-    
-    // ========== 生成打印 HTML ==========
-    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>打印(' + gridColumns + '列)</title><style>';
+    // ========== 生成 HTML ==========
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>打印</title><style>';
     html += '*{margin:0;padding:0;box-sizing:border-box;}';
     html += '@page{size:A4 ' + pageOrientation + ';margin:0.1cm 0.1cm 0.1cm 0.1cm !important;}';
-html += '@page{margin:0.1cm !important;}';
     html += 'body{padding:5px;background:#fff;font-family:sans-serif;}';
-    html += '.print-grid{display:grid;grid-template-columns:repeat(' + gridColumns + ',1fr);gap:8px;padding:2px;}';
+    html += '.print-section{margin-bottom:20px;}';
+    html += '.print-section-title{font-size:14px;font-weight:bold;color:#007aff;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e9e9ef;}';
+    html += '.print-grid{display:grid;gap:8px;padding:2px;}';
     html += '.print-card{border:none;box-shadow:none;background:transparent;page-break-inside:avoid;break-inside:avoid;padding:2px;}';
     html += '.card-header{font-size:10px;color:#999;margin-bottom:8px;text-align:center;}';
-    
-    // 数学专用样式
-    if (isMathPrint) {
-        html += '.math-question{font-size:18px;font-weight:500;text-align:center;padding:20px 10px;background:#f8f9fc;border-radius:12px;margin:8px 0;}';
-        html += '.math-answer{font-size:14px;margin-top:12px;padding:10px;background:#f0fff0;border-left:3px solid #34c759;border-radius:8px;}';
-        html += '.math-wrong{font-size:14px;margin-top:8px;padding:10px;background:#fff5f5;border-left:3px solid #ff3b30;border-radius:8px;}';
-        html += '.math-meta{font-size:11px;color:#888;margin-top:10px;padding-top:8px;border-top:1px dashed #ddd;display:flex;flex-wrap:wrap;gap:12px;}';
-    }
-    
-    // 拼音四线格样式
     html += '.four-line-grid{display:inline-block;width:60px;margin:2px 0;}';
     html += '.grid-line-1,.grid-line-4{border-top:1px solid #333;margin-bottom:10px;}';
     html += '.grid-line-2,.grid-line-3{border-top:1px dashed #ccc;margin-bottom:10px;}';
     html += '.pinyin-text{visibility:hidden;height:15px;}';
-    html += '.flex-row{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}';
-    html += '.char-box{text-align:center;}';
-    html += '.hanzi{font-size:18px;font-weight:400;margin-top:-20px;color:#1c1c1e;}';
-    
-    // 生字田字格样式
-    html += '.tian-grid{display:inline-block;width:1.3cm;height:1.3cm;border:1px solid #000;position:relative;background:#fff;}';
     html += '@media print{body{padding:0;margin:0;}}';
     html += '</style></head><body>';
     
-    // 添加提示文字
-    if (!isMathPrint && list.length > 0) {
-        if (list[0].subTag === "拼音") {
-            html += '<div style="text-align: left; margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 16px; font-weight: bold;">写拼音</div>';
-        } else if (list[0].subTag === "生字") {
-            html += '<div style="text-align: left; margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 8px; font-size: 16px; font-weight: bold;">看拼音写汉字</div>';
-        }
-    }
-    
-    html += '<div class="print-grid">';
-    
-    for(var i = 0; i < list.length; i++) {
-    var item = list[i];
-    var isMath = item.id && item.id.startsWith('math');
-    
-    // ===== 卡片头部：日期和来源（居中） =====
-    var cardHeader = '';
-    cardHeader += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#aaa;margin-bottom:4px;padding:0 2px;">';
-    cardHeader += '<span>#' + (i+1) + '</span>';
-    cardHeader += '<span>';
-    var headerParts = [];
-    if (options.date && item.date) headerParts.push(escapeHtml(item.date));
-    if (options.source && item.source) headerParts.push(escapeHtml(item.source));
-    cardHeader += headerParts.join(' | ');
-    cardHeader += '</span>';
-    cardHeader += '</div>';
-    
-    // ===== 单元显示（居中） =====
-    var unitHtml = '';
-    if (options.unit) {
-        var unitValue = (item.unit && item.unit.trim()) ? escapeHtml(item.unit) : '未设置';
-        unitHtml = '<div style="font-size:10px;color:#666;margin-bottom:2px;text-align:center;">' + unitValue + '</div>';
-    }
-    
-    // ===== 课文显示（单元下一行，居中） =====
-    var textHtml = '';
-    if (options.text) {
-        var textValue = (item.text && item.text.trim()) ? escapeHtml(item.text) : '未设置';
-        textHtml = '<div style="font-size:10px;color:#666;margin-bottom:4px;text-align:center;">' + textValue + '</div>';
-    }
-    
-    // ===== 单元和课文合并 =====
-    var unitTextHtml = '';
-    if (unitHtml || textHtml) {
-        unitTextHtml = '<div style="margin-bottom:4px;">' + unitHtml + textHtml + '</div>';
-    }
-    
-    // ===== 错误原因（放在卡片底部，居中） =====
-    var reasonHtml = '';
-    if (options.reason && item.reasons && item.reasons.length) {
-        reasonHtml = '<div style="font-size:10px;color:#888;margin-top:4px;padding-top:4px;border-top:1px dashed #ddd;text-align:center;">错误原因: ' + escapeHtml(item.reasons.join('、')) + '</div>';
-    }
-    
-    if(isMath) {
-        // ========== 数学卡片渲染 ==========
-        html += '<div class="print-card">';
-        html += cardHeader;
-        html += unitTextHtml;
+    var groupKeys = Object.keys(groups);
+    for (var g = 0; g < groupKeys.length; g++) {
+        var groupName = groupKeys[g];
+        var groupItems = groups[groupName];
+        var gridColumns = getColumnsForGroup(groupName);
         
-        if(options.question) {
-            html += '<div class="math-question">';
-            if(item.question && item.question.trim()) {
-                html += '<div>' + escapeHtml(item.question) + '</div>';
-            }
-            if(item.questionImages && item.questionImages.length > 0) {
-                for(var qi = 0; qi < item.questionImages.length; qi++) {
-                    html += '<div style="margin-top:12px;text-align:center;"><img src="' + item.questionImages[qi] + '" style="max-width:100%; max-height:200px; border-radius:8px;"></div>';
+        html += '<div class="print-section">';
+        html += '<div class="print-section-title">' + groupName + '（' + groupItems.length + '道）</div>';
+        html += '<div class="print-grid" style="grid-template-columns: repeat(' + gridColumns + ', 1fr);">';
+        
+        // ========== 拼音 ==========
+        if (groupName === '拼音') {
+            groupItems.forEach(function(item) {
+                if (!options.question) return;
+                
+                var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
+                var metaRowHeight = metaFontSize + 6;
+                
+                var questionText = item.question || '';
+                var mainHanzi = questionText;
+                var bracketIndex = questionText.indexOf('（');
+                if (bracketIndex > 0) {
+                    mainHanzi = questionText.substring(0, bracketIndex);
                 }
-            }
-            html += '</div>';
-        }
-        
-        if(options.wrong && ((item.wrongAnswer && item.wrongAnswer.trim()) || (item.wrongImages && item.wrongImages.length > 0))) {
-            html += '<div class="math-wrong">';
-            html += '<strong style="color:#ff3b30;">错误答案：</strong><br>';
-            if(item.wrongAnswer && item.wrongAnswer.trim()) {
-                html += '<div>' + escapeHtml(item.wrongAnswer) + '</div>';
-            }
-            if(item.wrongImages && item.wrongImages.length > 0) {
-                for(var wi = 0; wi < item.wrongImages.length; wi++) {
-                    html += '<div style="margin-top:8px;"><img src="' + item.wrongImages[wi] + '" style="max-width:100%; max-height:150px; border-radius:6px;"></div>';
+                var englishBracketIndex = questionText.indexOf('(');
+                if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
+                    mainHanzi = questionText.substring(0, englishBracketIndex);
                 }
-            }
-            html += '</div>';
-        }
-        
-        if(options.correct && ((item.correctAnswer && item.correctAnswer.trim()) || (item.correctImages && item.correctImages.length > 0))) {
-            html += '<div class="math-answer">';
-            html += '<strong style="color:#34c759;">正确答案：</strong><br>';
-            if(item.correctAnswer && item.correctAnswer.trim()) {
-                html += '<div>' + escapeHtml(item.correctAnswer) + '</div>';
-            }
-            if(item.correctImages && item.correctImages.length > 0) {
-                for(var ci = 0; ci < item.correctImages.length; ci++) {
-                    html += '<div style="margin-top:8px;"><img src="' + item.correctImages[ci] + '" style="max-width:100%; max-height:150px; border-radius:6px;"></div>';
+                var chars = mainHanzi.split('');
+                var totalChars = 0;
+                chars.forEach(function(c) { if (c.trim() !== '') totalChars++; });
+                if (totalChars === 0) totalChars = 1;
+                
+                html += '<div style="grid-column: span ' + totalChars + '; display:flex; flex-direction:column; align-items:center; gap:0px;">';
+                
+                // ✅ 元信息固定4行（不管有没有内容）
+                // 单元
+                if (options.unit) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#aaa;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.unit ? escapeHtml(item.unit) : '') + '</div>';
                 }
-            }
-            html += '</div>';
+                // 课文
+                if (options.text) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.text ? escapeHtml(item.text) : '') + '</div>';
+                }
+                // 日期
+                if (options.date) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.date ? escapeHtml(item.date) : '') + '</div>';
+                }
+                // 来源
+                if (options.source) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.source ? escapeHtml(item.source) : '') + '</div>';
+                }
+                
+                // 题目
+                html += '<div style="display:flex; justify-content:center; gap:4px; flex-wrap:wrap; margin-top:2px;">';
+                chars.forEach(function(char) {
+                    if (char.trim() === '') return;
+                    html += '<div style="text-align:center;">';
+                    html += '<div class="four-line-grid" style="display:inline-block;width:50px;margin:0;">';
+                    html += '<div class="grid-line-1"></div>';
+                    html += '<div class="grid-line-2"></div>';
+                    html += '<div class="grid-line-3"></div>';
+                    html += '<div class="grid-line-4"></div>';
+                    html += '<div class="pinyin-text">&nbsp;</div>';
+                    html += '</div>';
+                    html += '<div style="font-size:20px;font-weight:500;margin-top:-18px;color:#1c1c1e;">' + escapeHtml(char) + '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+                
+                html += '</div>';
+            });
+        }
+        // ========== 生字 ==========
+        else if (groupName === '生字') {
+            groupItems.forEach(function(item) {
+                if (!options.question) return;
+                
+                var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
+                var metaRowHeight = metaFontSize + 6;
+                
+                var parts = (item.question || '').trim().split(/\s+/);
+                var displayItems = [];
+                for (var p = 0; p < parts.length; p++) {
+                    if (/[\u4e00-\u9fa5]/.test(parts[p])) {
+                        displayItems.push({ type: 'hanzi', text: parts[p] });
+                    } else {
+                        displayItems.push({ type: 'pinyin', text: parts[p] });
+                    }
+                }
+                var totalItems = displayItems.length;
+                if (totalItems === 0) totalItems = 1;
+                
+                html += '<div style="grid-column: span ' + totalItems + '; display:flex; flex-direction:column; align-items:center; gap:0px;">';
+                
+                // ✅ 元信息固定4行（不管有没有内容）
+                if (options.unit) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.unit ? escapeHtml(item.unit) : '') + '</div>';
+                }
+                if (options.text) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.text ? escapeHtml(item.text) : '') + '</div>';
+                }
+                if (options.date) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.date ? escapeHtml(item.date) : '') + '</div>';
+                }
+                if (options.source) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.source ? escapeHtml(item.source) : '') + '</div>';
+                }
+                
+                // 题目
+                html += '<div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:2px;">';
+                displayItems.forEach(function(item) {
+                    if (item.type === 'pinyin') {
+                        html += '<div style="text-align:center;">';
+                        html += '<div style="font-size:11px;color:#007aff;margin-bottom:2px;">' + escapeHtml(item.text) + '</div>';
+                        html += '<table style="width:1.3cm;height:1.3cm;border-collapse:collapse;margin:0 auto;border:1px solid #000;">';
+                        html += '  <tr>';
+                        html += '    <td style="width:50%;height:50%;border-right:1px dashed #ccc;border-bottom:1px dashed #ccc;"></td>';
+                        html += '    <td style="width:50%;height:50%;border-bottom:1px dashed #ccc;"></td>';
+                        html += '  </tr>';
+                        html += '  <tr>';
+                        html += '    <td style="width:50%;height:50%;border-right:1px dashed #ccc;"></td>';
+                        html += '    <td style="width:50%;height:50%;"></td>';
+                        html += '  </tr>';
+                        html += '</table>';
+                        html += '</div>';
+                    } else {
+                        html += '<div style="text-align:center;padding-top:8px;">';
+                        html += '<div style="font-size:20px;font-weight:500;color:#1c1c1e;">' + escapeHtml(item.text) + '</div>';
+                        html += '</div>';
+                    }
+                });
+                html += '</div>';
+                
+                html += '</div>';
+            });
+        }
+        // ========== 笔顺 ==========
+        else if (groupName === '笔顺') {
+            groupItems.forEach(function(item) {
+                if (!options.question) return;
+                
+                var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
+                var metaRowHeight = metaFontSize + 6;
+                
+                var questionText = item.question || '';
+                var chars = questionText.split('');
+                var totalChars = 0;
+                chars.forEach(function(c) { if (c.trim() !== '') totalChars++; });
+                if (totalChars === 0) totalChars = 1;
+                
+                html += '<div style="grid-column: span ' + totalChars + '; display:flex; flex-direction:column; align-items:center; gap:0px;">';
+                
+                // ✅ 元信息固定4行（不管有没有内容）
+                if (options.unit) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.unit ? escapeHtml(item.unit) : '') + '</div>';
+                }
+                if (options.text) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.text ? escapeHtml(item.text) : '') + '</div>';
+                }
+                if (options.date) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.date ? escapeHtml(item.date) : '') + '</div>';
+                }
+                if (options.source) {
+                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.source ? escapeHtml(item.source) : '') + '</div>';
+                }
+                
+                // 题目
+                html += '<div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:2px;">';
+                chars.forEach(function(char) {
+                    if (char.trim() === '') return;
+                    html += '<div style="text-align:center;padding:4px 0;">';
+                    html += '<div style="font-size:20px;font-weight:500;color:#1c1c1e;">' + escapeHtml(char) + '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+                
+                html += '</div>';
+            });
+        }
+        // ========== 其他 ==========
+        else {
+            groupItems.forEach(function(item, idx) {
+                html += generatePrintCard(item, idx + 1, options, gridColumns);
+            });
         }
         
-        html += reasonHtml;
-        html += '</div>';
-    }
-    else if(item.subTag === "生字") {
-        // ========== 生字渲染 ==========
-        var parts = item.question.trim().split(/\s+/);
-        var hanzi = '';
-        var pinyinParts = [];
-        for(var p = 0; p < parts.length; p++) {
-            if(/[\u4e00-\u9fa5]/.test(parts[p])) {
-                hanzi += parts[p];
-            } else {
-                pinyinParts.push(parts[p]);
-            }
-        }
-        
-        var cardSpan = Math.min(pinyinParts.length + (hanzi ? 1 : 0), gridColumns);
-        html += '<div class="print-card" style="grid-column:span ' + cardSpan + ';">';
-        html += cardHeader;
-        html += unitTextHtml;
-        
-        html += '<div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;">';
-        
-        if(hanzi) {
-            html += '<div style="text-align:center;">';
-            html += '<div style="font-size:20px;font-weight:normal;color:#1c1c1e;margin-top:12px;">' + escapeHtml(hanzi) + '</div>';
-            html += '</div>';
-        }
-        
-        for(var p = 0; p < pinyinParts.length; p++) {
-            html += '<div style="text-align:center;">';
-            html += '<div style="font-size:11px;color:#000;margin-bottom:4px;font-weight:500;">' + escapeHtml(pinyinParts[p]) + '</div>';
-            html += '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:1.3cm;height:1.3cm;border:1px solid #000;">';
-            html += '<div style="border-right:1px dashed #999;border-bottom:1px dashed #999;"></div>';
-            html += '<div style="border-bottom:1px dashed #999;"></div>';
-            html += '<div style="border-right:1px dashed #999;"></div>';
-            html += '<div></div>';
-            html += '</div>';
-            html += '</div>';
-        }
-        html += '</div>';
-        
-        html += reasonHtml;
-        html += '</div>';
-    }
-    else if(item.subTag === "拼音") {
-        // ========== 拼音渲染 ==========
-        var fullQuestion = item.question || '';
-        var mainHanzi = fullQuestion;
-        var noteText = '';
-        
-        var bracketIndex = fullQuestion.indexOf('（');
-        if (bracketIndex > 0) {
-            mainHanzi = fullQuestion.substring(0, bracketIndex);
-            var tempNote = fullQuestion.substring(bracketIndex + 1);
-            if (tempNote.endsWith('）')) {
-                tempNote = tempNote.slice(0, -1);
-            }
-            noteText = tempNote;
-        }
-        var englishBracketIndex = fullQuestion.indexOf('(');
-        if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
-            mainHanzi = fullQuestion.substring(0, englishBracketIndex);
-            var tempNote = fullQuestion.substring(englishBracketIndex + 1);
-            if (tempNote.endsWith(')')) {
-                tempNote = tempNote.slice(0, -1);
-            }
-            noteText = tempNote;
-        }
-        
-        var chars = mainHanzi.split('');
-        var noteChars = noteText ? noteText.split('') : [];
-        
-        chars.forEach(function(char) {
-            html += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin-bottom: 10px; display: inline-block;">';
-            
-            // ===== 拼音卡片显示单元和课文（居中） =====
-            var pinyinUnitHtml = '';
-            var pinyinUnitValue = '';
-            if (options.unit) {
-                var unitVal = (item.unit && item.unit.trim()) ? escapeHtml(item.unit) : '未设置';
-                pinyinUnitValue = '<div style="font-size:8px;color:#888;text-align:center;">' + unitVal + '</div>';
-            }
-            var pinyinTextValue = '';
-            if (options.text) {
-                var textVal = (item.text && item.text.trim()) ? escapeHtml(item.text) : '未设置';
-                pinyinTextValue = '<div style="font-size:8px;color:#888;text-align:center;">' + textVal + '</div>';
-            }
-            if (pinyinUnitValue || pinyinTextValue) {
-                pinyinUnitHtml = '<div style="margin-bottom:2px;">' + pinyinUnitValue + pinyinTextValue + '</div>';
-            }
-            html += pinyinUnitHtml;
-            
-            // 日期和来源（居中）
-            html += '<div style="display: flex; justify-content: center; font-size: 8px; color: #ccc; margin-bottom: 2px;">';
-            var headerParts2 = [];
-            if (options.date && item.date) headerParts2.push(escapeHtml(item.date));
-            if (options.source && item.source) headerParts2.push(escapeHtml(item.source));
-            html += headerParts2.join(' | ');
-            html += '</div>';
-            
-            html += '<div class="flex-row">';
-            html += '<div class="char-box">';
-            html += '<div class="four-line-grid">';
-            html += '<div class="grid-line-1"></div>';
-            html += '<div class="grid-line-2"></div>';
-            html += '<div class="grid-line-3"></div>';
-            html += '<div class="grid-line-4"></div>';
-            html += '<div class="pinyin-text">&nbsp;</div>';
-            html += '</div>';
-            html += '<div class="hanzi">' + escapeHtml(char) + '</div>';
-            html += '</div>';
-            html += '</div></div>';
-        });
-        
-        noteChars.forEach(function(char) {
-            html += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin-bottom: 10px; display: inline-block;">';
-            html += '<div class="flex-row">';
-            html += '<div class="char-box">';
-            html += '<div class="four-line-grid">';
-            html += '<div class="grid-line-1" style="border-top: 1px solid transparent;"></div>';
-            html += '<div class="grid-line-2" style="border-top: 1px solid transparent;"></div>';
-            html += '<div class="grid-line-3" style="border-top: 1px solid transparent;"></div>';
-            html += '<div class="grid-line-4" style="border-top: 1px solid transparent;"></div>';
-            html += '<div class="pinyin-text">&nbsp;</div>';
-            html += '</div>';
-            html += '<div class="hanzi">' + escapeHtml(char) + '</div>';
-            html += '</div>';
-            html += '</div></div>';
-        });
-    }
-    else {
-    // ========== 笔顺、标点、其他：直接显示原题文字 ==========
-    html += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin-bottom: 10px;">';
-    html += cardHeader;
-    html += unitTextHtml;
-    
-    // 显示原题文字
-    if(item.question && item.question.trim()) {
-        html += '<div style="font-size: 16px; line-height: 1.6; padding: 12px; background: #f8f9fc; border-radius: 8px; text-align: center;">';
-        html += escapeHtml(item.question);
-        html += '</div>';
-    }
-    
-    // ========== 显示原题图片 ==========
-    if(item.questionImages && item.questionImages.length > 0) {
-        html += '<div style="margin-top: 8px; text-align: center;">';
-        for(var qi = 0; qi < item.questionImages.length; qi++) {
-            html += '<img src="' + item.questionImages[qi] + '" style="max-width:100%; max-height:250px; border-radius:8px; margin:4px 0;">';
-        }
-        html += '</div>';
+        html += '</div></div>';
     }
     
-    // ========== 显示错误答案（文字） ==========
-    if(options.wrong && item.wrongAnswer && item.wrongAnswer.trim()) {
-        html += '<div style="margin-top: 8px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; border-radius: 6px;">';
-        html += '<strong style="color:#ff3b30;">错误答案：</strong><br>';
-        html += '<div style="font-size: 14px; line-height: 1.5;">' + escapeHtml(item.wrongAnswer) + '</div>';
-        html += '</div>';
-    }
+    html += '</body></html>';
     
-    // ========== 显示错误答案图片 ==========
-    if(item.wrongImages && item.wrongImages.length > 0) {
-        html += '<div style="margin-top: 8px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; border-radius: 6px;">';
-        html += '<strong style="color:#ff3b30;">错误答案图片：</strong><br>';
-        for(var wi = 0; wi < item.wrongImages.length; wi++) {
-            html += '<div style="margin:4px 0;text-align:center;">';
-            html += '<img src="' + item.wrongImages[wi] + '" style="max-width:100%; max-height:200px; border-radius:8px;">';
-            html += '</div>';
-        }
-        html += '</div>';
-    }
-    
-    // ========== 显示正确答案（文字） ==========
-    if(options.correct && item.correctAnswer && item.correctAnswer.trim()) {
-        html += '<div style="margin-top: 8px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; border-radius: 6px;">';
-        html += '<strong style="color:#34c759;">正确答案：</strong><br>';
-        html += '<div style="font-size: 14px; line-height: 1.5;">' + escapeHtml(item.correctAnswer) + '</div>';
-        html += '</div>';
-    }
-    
-    // ========== 显示正确答案图片 ==========
-    if(item.correctImages && item.correctImages.length > 0) {
-        html += '<div style="margin-top: 8px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; border-radius: 6px;">';
-        html += '<strong style="color:#34c759;">正确答案图片：</strong><br>';
-        for(var ci = 0; ci < item.correctImages.length; ci++) {
-            html += '<div style="margin:4px 0;text-align:center;">';
-            html += '<img src="' + item.correctImages[ci] + '" style="max-width:100%; max-height:200px; border-radius:8px;">';
-            html += '</div>';
-        }
-        html += '</div>';
-    }
-    
-    html += reasonHtml;
-    html += '</div>';
-}
-}
-
-
-
-
-
-    html += '</div></body></html>';
-    
-    const printWindow = window.open('', '_blank');
+    var printWindow = window.open('', '_blank');
     printWindow.document.write(html);
     printWindow.document.close();
     
@@ -7713,10 +7863,98 @@ function closePrintSettings() {
         modal.style.display = 'none';
     }
 }// ========== generatePrintCard 函数（供其他分类使用） ==========
-function generatePrintCard(item, idx, options) {
+function generatePrintCard(item, idx, options, gridColumns) {
     const isMath = item.id && item.id.startsWith('math');
     
-    let html = '<div class="print-card" style="margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">';
+    // ========== 拼音特殊处理：每个字占一列 ==========
+    if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
+        // 去除括号内容
+        var questionText = item.question;
+        questionText = questionText.replace(/（[^）]*）/g, '');
+        questionText = questionText.replace(/\([^)]*\)/g, '');
+        questionText = questionText.trim();
+        
+        var chars = questionText.split('');
+        // 根据列数调整尺寸
+        var gridSize = gridColumns >= 10 ? 50 : (gridColumns >= 6 ? 60 : 80);
+        var fontSize = gridColumns >= 10 ? 24 : (gridColumns >= 6 ? 30 : 40);
+        var marginSize = gridColumns >= 10 ? 2 : (gridColumns >= 6 ? 6 : 10);
+        var lineMargin = gridColumns >= 10 ? 4 : (gridColumns >= 6 ? 6 : 8);
+        var pinyinHeight = gridColumns >= 10 ? 10 : (gridColumns >= 6 ? 12 : 20);
+        var marginTop = gridColumns >= 10 ? -16 : (gridColumns >= 6 ? -20 : -30);
+        
+        var result = '';
+        chars.forEach(function(char) {
+            if (char.trim() === '') return;
+            result += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin: 0; display: inline-block; width: 100%;">';
+            result += '<div style="text-align: center; padding: 4px 0;">';
+            result += '<div class="four-line-grid" style="display: inline-block; width: ' + gridSize + 'px; margin: ' + marginSize + 'px 0;">';
+            result += '<div class="grid-line-1" style="border-top: 1px solid #333; margin-bottom: ' + lineMargin + 'px;"></div>';
+            result += '<div class="grid-line-2" style="border-top: 1px solid #999; margin-bottom: ' + lineMargin + 'px;"></div>';
+            result += '<div class="grid-line-3" style="border-top: 1px solid #999; margin-bottom: ' + lineMargin + 'px;"></div>';
+            result += '<div class="grid-line-4" style="border-top: 1px solid #333; margin-bottom: ' + lineMargin + 'px;"></div>';
+            result += '<div class="pinyin-text" style="visibility: hidden; height: ' + pinyinHeight + 'px;">&nbsp;</div>';
+            result += '</div>';
+            result += '<div style="font-size: ' + fontSize + 'px; font-weight: 500; margin-top: ' + marginTop + 'px; color: #1c1c1e;">' + escapeHtml(char) + '</div>';
+            result += '</div>';
+            result += '</div>';
+        });
+        return result;
+    }
+    
+    // ========== 生字特殊处理：每个拼音+田字格占一列 ==========
+    if (item.tag === "基础知识" && item.subTag === "生字" && item.question) {
+        // 去除括号内容
+        var questionText = item.question;
+        questionText = questionText.replace(/（[^）]*）/g, '');
+        questionText = questionText.replace(/\([^)]*\)/g, '');
+        questionText = questionText.trim();
+        
+        var parts = questionText.trim().split(/\s+/);
+        var hanzi = '';
+        var pinyinParts = [];
+        for (var i = 0; i < parts.length; i++) {
+            if (/[\u4e00-\u9fa5]/.test(parts[i])) {
+                hanzi += parts[i];
+            } else {
+                pinyinParts.push(parts[i]);
+            }
+        }
+        
+        // 根据列数调整尺寸
+        var gridSize = gridColumns >= 10 ? 35 : (gridColumns >= 6 ? 45 : 60);
+        var hanziSize = gridColumns >= 10 ? 20 : (gridColumns >= 6 ? 28 : 40);
+        var pinyinSize = gridColumns >= 10 ? 9 : (gridColumns >= 6 ? 11 : 14);
+        
+        var result = '';
+        // 如果有汉字，先显示汉字（占一列）
+        if (hanzi) {
+            result += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin: 0; display: inline-block; width: 100%;">';
+            result += '<div style="text-align: center; padding: 4px 0;">';
+            result += '<div style="font-size: ' + (hanziSize + 4) + 'px; font-weight: normal; color: #1c1c1e; padding-top: 10px;">' + escapeHtml(hanzi) + '</div>';
+            result += '</div>';
+            result += '</div>';
+        }
+        
+        // 每个拼音+田字格占一列
+        pinyinParts.forEach(function(p) {
+            result += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin: 0; display: inline-block; width: 100%;">';
+            result += '<div style="text-align: center; padding: 4px 0;">';
+            result += '<div style="font-size: ' + pinyinSize + 'px; color: #007aff; margin-bottom: 4px;">' + escapeHtml(p) + '</div>';
+            // ========== 原版田字格（带十字虚线） ==========
+            result += '<div class="tian-grid" style="display: inline-block; width: ' + gridSize + 'px; height: ' + gridSize + 'px; border: 1px solid #c6c6c8; position: relative; margin: 5px 0; background: #fff;">';
+            result += '<div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #e9e9ef;"></div>';
+            result += '<div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #e9e9ef;"></div>';
+            result += '<div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>';
+            result += '</div>';
+            result += '</div>';
+            result += '</div>';
+        });
+        return result;
+    }
+    
+    // ========== 普通卡片（其他分类） ==========
+    var html = '<div class="print-card" style="margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">';
     html += '<div class="card-header" style="font-size: 11px; color: #999; margin-bottom: 8px;">';
     html += '第' + idx + '题 ' + (item.date || '无日期');
     if(item.source) html += ' | ' + escapeHtml(item.source);
@@ -7724,23 +7962,17 @@ function generatePrintCard(item, idx, options) {
     
     // 原题
     if (options.question) {
-        if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
-            var chars = item.question.split('');
-            html += '<div class="special-content" style="background: #f8f9fc; border-radius: 16px; padding: 20px; margin: 12px 0;">';
-            html += '<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">';
-            for (var i = 0; i < chars.length; i++) {
-                html += '<div style="text-align: center;">';
-                html += '<div class="four-line-grid" style="display: inline-block; width: 80px; margin: 10px 0;">';
-                html += '<div class="grid-line-1" style="border-top: 1px solid #333; margin-bottom: 8px;"></div>';
-                html += '<div class="grid-line-2" style="border-top: 1px solid #999; margin-bottom: 8px;"></div>';
-                html += '<div class="grid-line-3" style="border-top: 1px solid #999; margin-bottom: 8px;"></div>';
-                html += '<div class="grid-line-4" style="border-top: 1px solid #333; margin-bottom: 8px;"></div>';
-                html += '<div class="pinyin-text" style="visibility: hidden; height: 20px;">&nbsp;</div>';
-                html += '</div>';
-                html += '<div style="font-size: 40px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">' + escapeHtml(chars[i]) + '</div>';
-                html += '</div>';
-            }
-            html += '</div></div>';
+        // 笔顺特殊显示
+        if (item.tag === "基础知识" && item.subTag === "笔顺" && item.question) {
+            html += '<div style="font-size: 32px; font-weight: 600; text-align: center; letter-spacing: 8px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
+        }
+        // 数学题目：居中放大
+        else if (isMath && item.question) {
+            html += '<div style="font-size: 28px; font-weight: 600; text-align: center; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
+        }
+        // 多音字特殊显示
+        else if (item.subTag === "多音字" && item.question) {
+            html += '<div style="font-size: 28px; font-weight: 600; text-align: center; letter-spacing: 4px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
         }
         else if (item.question) {
             html += '<div style="font-size: 14px; line-height: 1.5; margin: 12px 0;">' + escapeHtml(item.question) + '</div>';
@@ -7765,8 +7997,8 @@ function generatePrintCard(item, idx, options) {
         html += '</div>';
     }
     
-    // 正确答案（拼音不重复显示）
-    var skipCorrect = (item.tag === "基础知识" && item.subTag === "拼音");
+    // 正确答案（拼音和生字不重复显示，因为原题已显示）
+    var skipCorrect = (item.tag === "基础知识" && (item.subTag === "拼音" || item.subTag === "生字"));
     if (options.correct && !skipCorrect && item.correctAnswer) {
         html += '<div style="margin-top: 6px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; font-size: 12px;">';
         html += '<strong style="color:#34c759;">✅ 正确：</strong> ' + escapeHtml(item.correctAnswer);
@@ -7794,7 +8026,6 @@ function generatePrintCard(item, idx, options) {
     html += '</div>';
     return html;
 }
-
 
 
 
@@ -8048,7 +8279,15 @@ if (target.classList && target.classList.contains('print-category-filter')) {
 
 
 async function init() {
-// 确保预览按钮调用正确的函数
+
+ const token = await loadToken();
+    if (token) {
+        console.log('✅ GitHub Token 已加载');
+    } else {
+        console.warn('⚠️ 未配置 GitHub Token，图片上传和同步功能将不可用。请在首页 → 设置 中配置。');
+    }
+
+
 var previewBtn = document.getElementById('previewPrintBtn');
 if(previewBtn) {
     var newBtn = previewBtn.cloneNode(true);
@@ -8220,30 +8459,22 @@ async function handleImageUploadFromFile(file, target) {
 }
 
 
-  function loadToken() {
+// ==================== 加载 Token（支持云端恢复） ====================
+async function loadToken() {
+    // 1. 先从 localStorage 读取
     let token = localStorage.getItem(PAGE_ID + '_github_token');
-    if (!token) {
-        console.log('⚠️ 未设置 GitHub Token，请在首页 → 设置 中配置');
-        return null;
-    }
-    return token;
-}
-
-    const token = loadToken();
     if (token) {
-        GITHUB_CONFIG.token = token;
-        GIST_CONFIG.token = token;
-        console.log('✅ GitHub Token 已加载');
-    } else {
-        console.warn('⚠️ 未配置 GitHub Token，图片上传和同步功能将不可用。请在首页 → 设置 中配置。');
+        GITHUB_REPO_CONFIG.token = token;
+        console.log('✅ Token 从本地加载');
+        return token;
     }
     
-    // 加载保存的 Gist ID
-    // 加载保存的 Gist ID（使用 PAGE_ID 独立存储）
-const savedGistId = localStorage.getItem(PAGE_ID + '_gist_id');
-if (savedGistId) {
-    GIST_CONFIG.id = savedGistId;
+    // 2. 本地没有 → 提示用户输入（不自动从云端恢复）
+    console.log('⚠️ 本地无 Token，请手动输入');
+    return null;
 }
+    
+
     
     // 【关键修复】先加载本地存储的数据
     const hasLocalData = await checkAndMigrateData();
@@ -8506,7 +8737,6 @@ if (reviewEditModal) {
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     const settingsTokenInput = document.getElementById('settingsTokenInput');
-    const settingsGistIdInput = document.getElementById('settingsGistIdInput');
     const syncNowBtn = document.getElementById('syncNowBtn');
     const resetToSampleBtn = document.getElementById('resetToSampleBtn');
     const exportDataBtn = document.getElementById('exportDataBtn');
@@ -8517,7 +8747,6 @@ const clearAllDataBtn = document.getElementById('clearAllDataBtn');
     if (openSettingsBtn) {
     openSettingsBtn.onclick = () => {
         settingsTokenInput.value = localStorage.getItem(PAGE_ID + '_github_token') || '';
-        settingsGistIdInput.value = localStorage.getItem(PAGE_ID + '_gist_id') || GIST_CONFIG.id || '';
         settingsModal.classList.add('active');
     };
 }
@@ -8530,21 +8759,12 @@ const clearAllDataBtn = document.getElementById('clearAllDataBtn');
 if (saveSettingsBtn) {
     saveSettingsBtn.onclick = () => {
         const newToken = settingsTokenInput.value.trim();
-        const newGistId = settingsGistIdInput.value.trim();
         if (newToken) {
             localStorage.setItem(PAGE_ID + '_github_token', newToken);
-            GITHUB_CONFIG.token = newToken;
-            GIST_CONFIG.token = newToken;
+            GITHUB_REPO_CONFIG.token = newToken;
         } else {
             localStorage.removeItem(PAGE_ID + '_github_token');
-            GITHUB_CONFIG.token = '';
-            GIST_CONFIG.token = '';
-        }
-        if (newGistId) {
-            localStorage.setItem(PAGE_ID + '_gist_id', newGistId);
-            GIST_CONFIG.id = newGistId;
-        } else {
-            localStorage.removeItem(PAGE_ID + '_gist_id');
+            GITHUB_REPO_CONFIG.token = '';
         }
         alert('✅ 设置已保存');
         settingsModal.classList.remove('active');
@@ -8553,72 +8773,48 @@ if (saveSettingsBtn) {
 
 
 
-
 // 上传到云端（带旋转）
 // 上传到云端（带旋转）
 if (syncCloudUpload) {
     syncCloudUpload.onclick = async () => {
-        console.log('🔘 [上传] 用户点击上传按钮');
-        
-        if (!GITHUB_CONFIG.token) {
-            console.error('❌ [上传] GitHub Token 未配置');
+        if (!GITHUB_REPO_CONFIG.token) {
             alert('⚠️ 请先在设置中填写 GitHub Token');
             return;
         }
-        
-        console.log('✅ [上传] Token 已配置:', GITHUB_CONFIG.token.substring(0, 10) + '...');
-        
         startUploadSpin();
         try {
-            console.log('📤 [上传] 开始调用 saveToCloud()...');
             await saveToCloud();
-            console.log('✅ [上传] saveToCloud() 执行成功');
             alert('✅ 上传成功！');
         } catch (err) {
-            console.error('❌ [上传] 失败:', err.message);
             alert('❌ 上传失败：' + err.message);
         } finally {
             stopUploadSpin();
-            console.log('🏁 [上传] 流程结束');
         }
     };
 }
 // 从云端恢复（带旋转）
-// 从云端恢复（带旋转）
 if (syncCloudDownload) {
     syncCloudDownload.onclick = async () => {
-        console.log('🔘 [恢复] 用户点击恢复按钮');
-        
-        if (!GITHUB_CONFIG.token) {
-            console.error('❌ [恢复] GitHub Token 未配置');
+        if (!GITHUB_REPO_CONFIG.token) {
             alert('⚠️ 请先在设置中填写 GitHub Token');
             return;
         }
-        
-        console.log('✅ [恢复] Token 已配置:', GITHUB_CONFIG.token.substring(0, 10) + '...');
-        
-        if (!confirm('从云端恢复会覆盖当前所有本地数据，确定继续吗？')) {
-            console.log('🚫 [恢复] 用户取消');
-            return;
-        }
-        
+        if (!confirm('从云端恢复会覆盖当前所有本地数据，确定继续吗？')) return;
         startDownloadSpin();
         try {
-            console.log('📥 [恢复] 开始调用 loadFromCloudForce()...');
             await loadFromCloudForce();
-            console.log('✅ [恢复] loadFromCloudForce() 执行成功');
             alert('✅ 恢复成功！');
             renderSidebar();
             renderContent();
         } catch (err) {
-            console.error('❌ [恢复] 失败:', err.message);
             alert('❌ 恢复失败：' + err.message);
         } finally {
             stopDownloadSpin();
-            console.log('🏁 [恢复] 流程结束');
         }
     };
-}
+}   
+    
+    
     // 导出数据
     if (exportDataBtn) {
         exportDataBtn.onclick = () => {
@@ -8715,6 +8911,9 @@ if (clearAllDataBtn) {
 
 // ========== 修复编辑弹窗右上角"取消"按钮 ==========
 // 放在 init() 函数的最后，setTimeout 之后
+
+
+
 
 const cancelInModalBtn = document.getElementById('cancelInModalBtn');
 if (cancelInModalBtn) {
@@ -9097,8 +9296,7 @@ document.getElementById('printFilterText')?.addEventListener('change', function(
 function showSyncChoiceModal() {
     // 检查是否已配置 Token 和 Gist ID
     const hasToken = localStorage.getItem(PAGE_ID + '_github_token');
-    const hasGistId = localStorage.getItem(PAGE_ID + '_gist_id') || GIST_CONFIG.id;
-    const isConfigured = hasToken && hasGistId;
+const isConfigured = hasToken && hasToken.length > 0;
     
     // 创建遮罩
     const overlay = document.createElement('div');
