@@ -1,0 +1,159 @@
+{
+  "chineseErrors": [
+    {
+      "id": "ch_1",
+      "tag": "基础知识",
+      "subTag": "拼音",
+      "grade": "一下",
+      "unit": "第一单元",
+      "question": "汗",
+      "wrongAnswer": "我写成了'汉'",
+      "correctAnswer": "汗",
+      "reasons": [
+        "粗心大意"
+      ],
+      "source": "听写本",
+      "date": "2026-05-12",
+      "reviewCount": 3,
+      "reviewHistory": [
+        {
+          "time": "2026/6/27 13:25:50",
+          "result": "correct"
+        },
+        {
+          "time": "2026-06-01 19:30:00",
+          "result": "correct"
+        },
+        {
+          "time": "2026-05-30 10:15:00",
+          "result": "wrong"
+        }
+      ],
+      "questionImages": [],
+      "wrongImages": [],
+      "correctImages": [],
+      "_correctPinyinHtml": "\n                    <div style=\"font-size: 40px; font-weight: 500; color: #34c759; display: inline-block; margin: 0 10px;\">\n                        汗\n                    </div>\n                ",
+      "_consecutiveCorrect": 1,
+      "_nextReviewDate": "2026-07-01",
+      "_mastered": false
+    },
+    {
+      "id": "ch_2",
+      "tag": "基础知识",
+      "subTag": "拼音",
+      "grade": "一下",
+      "unit": "第一单元",
+      "question": "晴",
+      "wrongAnswer": "我写成了'睛'",
+      "correctAnswer": "晴",
+      "reasons": [
+        "粗心大意"
+      ],
+      "source": "听写本",
+      "date": "2026-05-15",
+      "reviewCount": 1,
+      "reviewHistory": [
+        {
+          "time": "2026/6/27 13:25:06",
+          "result": "correct"
+        }
+      ],
+      "questionImages": [],
+      "wrongImages": [],
+      "correctImages": [],
+      "_correctPinyinHtml": "\n                    <div style=\"font-size: 40px; font-weight: 500; color: #34c759; display: inline-block; margin: 0 10px;\">\n                        晴\n                    </div>\n                ",
+      "_consecutiveCorrect": 1,
+      "_nextReviewDate": "2026-07-01",
+      "_mastered": false
+    },
+    {
+      "id": "ch_3",
+      "tag": "基础知识",
+      "subTag": "生字",
+      "grade": "一下",
+      "unit": "第二单元",
+      "question": "shi",
+      "wrongAnswer": "我写成了'是'",
+      "correctAnswer": "诗",
+      "reasons": [
+        "概念模糊"
+      ],
+      "source": "生字本",
+      "date": "2026-05-18",
+      "reviewCount": 1,
+      "reviewHistory": [
+        {
+          "time": "2026-05-28 09:30:00",
+          "result": "wrong"
+        }
+      ],
+      "questionImages": [],
+      "wrongImages": [],
+      "correctImages": []
+    },
+    {
+      "id": "ch_4",
+      "tag": "基础知识",
+      "subTag": "生字",
+      "grade": "一下",
+      "unit": "第二单元",
+      "question": "wang",
+      "wrongAnswer": "我写成了'忘'",
+      "correctAnswer": "望",
+      "reasons": [
+        "思路错误"
+      ],
+      "source": "生字本",
+      "date": "2026-05-20",
+      "reviewCount": 0,
+      "reviewHistory": [],
+      "questionImages": [],
+      "wrongImages": [],
+      "correctImages": []
+    }
+  ],
+  "mathErrors": [
+    {
+      "id": "math_1780845520421",
+      "tag": "计算",
+      "grade": "一下",
+      "unit": "",
+      "question": "",
+      "wrongAnswer": "11",
+      "correctAnswer": "12",
+      "reasons": [],
+      "source": "",
+      "date": "2026-05-31",
+      "reviewCount": 0,
+      "reviewHistory": [],
+      "questionImages": [
+        "https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben/images/1780845503803_1jkb3ed5.jpeg"
+      ],
+      "wrongImages": [],
+      "correctImages": []
+    },
+    {
+      "id": "math_1",
+      "tag": "计算",
+      "unit": "第一单元",
+      "question": "计算 25 × 4 ÷ 25 × 4 = ?",
+      "wrongAnswer": "1",
+      "correctAnswer": "16",
+      "reasons": [
+        "粗心大意"
+      ],
+      "source": "口算练习",
+      "date": "2026-05-15",
+      "reviewCount": 1,
+      "reviewHistory": [
+        {
+          "time": "2026-05-30 14:20:00",
+          "result": "wrong"
+        }
+      ],
+      "questionImages": [],
+      "wrongImages": [],
+      "correctImages": []
+    }
+  ]
+}
