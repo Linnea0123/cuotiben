@@ -1931,7 +1931,8 @@ document.getElementById('calendarTrigger').textContent = "错题本";
             </div>
 
             <!-- 三列布局：来源、所属单元、日期 -->
-           <div class="three-input" style="display: flex; gap: 12px; flex-wrap: wrap;">
+<!-- 前四个输入框：来源、年级、单元、课文 在一行 -->
+<div class="three-input" style="display: flex; gap: 12px; flex-wrap: wrap;">
     <div style="flex: 1; min-width: 120px;">
         <label>来源</label>
         <input type="text" id="editSource" placeholder="如：听写本" style="width:100%;padding:10px 12px;border-radius:12px;border:0.5px solid #c6c6c8;font-size:14px;background:white;">
@@ -1971,6 +1972,9 @@ document.getElementById('calendarTrigger').textContent = "错题本";
         <input type="date" id="editDate" style="width:100%;padding:10px 12px;border-radius:12px;border:0.5px solid #c6c6c8;font-size:14px;background:white;">
     </div>
 </div>
+
+
+
 
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" id="cancelEditBtn">取消</button>
@@ -2697,6 +2701,12 @@ if (headerGradeFilter) {
         
         renderContent();
         renderSidebar();
+
+// ========== 如果编辑弹窗打开，更新单元选项 ==========
+    if (document.getElementById('editModal').classList.contains('active')) {
+        updateUnitOptionsInModal();
+    }
+
         
         // 同步更新内容区的年级下拉框
         const contentGradeFilter = document.getElementById('gradeFilter');
@@ -3083,27 +3093,8 @@ function renderSidebar() {
         categoryTabs.innerHTML = html;
         
         // 绑定点击事件
-        document.querySelectorAll('.category-tab').forEach(function(el) {
-            el.addEventListener('click', function(e) {
-                const tag = e.target.getAttribute('data-tag');
-                if (tag) {
-                    if (tag === '全部') {
-                        currentChineseTag = '全部';
-                        currentChineseSubTag = '全部';
-                    } else {
-                        currentChineseTag = tag;
-                        currentChineseSubTag = '全部';
-                    }
-                    resetPrintColumnsByCategory();
-                    renderSidebar();
-                    renderContent();
-                    updateBatchAddButtonVisibility();
-                    localStorage.setItem('cuoti_chineseTag', currentChineseTag);
-                    localStorage.setItem('cuoti_subTag', currentChineseSubTag);
-                    localStorage.setItem('cuoti_subject', currentSubject);
-                }
-            });
-        });
+       
+    
     } else {
         // 数学科目
         const categories = ["全部", "计算", "应用题", "长度单位", "图形", "概念"];
@@ -3679,6 +3670,10 @@ function handleGradeChange() {
     
     renderContent();
     renderSidebar();
+    // ========== 如果编辑弹窗打开，更新单元选项 ==========
+    if (document.getElementById('editModal').classList.contains('active')) {
+        updateUnitOptionsInModal();
+    }
 } 
 
 
@@ -4717,7 +4712,9 @@ document.querySelectorAll('.label-tag').forEach(tag => {
     tag.classList.remove('selected');
 });
 initLabelTags();
-
+// 在这行之前添加：
+updateUnitOptionsInModal();
+updateTextPlaceholderInModal();
     editModal.classList.add('active');
     // 强制滚动到顶部
 const container = editModal.querySelector('.modal-container');
@@ -5128,7 +5125,8 @@ if (editItem.labels && editItem.labels.length > 0) {
 }
 initLabelTags();
 
-    // 显示模态框
+    updateUnitOptionsInModal();
+updateTextPlaceholderInModal();
     editModal.classList.add('active');
     // 强制滚动到顶部
 const container = editModal.querySelector('.modal-container');
@@ -5379,6 +5377,13 @@ function deleteQuestion(id, subject) {
     localStorage.setItem('cuoti_subject', currentSubject);
     updateUnitOptions();
     updateTextOptions();
+ // ========== 如果编辑弹窗打开，更新单元选项 ==========
+    if (document.getElementById('editModal').classList.contains('active')) {
+        updateUnitOptionsInModal();
+        updateTextPlaceholderInModal();
+    }
+
+
 }
 
 
@@ -8580,7 +8585,57 @@ document.getElementById('filterDateRange')?.addEventListener('change', function(
     
     renderContent();
     renderSidebar();
+
+
+
 });
+
+// ========== 分类点击事件委托 ==========
+const categoryTabs = document.getElementById('categoryTabs');
+if (categoryTabs) {
+    // 移除旧委托
+    if (categoryTabs._delegateHandler) {
+        categoryTabs.removeEventListener('click', categoryTabs._delegateHandler);
+    }
+    
+    categoryTabs._delegateHandler = function(e) {
+        const target = e.target.closest('.category-tab');
+        if (!target) return;
+        
+        const tag = target.getAttribute('data-tag');
+        if (!tag) return;
+        
+        console.log('点击分类:', tag, '当前学科:', currentSubject);
+        
+        if (currentSubject === "chinese") {
+            if (tag === '全部') {
+                currentChineseTag = '全部';
+                currentChineseSubTag = '全部';
+            } else {
+                currentChineseTag = tag;
+                currentChineseSubTag = '全部';
+            }
+            resetPrintColumnsByCategory();
+            localStorage.setItem('cuoti_chineseTag', currentChineseTag);
+            localStorage.setItem('cuoti_subTag', currentChineseSubTag);
+            localStorage.setItem('cuoti_subject', currentSubject);
+        } else {
+            if (tag === '全部') {
+                currentMathTag = '全部';
+            } else {
+                currentMathTag = tag;
+            }
+            localStorage.setItem('cuoti_mathTag', currentMathTag);
+            localStorage.setItem('cuoti_subject', currentSubject);
+        }
+        
+        renderSidebar();
+        renderContent();
+        updateBatchAddButtonVisibility();
+    };
+    
+    categoryTabs.addEventListener('click', categoryTabs._delegateHandler);
+}
 
 // ========== 清除筛选按钮 ==========
 document.getElementById('clearFilterBtn')?.addEventListener('click', function() {
@@ -8840,12 +8895,16 @@ openReviewBtn.addEventListener('click', () => {
 });
     
   if (closeReviewBtn) {
+    // 先移除旧的事件监听
     const newCloseReviewBtn = closeReviewBtn.cloneNode(true);
-    closeReviewBtn.parentNode.replaceChild(newCloseReviewBtn, closeReviewBtn);
+    if (closeReviewBtn.parentNode) {
+        closeReviewBtn.parentNode.replaceChild(newCloseReviewBtn, closeReviewBtn);
+    }
     newCloseReviewBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         reviewModal.classList.remove('active');
     });
+
 }
 
 
@@ -9494,7 +9553,18 @@ document.getElementById('printFilterText')?.addEventListener('change', function(
     updatePrintStats();
 });  
 
+// ========== 编辑弹窗中的单元下拉框更新 ==========
 
+function updateTextPlaceholderInModal() {
+    const textInput = document.getElementById('editText');
+    if (!textInput) return;
+    
+    if (currentSubject === 'chinese') {
+        textInput.placeholder = '如：秋天';
+    } else {
+        textInput.placeholder = '如：认识图形';
+    }
+}
 
     // 搜索逻辑
     function performSearch2(keyword) {
@@ -9604,7 +9674,47 @@ document.getElementById('printFilterText')?.addEventListener('change', function(
 }
 
 
+// ========== 把新函数放在这里 ==========
+function updateUnitOptionsInModal() {
+    const unitSelect = document.getElementById('editUnit');
+    if (!unitSelect) return;
+    
+    const currentValue = unitSelect.value;
+    const grade = currentGradeFilter;
+    const subject = currentSubject;
+    
+    let units = [];
+    if (subject === 'chinese') {
+        units = UNIT_CONFIG.chinese[grade] || UNIT_CONFIG.chinese['二上'];
+    } else {
+        units = UNIT_CONFIG.math[grade] || UNIT_CONFIG.math['二上'];
+    }
+    
+    if (!units || units.length === 0) {
+        units = ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元'];
+    }
+    
+    unitSelect.innerHTML = '<option value="">请选择</option>';
+    units.forEach(function(unit) {
+        const selected = (unit === currentValue) ? 'selected' : '';
+        unitSelect.innerHTML += `<option value="${unit}" ${selected}>${unit}</option>`;
+    });
+}
 
+function updateTextPlaceholderInModal() {
+    const textInput = document.getElementById('editText');
+    if (!textInput) return;
+    
+    if (currentSubject === 'chinese') {
+        textInput.placeholder = '如：秋天';
+    } else {
+        textInput.placeholder = '如：认识图形';
+    }
+}
+
+(async function() {
+    await init();
+})();
 
 
 
