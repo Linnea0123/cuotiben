@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+
+    <!-- Cropper.js 样式 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+<!-- Cropper.js 核心库 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <meta name="theme-color" content="#ffffff">
@@ -2952,36 +2957,39 @@ function renderShengziContent(question, wrongAnswer, correctAnswer) {
     // 按空格分割成多个部分
     const parts = question.trim().split(/\s+/);
     
-    // 收集所有需要显示的项（每个汉字单独一项，每个拼音单独一项）
+    // 构建显示项数组，保持原有顺序
     let items = [];
-    
     for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
         const hasChinese = [...part].some(char => /[\u4e00-\u9fa5]/.test(char));
-        
         if (hasChinese) {
-            // 汉字：拆分成单个字符，每个字符单独一项
+            // 汉字：拆分成单个字符
             const chars = part.split('');
             for (let j = 0; j < chars.length; j++) {
                 items.push({ type: 'hanzi', text: chars[j] });
             }
         } else {
-            // 拼音：每个拼音单独一项
+            // 拼音：整个作为一个项
             items.push({ type: 'pinyin', text: part });
         }
     }
     
-    // 将 items 分成左右两半（保持顺序）
-    const midIndex = Math.ceil(items.length / 2);
-    const leftItems = items.slice(0, midIndex);
-    const rightItems = items.slice(midIndex);
+    // 渲染所有项，保持顺序
+    let html = `
+        <div class="special-content" style="background: #f8f9fc; border-radius: 16px; padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;">
+    `;
     
-    // 渲染单项
-    const renderItem = (item) => {
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
         if (item.type === 'hanzi') {
-            return `<div style="font-size: 32px; font-weight: normal; color: #1c1c1e; padding-top: 25px;">${escapeHtml(item.text)}</div>`;
+            html += `
+                <div style="font-size: 32px; font-weight: normal; color: #1c1c1e; padding-top: 25px;">
+                    ${escapeHtml(item.text)}
+                </div>
+            `;
         } else {
-            return `
+            html += `
                 <div style="display: flex; flex-direction: column; align-items: center;">
                     <div style="font-size: 14px; color: #007aff; margin-bottom: 6px;">${escapeHtml(item.text)}</div>
                     <div class="tian-grid" style="width: 60px; height: 60px;">
@@ -2990,26 +2998,14 @@ function renderShengziContent(question, wrongAnswer, correctAnswer) {
                 </div>
             `;
         }
-    };
+    }
     
-    // 渲染左右两侧
-    const renderSide = (items) => {
-        if (items.length === 0) return '<div></div>';
-        let html = '';
-        for (let i = 0; i < items.length; i++) {
-            html += renderItem(items[i]);
-        }
-        return `<div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; align-items: center;">${html}</div>`;
-    };
-    
-    return `
-        <div class="special-content" style="background: #f8f9fc; border-radius: 16px; padding: 20px;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap;">
-                ${renderSide(leftItems)}
-                ${renderSide(rightItems)}
+    html += `
             </div>
         </div>
     `;
+    
+    return html;
 }
 
 function renderNormalContent(question, wrongAnswer, correctAnswer) {
@@ -3708,26 +3704,36 @@ function handleSubTabClick(e) {
 function getFilteredQuestionsForReview() {
     let baseList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
     
+// ========== 添加年级筛选 ==========
+if (currentGradeFilter !== '全部') {
+    baseList = baseList.filter(q => q.grade === currentGradeFilter);
+}
+
+// ========== 分类筛选 ==========
+// 如果 reviewContextFilter 有值，用它筛选（复习时选了具体分类）
+if (reviewContextFilter) {
+    baseList = baseList.filter(q => q.tag === reviewContextFilter);
+    if (reviewContextFilter === "基础知识" && reviewContextSubFilter && reviewContextSubFilter !== "全部") {
+        baseList = baseList.filter(q => q.subTag === reviewContextSubFilter);
+    }
+} 
+// 如果 reviewContextFilter 为 null，但当前分类不是"全部"，用当前分类筛选
+else if (currentSubject === "chinese" && currentChineseTag !== '全部') {
+    baseList = baseList.filter(q => q.tag === currentChineseTag);
+    if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+        baseList = baseList.filter(q => q.subTag === currentChineseSubTag);
+    }
+} else if (currentSubject === "math" && currentMathTag !== '全部') {
+    baseList = baseList.filter(q => q.tag === currentMathTag);
+}
 
 
-    // 分类筛选 - 使用 reviewContextFilter
-    if (reviewContextFilter) {
-        baseList = baseList.filter(q => q.tag === reviewContextFilter);
-        // 如果是基础知识且有二级分类筛选
-        if (reviewContextFilter === "基础知识" && reviewContextSubFilter && reviewContextSubFilter !== "全部") {
-            baseList = baseList.filter(q => q.subTag === reviewContextSubFilter);
-        }
+// ========== 添加单元筛选（复习模式） ==========
+    if (currentFilter === "unit" && customUnitKeyword) {
+        baseList = baseList.filter(q => q.unit && q.unit === customUnitKeyword);
     }
-    
-    
-    else {
-        if (currentSubject === "chinese") {
-            baseList = baseList.filter(q => q.tag === currentChineseTag);
-            if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-                baseList = baseList.filter(q => q.subTag === currentChineseSubTag);
-            }
-        }
-    }
+
+// 如果 reviewContextFilter 为 null 且当前分类是"全部"，不过滤，显示全部
     
     // ========== 核心：做对隐藏，做错推到下周 ==========
     const today = new Date();
@@ -3916,12 +3922,7 @@ if (currentFilter === "month") {
     return baseList;
 }
 
-// 单元筛选
-    if (currentFilter === "unit" && customUnitKeyword) {
-        baseList = baseList.filter(q => q.unit && q.unit.includes(customUnitKeyword));
-        baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        return baseList;
-    }
+
     
 
     // 全部筛选 - 显示所有错题（包括已掌握的）
@@ -4104,47 +4105,63 @@ function updateFilterCounts() {
     const previousFilter = currentFilter;
     const previousUnit = customUnitKeyword;
     
-    // 统计全部数量（只统计当前年级）
-currentFilter = "all";
-customUnitKeyword = "";
-const allList = getFilteredQuestionsForReview();
-const allCount = document.getElementById('allCount');
-if (allCount) allCount.textContent = `(${allList.length})`;
+    // ========== 获取当前年级 ==========
+    function applyGradeFilter(list) {
+        if (currentGradeFilter !== '全部') {
+            return list.filter(q => q.grade === currentGradeFilter);
+        }
+        return list;
+    }
+    
+    // 统计全部数量
+    currentFilter = "all";
+    customUnitKeyword = "";
+    let allList = getFilteredQuestionsForReview();
+    allList = applyGradeFilter(allList);
+    const allCount = document.getElementById('allCount');
+    if (allCount) allCount.textContent = `(${allList.length})`;
+    
     // 统计今日数量
     currentFilter = "today";
     customUnitKeyword = "";
-    const todayList = getFilteredQuestionsForReview();
+    let todayList = getFilteredQuestionsForReview();
+    todayList = applyGradeFilter(todayList);
     const todayCount = document.getElementById('todayCount');
     if (todayCount) todayCount.textContent = `(${todayList.length})`;
     
     // 统计本周数量
     currentFilter = "week";
-    const weekList = getFilteredQuestionsForReview();
+    let weekList = getFilteredQuestionsForReview();
+    weekList = applyGradeFilter(weekList);
     const weekCount = document.getElementById('weekCount');
     if (weekCount) weekCount.textContent = `(${weekList.length})`;
     
     // 统计下周数量
     currentFilter = "nextWeek";
-    const nextWeekList = getFilteredQuestionsForReview();
+    let nextWeekList = getFilteredQuestionsForReview();
+    nextWeekList = applyGradeFilter(nextWeekList);
     const nextWeekCount = document.getElementById('nextWeekCount');
     if (nextWeekCount) nextWeekCount.textContent = `(${nextWeekList.length})`;
     
     // 统计本月数量
     currentFilter = "month";
-    const monthList = getFilteredQuestionsForReview();
+    let monthList = getFilteredQuestionsForReview();
+    monthList = applyGradeFilter(monthList);
     const monthCount = document.getElementById('monthCount');
     if (monthCount) monthCount.textContent = `(${monthList.length})`;
     
-    // 【新增】统计下月数量
+    // 统计下月数量
     currentFilter = "nextMonth";
-    const nextMonthList = getFilteredQuestionsForReview();
+    let nextMonthList = getFilteredQuestionsForReview();
+    nextMonthList = applyGradeFilter(nextMonthList);
     const nextMonthCount = document.getElementById('nextMonthCount');
     if (nextMonthCount) nextMonthCount.textContent = `(${nextMonthList.length})`;
     
     // 统计单元数量
     currentFilter = "all";
     customUnitKeyword = "";
-    const allListForUnit = getFilteredQuestionsForReview();
+    let allListForUnit = getFilteredQuestionsForReview();
+    allListForUnit = applyGradeFilter(allListForUnit);
     
     // 按单元分组统计
     const unitMap = new Map();
@@ -4158,7 +4175,6 @@ if (allCount) allCount.textContent = `(${allList.length})`;
     // 更新单元数量显示
     const unitCountSpan = document.getElementById('unitCount');
     if (unitCountSpan) {
-        // 如果当前选中了具体单元，显示该单元的数量；否则显示单元总数
         if (currentFilter === "unit" && customUnitKeyword) {
             const specificCount = unitMap.get(customUnitKeyword) || 0;
             unitCountSpan.textContent = `(${specificCount})`;
@@ -4172,23 +4188,24 @@ if (allCount) allCount.textContent = `(${allList.length})`;
     currentFilter = previousFilter;
     customUnitKeyword = previousUnit;
 }
-
 function openReviewWithCurrentFilter() {
     updateFilterCounts();
     // 获取当前分类名称
     let categoryName = '';
     if (currentSubject === 'chinese') {
-        if (currentChineseTag === '基础知识') {
-            if (currentChineseSubTag && currentChineseSubTag !== '全部') {
-                categoryName = `语文 · ${currentChineseTag} · ${currentChineseSubTag}`;
-            } else {
-                categoryName = `语文 · ${currentChineseTag}`;
-            }
+        if (currentChineseTag === '全部') {
+            categoryName = '语文 · 全部';
+        } else if (currentChineseTag === '基础知识' && currentChineseSubTag && currentChineseSubTag !== '全部') {
+            categoryName = `语文 · ${currentChineseTag} · ${currentChineseSubTag}`;
         } else {
             categoryName = `语文 · ${currentChineseTag}`;
         }
     } else {
-        categoryName = `数学 · ${currentMathTag}`;
+        if (currentMathTag === '全部') {
+            categoryName = '数学 · 全部';
+        } else {
+            categoryName = `数学 · ${currentMathTag}`;
+        }
     }
     
     // 更新标题
@@ -4213,153 +4230,133 @@ function openReviewWithCurrentFilter() {
             const lastReview = item.reviewHistory && item.reviewHistory.length > 0 ? item.reviewHistory[0] : null;
             const lastReviewText = lastReview ? `${lastReview.time} (${lastReview.result === 'correct' ? '✓' : '✗'})` : '从未';
             const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
-            const reasonText = item.reasons?.length ? item.reasons.join("、") : "未分类";  // 👈 添加这行
-            // 判断是数学还是语文
+            const reasonText = item.reasons?.length ? item.reasons.join("、") : "未分类";
             const isMathItem = item.id && item.id.startsWith('math');
             
-            // ========== 生成原题特殊内容 ==========
             let specialContent = "";
             const hasTextContent = item.question && item.question.trim();
             
             // 拼音特殊渲染
-            
-
-            // 拼音特殊渲染（和错题卡保持一致）
-if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
-    // 提取括号前的汉字和括号内的注释
-    let mainHanzi = item.question;
-    let noteText = '';
-    
-    // 处理中文括号 （）
-    const bracketIndex = item.question.indexOf('（');
-    if (bracketIndex > 0) {
-        mainHanzi = item.question.substring(0, bracketIndex);
-        let tempNote = item.question.substring(bracketIndex + 1);
-        if (tempNote.endsWith('）')) {
-            tempNote = tempNote.slice(0, -1);
-        }
-        noteText = tempNote;
-    }
-    // 处理英文括号 ()
-    const englishBracketIndex = item.question.indexOf('(');
-    if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
-        mainHanzi = item.question.substring(0, englishBracketIndex);
-        let tempNote = item.question.substring(englishBracketIndex + 1);
-        if (tempNote.endsWith(')')) {
-            tempNote = tempNote.slice(0, -1);
-        }
-        noteText = tempNote;
-    }
-    
-    const chars = mainHanzi.split('');
-    const noteChars = noteText ? noteText.split('') : [];
-    
-    let leftHtml = '';
-   // 主体汉字：增加 margin-top 的负值让汉字下移
-chars.forEach(char => {
-    leftHtml += `
-        <div style="text-align: center; display: inline-block; margin: 0 4px;">
-            <div class="four-line-grid" style="width: 70px; margin-bottom: 25px;">
-                <div class="grid-line-1"></div>
-                <div class="grid-line-2"></div>
-                <div class="grid-line-3"></div>
-                <div class="grid-line-4"></div>
-            </div>
-            <div style="font-size: 36px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">${escapeHtml(char)}</div>
-        </div>
-    `;
-});
-    
-    // 注释文字：透明四线格（和错题卡一致）
-    if (noteChars.length > 0) {
-        noteChars.forEach(char => {
-            leftHtml += `
-                <div style="text-align: center; display: inline-block; margin: 0 4px;">
-                    <div class="four-line-grid" style="width: 70px;">
-                        <div class="grid-line-1" style="border-top: 1px solid transparent;"></div>
-                        <div class="grid-line-2" style="border-top: 1px solid transparent;"></div>
-                        <div class="grid-line-3" style="border-top: 1px solid transparent;"></div>
-                        <div class="grid-line-4" style="border-top: 1px solid transparent;"></div>
-                    </div>
-                    <div style="font-size: 36px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">${escapeHtml(char)}</div>
-                </div>
-            `;
-        });
-    }
-    
-    // 正确答案的拼音
-    const correctPinyin = item.correctAnswer || '';
-    const pinyinParts = correctPinyin ? correctPinyin.trim().split(/\s+/) : [];
-    let rightHtml = '';
-    pinyinParts.forEach(p => {
-        rightHtml += `
-            <div style="text-align: center; display: inline-block; margin: 0 4px;">
-                <div style="font-size: 36px; font-weight: 500; color: #34c759;">${escapeHtml(p)}</div>
-            </div>
-        `;
-    });
-    if (!rightHtml) rightHtml = '<span style="font-size: 20px; color: #8e8e93;">未填写</span>';
-    
-    specialContent = `
-        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 20px;">
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 8px;">${leftHtml}</div>
-            <div id="answer-row-${item.id}" style="display: none; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e9e9ef;">
-                <div style="font-size: 13px; color: #8e8e93; margin-bottom: 8px;">✅ 正确答案：</div>
-                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">${rightHtml}</div>
-            </div>
-        </div>
-    `;
-}
-          
-          
-            // 生字特殊渲染
-            else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
-                let hanzi = '';
-                let pinyinParts = [];
-                const parts = item.question.trim().split(/\s+/);
+            if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
+                let mainHanzi = item.question;
+                let noteText = '';
                 
-                for (let i = 0; i < parts.length; i++) {
-                    const part = parts[i];
-                    const hasChinese = /[\u4e00-\u9fa5]/.test(part);
-                    if (hasChinese) {
-                        hanzi += part;
-                    } else {
-                        pinyinParts.push(part);
+                const bracketIndex = item.question.indexOf('（');
+                if (bracketIndex > 0) {
+                    mainHanzi = item.question.substring(0, bracketIndex);
+                    let tempNote = item.question.substring(bracketIndex + 1);
+                    if (tempNote.endsWith('）')) {
+                        tempNote = tempNote.slice(0, -1);
                     }
+                    noteText = tempNote;
+                }
+                const englishBracketIndex = item.question.indexOf('(');
+                if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
+                    mainHanzi = item.question.substring(0, englishBracketIndex);
+                    let tempNote = item.question.substring(englishBracketIndex + 1);
+                    if (tempNote.endsWith(')')) {
+                        tempNote = tempNote.slice(0, -1);
+                    }
+                    noteText = tempNote;
                 }
                 
-                let pinyinGridHtml = '';
-                for (let i = 0; i < pinyinParts.length; i++) {
-                    pinyinGridHtml += `
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <div style="font-size: 22px; font-weight: 500; color: #007aff; margin-bottom: 10px;">${escapeHtml(pinyinParts[i])}</div>
-                            <div class="tian-grid" style="width: 80px; height: 80px;">
-                                <div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>
+                const chars = mainHanzi.split('');
+                const noteChars = noteText ? noteText.split('') : [];
+                
+                let leftHtml = '';
+                chars.forEach(char => {
+                    leftHtml += `
+                        <div style="text-align: center; display: inline-block; margin: 0 4px;">
+                            <div class="four-line-grid" style="width: 70px; margin-bottom: 25px;">
+                                <div class="grid-line-1"></div>
+                                <div class="grid-line-2"></div>
+                                <div class="grid-line-3"></div>
+                                <div class="grid-line-4"></div>
                             </div>
+                            <div style="font-size: 36px; font-weight: 500; margin-top: -30px; color: #1c1c1e;">${escapeHtml(char)}</div>
                         </div>
                     `;
+                });
+                
+                if (noteChars.length > 0) {
+                    noteChars.forEach(char => {
+                        leftHtml += `
+                            <div style="text-align: center; display: inline-block; margin: 0 4px;">
+                                <div class="four-line-grid" style="width: 70px;">
+                                    <div class="grid-line-1" style="border-top: 1px solid transparent;"></div>
+                                    <div class="grid-line-2" style="border-top: 1px solid transparent;"></div>
+                                    <div class="grid-line-3" style="border-top: 1px solid transparent;"></div>
+                                    <div class="grid-line-4" style="border-top: 1px solid transparent;"></div>
+                                </div>
+                                <div style="font-size: 36px; font-weight: 500; margin-top: -24px; color: #1c1c1e;">${escapeHtml(char)}</div>
+                            </div>
+                        `;
+                    });
                 }
                 
-                if (pinyinGridHtml === '') {
-                    pinyinGridHtml = '<div style="color: #8e8e93; font-size: 14px;">（无拼音）</div>';
-                }
+                const correctPinyin = item.correctAnswer || '';
+                const pinyinParts = correctPinyin ? correctPinyin.trim().split(/\s+/) : [];
+                let rightHtml = '';
+                pinyinParts.forEach(p => {
+                    rightHtml += `
+                        <div style="text-align: center; display: inline-block; margin: 0 4px;">
+                            <div style="font-size: 36px; font-weight: 500; color: #34c759;">${escapeHtml(p)}</div>
+                        </div>
+                    `;
+                });
+                if (!rightHtml) rightHtml = '<span style="font-size: 20px; color: #8e8e93;">未填写</span>';
                 
                 specialContent = `
                     <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 20px;">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 40px; flex-wrap: wrap;">
-                            <div style="font-size: 40px; font-weight: normal; padding-top: 25px; color: #1c1c1e;">${escapeHtml(hanzi)}</div>
-                            <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
-                                ${pinyinGridHtml}
-                            </div>
-                        </div>
-                        <div id="answer-row-${item.id}" style="display: none; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e9e9ef; text-align: center;">
+                        <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 8px;">${leftHtml}</div>
+                        <div id="answer-row-${item.id}" style="display: none; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e9e9ef;">
                             <div style="font-size: 13px; color: #8e8e93; margin-bottom: 8px;">✅ 正确答案：</div>
-                            <div style="font-size: 40px; font-weight: normal; color: #34c759;">${escapeHtml(item.correctAnswer || '未填写')}</div>
+                            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">${rightHtml}</div>
                         </div>
                     </div>
                 `;
             }
-            // 笔顺特殊渲染
+            // 生字特殊处理（复习模式）
+else if (item.tag === "基础知识" && item.subTag === "生字" && hasTextContent) {
+    const parts = item.question.trim().split(/\s+/);
+    let renderHtml = `
+        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+    `;
+    
+    for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const hasChinese = [...part].some(char => /[\u4e00-\u9fa5]/.test(char));
+        
+        if (hasChinese) {
+            const chars = part.split('');
+            for (let j = 0; j < chars.length; j++) {
+                renderHtml += `
+                    <div style="font-size: 40px; font-weight: normal; color: #1c1c1e; padding-top: 25px;">
+                        ${escapeHtml(chars[j])}
+                    </div>
+                `;
+            }
+        } else {
+            renderHtml += `
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="font-size: 22px; font-weight: 500; color: #007aff; margin-bottom: 10px;">${escapeHtml(part)}</div>
+                    <div class="tian-grid" style="width: 80px; height: 80px;">
+                        <div class="hanzi-display" style="visibility: hidden;">&nbsp;</div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    renderHtml += `
+            </div>
+        </div>
+    `;
+    specialContent = renderHtml;
+}
+        
+        
             else if (item.tag === "基础知识" && item.subTag === "笔顺" && hasTextContent) {
                 specialContent = `
                     <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
@@ -4372,7 +4369,6 @@ chars.forEach(char => {
                     </div>
                 `;
             }
-            // 数学题目：居中放大（与其他完全分开）
             else if (isMathItem && hasTextContent) {
                 specialContent = `
                     <div style="font-size: 32px; font-weight: 600; line-height: 1.4; margin: 12px 0; background: #f8f9fc; padding: 28px 20px; border-radius: 20px; text-align: center;">
@@ -4380,30 +4376,26 @@ chars.forEach(char => {
                     </div>
                 `;
             }
-           // 多音字特殊渲染（和笔顺样式一致）
-else if (item.tag === "基础知识" && item.subTag === "多音字" && hasTextContent) {
-    specialContent = `
-        <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
-            <div style="font-size: 48px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
-                ${escapeHtml(item.question)}
-            </div>
-            <div style="font-size: 14px; color: #8e8e93; text-align: center; margin-top: 16px;">
-                多音字
-            </div>
-        </div>
-    `;
-}
-else if (hasTextContent) {
-    specialContent = `<div style="font-size: 16px; font-weight: 500; line-height: 1.5; margin: 12px 0; background: #f8f9fc; padding: 16px; border-radius: 16px;">${escapeHtml(item.question)}</div>`;
-}
-
+            else if (item.tag === "基础知识" && item.subTag === "多音字" && hasTextContent) {
+                specialContent = `
+                    <div class="special-content" style="margin: 12px 0; background: #f8f9fc; border-radius: 16px; padding: 30px 20px;">
+                        <div style="font-size: 48px; font-weight: 600; color: #1c1c1e; text-align: center; letter-spacing: 8px;">
+                            ${escapeHtml(item.question)}
+                        </div>
+                        <div style="font-size: 14px; color: #8e8e93; text-align: center; margin-top: 16px;">
+                            多音字
+                        </div>
+                    </div>
+                `;
+            }
+            else if (hasTextContent) {
+                specialContent = `<div style="font-size: 16px; font-weight: 500; line-height: 1.5; margin: 12px 0; background: #f8f9fc; padding: 16px; border-radius: 16px;">${escapeHtml(item.question)}</div>`;
+            }
             
-            // ========== 生成图片 ==========
             const qImagesHtml = renderImagesInCard(item.questionImages, '', 'full');
             const wImagesHtml = renderImagesInCard(item.wrongImages, '错误答案图片', 'full');
             const cImagesHtml = renderImagesInCard(item.correctImages, '正确答案图片', 'full');
             
-            // ========== 构建复习卡片HTML ==========
             html += `
                 <div class="review-card">
                     <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
@@ -4446,28 +4438,23 @@ else if (hasTextContent) {
                     </div>
                 </div>
             `;
-        
-        
-        
         });
         
         reviewListContainer.innerHTML = html;
-
-
-        // 在渲染完成后，给每个卡片添加数据
-document.querySelectorAll('#reviewListContainer .review-card').forEach(function(card, index) {
-    var item = filtered[index];
-    if (item) {
-        card._itemData = {
-            labels: item.labels || [],
-            reasons: item.reasons || [],
-            source: item.source || '',
-            date: item.date || ''
-        };
-    }
-})
         
-        // 绑定显示答案按钮事件
+        // 绑定事件
+        document.querySelectorAll('#reviewListContainer .review-card').forEach(function(card, index) {
+            var item = filtered[index];
+            if (item) {
+                card._itemData = {
+                    labels: item.labels || [],
+                    reasons: item.reasons || [],
+                    source: item.source || '',
+                    date: item.date || ''
+                };
+            }
+        });
+        
         document.querySelectorAll('.toggle-details-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.getAttribute('data-id');
@@ -4490,7 +4477,6 @@ document.querySelectorAll('#reviewListContainer .review-card').forEach(function(
             });
         });
         
-        // 绑定做对/做错按钮事件
         document.querySelectorAll('.review-correct-btn, .review-wrong-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const id = btn.getAttribute('data-id');
@@ -4500,7 +4486,6 @@ document.querySelectorAll('#reviewListContainer .review-card').forEach(function(
             });
         });
         
-        // 绑定编辑按钮事件
         document.querySelectorAll('.review-edit-btn').forEach(btn => {
             btn.removeEventListener('click', btn._handler);
             const handler = (e) => {
@@ -4517,6 +4502,9 @@ document.querySelectorAll('#reviewListContainer .review-card').forEach(function(
     }
     reviewModal.classList.add('active');
 }
+
+
+
 
 function toggleSubTagGroup() {
     const tagSelect = document.getElementById('editTag');
@@ -5469,6 +5457,7 @@ function dataURItoBlob(dataURI) {
 
 
 // 处理图片上传 - 压缩后上传到 GitHub
+// ========== 处理图片上传（包含裁剪） ==========
 async function handleImageUpload(event, target) {
     const file = event.target.files[0];
     if (!file) return;
@@ -5480,35 +5469,21 @@ async function handleImageUpload(event, target) {
     
     const btn = document.querySelector(`.upload-img-btn[data-target="${target}"]`);
     const originalText = btn.textContent;
-    btn.textContent = '⏳ 压缩上传中...';
+    btn.textContent = '⏳ 加载中...';
     btn.disabled = true;
     
     try {
+        // 先压缩图片
         compressImageTo200KB(file, async (compressedBase64) => {
-            try {
-                // 生成唯一文件名
-                const ext = file.name.split('.').pop() || 'jpg';
-                const fileName = `images/${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
-                
-                // 上传到 GitHub
-                const imageUrl = await uploadToGitHub(compressedBase64, fileName);
-                
-                if (!tempImages[target]) tempImages[target] = [];
-                tempImages[target].push(imageUrl);
-                renderImagePreview(target);
-                
-                alert('✅ 图片已上传到 GitHub 云端！');
-            } catch (err) {
-                console.error('上传错误:', err);
-                alert('❌ 上传失败：' + err.message);
-            } finally {
-                btn.textContent = originalText;
-                btn.disabled = false;
-                event.target.value = '';
-            }
+            // 打开裁剪弹窗，让用户裁剪
+            openCropModal(compressedBase64, target, file);
+            btn.textContent = originalText;
+            btn.disabled = false;
+            event.target.value = '';
         });
     } catch (err) {
-        alert('❌ 压缩失败');
+        console.error('处理失败:', err);
+        alert('❌ 处理失败：' + err.message);
         btn.textContent = originalText;
         btn.disabled = false;
         event.target.value = '';
@@ -5528,7 +5503,7 @@ function renderImagesInCard(images, title = '', size = 'normal') {
     if (size === 'full') {
         images.forEach((img, idx) => {
             html += `
-                <div style="width:100%;position:relative;background:#f8f9fc;border-radius:12px;overflow:hidden;margin-bottom:8px;border:0.5px solid #e9e9ef;">
+                <div style="width:100%;position:relative;background:#f8f9fc;border-radius:12px;overflow:hidden;margin-bottom:8px;border:0.5px solid #e9e9ef;cursor:pointer;" onclick="openImageViewer('${img}')">
                     <div style="width:100%;padding-bottom:30%;"></div>
                     <img src="${img}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:block;" alt="图片${idx+1}">
                 </div>
@@ -5538,7 +5513,7 @@ function renderImagesInCard(images, title = '', size = 'normal') {
         html += `<div style="display:flex;gap:10px;flex-wrap:wrap;">`;
         images.forEach((img, idx) => {
             html += `
-                <div style="width:100px;height:100px;flex-shrink:0;background:#f8f9fc;border-radius:8px;overflow:hidden;border:0.5px solid #e9e9ef;">
+                <div style="width:100px;height:100px;flex-shrink:0;background:#f8f9fc;border-radius:8px;overflow:hidden;border:0.5px solid #e9e9ef;cursor:pointer;" onclick="openImageViewer('${img}')">
                     <img src="${img}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="图片${idx+1}">
                 </div>
             `;
@@ -5549,6 +5524,8 @@ function renderImagesInCard(images, title = '', size = 'normal') {
     html += `</div>`;
     return html;
 }
+
+
 // 显示已有的图片（编辑时）
 function displayExistingImages(target, imageUrls) {
     if (!tempImages[target]) tempImages[target] = [];
@@ -5570,28 +5547,15 @@ function renderImagePreview(target) {
     let html = '';
     images.forEach((img, idx) => {
         html += `
-            <div class="img-preview-item">
-                <img src="${img}" alt="预览图">
-                <div class="remove-img" data-target="${target}" data-index="${idx}">×</div>
+            <div class="img-preview-item" style="position:relative; cursor:pointer;" onclick="reCropImage('${target}', ${idx})" title="点击重新裁剪">
+                <img src="${img}" alt="预览图" style="width:100%; height:100%; object-fit:cover;">
+                <div class="remove-img" data-target="${target}" data-index="${idx}" onclick="event.stopPropagation();">×</div>
+                <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.5); color:white; font-size:10px; text-align:center; padding:2px 0;">点击裁剪</div>
             </div>
         `;
     });
     container.innerHTML = html;
-    
-    // 绑定删除事件
-    container.querySelectorAll('.remove-img').forEach(el => {
-        el.onclick = (e) => {
-            e.stopPropagation();
-            const t = el.getAttribute('data-target');
-            const idx = parseInt(el.getAttribute('data-index'));
-            if (tempImages[t] && tempImages[t][idx]) {
-                tempImages[t].splice(idx, 1);
-                renderImagePreview(t);
-            }
-        };
-    });
 }
-
 function getFallbackUrls(originalUrl) {
     const fileName = originalUrl.split('/').pop();
     // 只保留可用的 CDN
@@ -6918,11 +6882,22 @@ else if (item.question) {
 }
     
     // 原题图片
-    if (item.questionImages && item.questionImages.length > 0) {
-        item.questionImages.forEach(img => {
-            html += `<div style="margin-top: 8px;"><img src="${img}" style="max-width: 100%; max-height: 200px; border-radius: 8px;"></div>`;
-        });
+    // ========== 原题图片：自适应排列 ==========
+if (item.questionImages && item.questionImages.length > 0) {
+    if (item.questionImages.length === 1) {
+        // 1张图：居中显示
+        html += '<div style="text-align:center; margin:8px 0;">';
+        html += '<img src="' + item.questionImages[0] + '" style="max-width:80%; max-height:450px; height:auto; width:auto; object-fit:contain; border:none; border-radius:8px;">';
+        html += '</div>';
+    } else {
+        // 多张图：用 flex-wrap 自动换行，每张图自适应
+        html += '<div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin:8px 0; width:100%;">';
+        for (var i = 0; i < item.questionImages.length; i++) {
+            html += '<img src="' + item.questionImages[i] + '" style="flex:1 1 auto; min-width:120px; max-width:48%; max-height:400px; height:auto; width:auto; object-fit:contain; border:none; border-radius:8px;">';
+        }
+        html += '</div>';
     }
+}
     html += `</div>`;
     
     // ========== 错误答案区域 ==========
@@ -8220,78 +8195,89 @@ if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
         return result;
     }
     
-    // ========== 普通卡片（其他分类） ==========
-    var html = '<div class="print-card" style="margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">';
-    html += '<div class="card-header" style="font-size: 11px; color: #999; margin-bottom: 8px;">';
-    html += '第' + idx + '题 ' + (item.date || '无日期');
-    if(item.source) html += ' | ' + escapeHtml(item.source);
-    html += '</div>';
-    
-    // 原题（始终显示）
-    if (item.tag === "基础知识" && item.subTag === "笔顺" && item.question) {
-        html += '<div style="font-size: 32px; font-weight: 600; text-align: center; letter-spacing: 8px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
-    }
-    else if (isMath && item.question) {
-        html += '<div style="font-size: 28px; font-weight: 600; text-align: center; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
-    }
-    else if (item.subTag === "多音字" && item.question) {
-        html += '<div style="font-size: 28px; font-weight: 600; text-align: center; letter-spacing: 4px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
-    }
-    else if (item.question) {
-        html += '<div style="font-size: 14px; line-height: 1.5; margin: 12px 0;">' + escapeHtml(item.question) + '</div>';
-    }
-    
-    if (item.questionImages && item.questionImages.length > 0) {
+   // ========== 普通卡片（其他分类） ==========
+var html = '<div class="print-card" style="margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px;">';
+
+// ========== 元信息全部放在顶部正中间 ==========
+html += '<div style="text-align: center; font-size: 10px; color: #888; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #ddd;">';
+html += '第' + idx + '题';
+if (item.date) html += ' | ' + escapeHtml(item.date);
+if (item.source) html += ' | ' + escapeHtml(item.source);
+if (options.reviewCount) html += ' | ' + (item.reviewCount || 0) + ' 次';
+if (options.unit && item.unit) html += ' | ' + escapeHtml(item.unit);
+if (options.text && item.text) html += ' | ' + escapeHtml(item.text);
+html += '</div>';
+
+// 原题（始终显示）
+if (item.tag === "基础知识" && item.subTag === "笔顺" && item.question) {
+    html += '<div style="font-size: 32px; font-weight: 600; text-align: center; letter-spacing: 8px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
+}
+else if (isMath && item.question) {
+    html += '<div style="font-size: 28px; font-weight: 600; text-align: center; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
+}
+else if (item.subTag === "多音字" && item.question) {
+    html += '<div style="font-size: 28px; font-weight: 600; text-align: center; letter-spacing: 4px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
+}
+else if (item.question) {
+    html += '<div style="font-size: 14px; line-height: 1.5; margin: 12px 0;">' + escapeHtml(item.question) + '</div>';
+}
+
+// ========== 原题图片：左右并排 ==========
+if (item.questionImages && item.questionImages.length > 0) {
+    var imgCount = item.questionImages.length;
+    if (imgCount === 1) {
+        // 1张图：居中显示
+        html += '<div style="text-align:center; margin:8px 0;">';
+        html += '<img src="' + item.questionImages[0] + '" style="max-width:80%; max-height:400px; height:auto; object-fit:contain; border-radius:8px;">';
+        html += '</div>';
+    } else if (imgCount === 2) {
+        // 2张图：左右并排
+        html += '<div style="display:flex; gap:12px; justify-content:center; margin:8px 0; width:100%;">';
+        html += '<img src="' + item.questionImages[0] + '" style="flex:0 0 45%; max-width:45%; max-height:350px; height:auto; object-fit:contain; border:none; border-radius:8px;">';
+        html += '<img src="' + item.questionImages[1] + '" style="flex:0 0 45%; max-width:45%; max-height:350px; height:auto; object-fit:contain; border:none; border-radius:8px;">';
+        html += '</div>';
+    } else {
+        // 3张及以上：每行2张
+        html += '<div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin:8px 0; width:100%;">';
         for (var i = 0; i < item.questionImages.length; i++) {
-            html += '<img src="' + item.questionImages[i] + '" style="max-width:100%; max-height:150px;">';
-        }
-    }
-    
-    // 错误答案
-    if (options.wrong && item.wrongAnswer) {
-        html += '<div style="margin-top: 8px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; font-size: 12px;">';
-        html += '<strong style="color:#ff3b30;">错误：</strong> ' + escapeHtml(item.wrongAnswer);
-        if (item.wrongImages && item.wrongImages.length > 0) {
-            for (var i = 0; i < item.wrongImages.length; i++) {
-                html += '<img src="' + item.wrongImages[i] + '" style="max-width:100%; max-height:100px;">';
-            }
+            html += '<img src="' + item.questionImages[i] + '" style="flex:0 0 calc(50% - 6px); max-width:calc(50% - 6px); max-height:300px; height:auto; object-fit:contain; border:0.5px solid #eee; border-radius:8px;">';
         }
         html += '</div>';
     }
-    
-    // 正确答案（拼音和生字不重复显示，因为原题已显示）
-    var skipCorrect = (item.tag === "基础知识" && (item.subTag === "拼音" || item.subTag === "生字"));
-    if (options.correct && !skipCorrect && item.correctAnswer) {
-        html += '<div style="margin-top: 6px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; font-size: 12px;">';
-        html += '<strong style="color:#34c759;">正确：</strong> ' + escapeHtml(item.correctAnswer);
-        if (item.correctImages && item.correctImages.length > 0) {
-            for (var i = 0; i < item.correctImages.length; i++) {
-                html += '<img src="' + item.correctImages[i] + '" style="max-width:100%; max-height:100px;">';
-            }
+}
+
+// 错误答案
+if (options.wrong && item.wrongAnswer) {
+    html += '<div style="margin-top: 8px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; font-size: 12px;">';
+    html += '<strong style="color:#ff3b30;">错误：</strong> ' + escapeHtml(item.wrongAnswer);
+    if (item.wrongImages && item.wrongImages.length > 0) {
+        for (var i = 0; i < item.wrongImages.length; i++) {
+            html += '<img src="' + item.wrongImages[i] + '" style="max-width:100%; max-height:200px; height:auto; object-fit:contain; border-radius:6px;">';
         }
-        html += '</div>';
     }
-    
-    // 错误原因
-    if (options.reason && item.reasons && item.reasons.length) {
-        html += '<div style="font-size: 10px; color: #888; margin-top: 6px;">原因：' + escapeHtml(item.reasons.join('、')) + '</div>';
-    }
-    
-    // 复习次数
-    if (options.reviewCount) {
-        html += '<div style="font-size: 10px; color: #666; margin-top: 4px;">复习次数：' + (item.reviewCount || 0) + ' 次</div>';
-    }
-    
-    // 单元和课文（在底部显示）
-    if (options.unit && item.unit) {
-        html += '<div style="font-size: 10px; color: #888; margin-top: 4px;">单元：' + escapeHtml(item.unit) + '</div>';
-    }
-    if (options.text && item.text) {
-        html += '<div style="font-size: 10px; color: #888; margin-top: 2px;">课文：' + escapeHtml(item.text) + '</div>';
-    }
-    
     html += '</div>';
-    return html;
+}
+
+// 正确答案（拼音和生字不重复显示，因为原题已显示）
+var skipCorrect = (item.tag === "基础知识" && (item.subTag === "拼音" || item.subTag === "生字"));
+if (options.correct && !skipCorrect && item.correctAnswer) {
+    html += '<div style="margin-top: 6px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; font-size: 12px;">';
+    html += '<strong style="color:#34c759;">正确：</strong> ' + escapeHtml(item.correctAnswer);
+    if (item.correctImages && item.correctImages.length > 0) {
+        for (var i = 0; i < item.correctImages.length; i++) {
+            html += '<img src="' + item.correctImages[i] + '" style="max-width:100%; max-height:200px; height:auto; object-fit:contain; border-radius:6px;">';
+        }
+    }
+    html += '</div>';
+}
+
+// 错误原因
+if (options.reason && item.reasons && item.reasons.length) {
+    html += '<div style="font-size: 10px; color: #888; margin-top: 6px; text-align: center;">原因：' + escapeHtml(item.reasons.join('、')) + '</div>';
+}
+
+html += '</div>';
+return html;
 }
 
 
@@ -8542,7 +8528,237 @@ if (target.classList && target.classList.contains('print-category-filter')) {
 
 
 
+// ========== 图片裁剪功能 ==========
+let cropper = null;
 
+
+
+
+
+
+
+// ========== 图片裁剪功能 ==========
+
+let cropTarget = ''; // 'question', 'wrong', 'correct'
+let cropFile = null;
+let isReCrop = false;
+let reCropIndex = -1;
+
+// 打开裁剪弹窗（新上传）
+function openCropModal(imageUrl, target, file) {
+    cropTarget = target;
+    cropFile = file;
+    isReCrop = false;
+    reCropIndex = -1;
+    
+    const modal = document.getElementById('cropModal');
+    modal.style.display = 'flex';
+    
+    const img = document.getElementById('cropImage');
+    img.src = imageUrl;
+    
+    initCropper(img);
+}
+
+// 打开裁剪弹窗（重新裁剪）
+function openCropModalForReCrop(imageUrl, target, index) {
+    cropTarget = target;
+    cropFile = null;
+    isReCrop = true;
+    reCropIndex = index;
+    
+    const modal = document.getElementById('cropModal');
+    modal.style.display = 'flex';
+    
+    const img = document.getElementById('cropImage');
+    img.src = imageUrl;
+    
+    initCropper(img);
+}
+
+// 初始化裁剪器
+function initCropper(img) {
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+    
+    function createCropper() {
+        cropper = new Cropper(img, {
+            aspectRatio: NaN,
+            viewMode: 1,
+            dragMode: 'move',
+            autoCropArea: 0.8,
+            restore: false,
+            guides: true,
+            center: false,
+            highlight: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false,
+        });
+    }
+    
+    if (img.complete && img.naturalWidth > 0) {
+        setTimeout(createCropper, 100);
+    } else {
+        img.onload = function() {
+            setTimeout(createCropper, 100);
+        };
+    }
+}
+
+// 关闭裁剪弹窗
+function closeCropModal() {
+    document.getElementById('cropModal').style.display = 'none';
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+}
+
+// 获取裁剪后的图片
+function getCroppedImage() {
+    return new Promise(function(resolve) {
+        if (!cropper) {
+            resolve(null);
+            return;
+        }
+        try {
+            var canvas = cropper.getCroppedCanvas({
+                maxWidth: 1200,
+                maxHeight: 1200,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            resolve(canvas.toDataURL('image/jpeg', 0.9));
+        } catch(e) {
+            console.error('裁剪失败:', e);
+            resolve(null);
+        }
+    });
+}
+
+// DataURL 转 Blob
+function dataURLtoBlob(dataURL) {
+    var arr = dataURL.split(',');
+    var mime = arr[0].match(/:(.*?);/)[1];
+    var bstr = atob(arr[1]);
+    var n = bstr.length;
+    var u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
+// 重新裁剪已上传的图片
+function reCropImage(target, index) {
+    var images = tempImages[target] || [];
+    if (!images[index]) {
+        alert('图片不存在');
+        return;
+    }
+    
+    var imgUrl = images[index];
+    
+    var modal = document.getElementById('cropModal');
+    modal.style.display = 'flex';
+    var cropImg = document.getElementById('cropImage');
+    cropImg.src = '';
+    
+    fetch(imgUrl)
+        .then(function(response) { return response.blob(); })
+        .then(function(blob) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                openCropModalForReCrop(e.target.result, target, index);
+            };
+            reader.readAsDataURL(blob);
+        })
+        .catch(function(err) {
+            console.warn('fetch 失败，尝试直接使用原图:', err);
+            openCropModalForReCrop(imgUrl, target, index);
+        });
+}
+
+// 确认裁剪并上传
+function confirmCrop() {
+    (async function() {
+        var croppedDataUrl = await getCroppedImage();
+        if (!croppedDataUrl) {
+            alert('请先选择裁剪区域');
+            return;
+        }
+        
+        closeCropModal();
+        
+        var btn = document.querySelector('.upload-img-btn[data-target="' + cropTarget + '"]');
+        var originalText = btn ? btn.textContent : '上传图片';
+        if (btn) {
+            btn.textContent = '⏳ 上传中...';
+            btn.disabled = true;
+        }
+        
+        try {
+            var fileName = 'images/' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + '.jpg';
+            var imageUrl = await uploadToGitHub(croppedDataUrl, fileName);
+            
+            if (!tempImages[cropTarget]) tempImages[cropTarget] = [];
+            
+            if (isReCrop && reCropIndex >= 0 && reCropIndex < tempImages[cropTarget].length) {
+                tempImages[cropTarget][reCropIndex] = imageUrl;
+                alert('✅ 图片已裁剪并替换！');
+            } else {
+                tempImages[cropTarget].push(imageUrl);
+                alert('✅ 图片已裁剪并上传！');
+            }
+            
+            renderImagePreview(cropTarget);
+        } catch (err) {
+            console.error('上传错误:', err);
+            alert('❌ 上传失败：' + err.message);
+        } finally {
+            if (btn) {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+        
+        isReCrop = false;
+        reCropIndex = -1;
+    })();
+}
+
+// 绑定裁剪弹窗按钮事件（在 DOM 加载完成后执行）
+(function() {
+    var closeBtn = document.getElementById('cropCloseBtn');
+    var cancelBtn = document.getElementById('cropCancelBtn');
+    var modal = document.getElementById('cropModal');
+    
+    if (closeBtn) closeBtn.onclick = closeCropModal;
+    if (cancelBtn) cancelBtn.onclick = closeCropModal;
+    
+    if (modal) {
+        modal.onclick = function(e) {
+            if (e.target === this) closeCropModal();
+        };
+    }
+})();
+
+// DataURL 转 Blob
+function dataURLtoBlob(dataURL) {
+    const arr = dataURL.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
 
 
 
@@ -8796,6 +9012,7 @@ if (editQuestionEl) {
 }
 
 // 从文件对象处理图片上传
+// ========== 从剪贴板粘贴图片（包含裁剪） ==========
 async function handleImageUploadFromFile(file, target) {
     if (!file.type.startsWith('image/')) {
         alert('请上传图片文件');
@@ -8804,35 +9021,23 @@ async function handleImageUploadFromFile(file, target) {
     
     const btn = document.querySelector(`.upload-img-btn[data-target="${target}"]`);
     const originalText = btn.textContent;
-    btn.textContent = '⏳ 上传中...';
+    btn.textContent = '⏳ 加载中...';
     btn.disabled = true;
     
     try {
         compressImageTo200KB(file, async (compressedBase64) => {
-            try {
-                const ext = file.name.split('.').pop() || 'jpg';
-                const fileName = `images/${Date.now()}_${Math.random().toString(36).substr(2, 8)}.${ext}`;
-                const imageUrl = await uploadToGitHub(compressedBase64, fileName);
-                
-                if (!tempImages[target]) tempImages[target] = [];
-                tempImages[target].push(imageUrl);
-                renderImagePreview(target);
-                
-                alert('✅ 图片已上传！');
-            } catch (err) {
-                alert('❌ 上传失败：' + err.message);
-            } finally {
-                btn.textContent = originalText;
-                btn.disabled = false;
-            }
+            // 打开裁剪弹窗，让用户裁剪
+            openCropModal(compressedBase64, target, file);
+            btn.textContent = originalText;
+            btn.disabled = false;
         });
     } catch (err) {
-        alert('❌ 压缩失败');
+        console.error('处理失败:', err);
+        alert('❌ 处理失败：' + err.message);
         btn.textContent = originalText;
         btn.disabled = false;
     }
 }
-
 
 // ==================== 加载 Token（支持云端恢复） ====================
 async function loadToken() {
@@ -8877,34 +9082,72 @@ console.log('本地数据加载完成，是否有数据:', hasLocalData);
     });
     
     // 绑定复习模式按钮
+// 绑定复习模式按钮
+// 绑定复习模式按钮
 openReviewBtn.addEventListener('click', () => {
     // 设置复习筛选的分类为当前选中的分类
     if (currentSubject === "chinese") {
-        reviewContextFilter = currentChineseTag;
-        // 如果是基础知识，还需要设置二级分类
+        if (currentChineseTag === '全部') {
+            reviewContextFilter = null;
+        } else {
+            reviewContextFilter = currentChineseTag;
+        }
         if (currentChineseTag === "基础知识") {
             reviewContextSubFilter = currentChineseSubTag;
         } else {
             reviewContextSubFilter = null;
         }
     } else {
-        reviewContextFilter = currentMathTag;
+        if (currentMathTag === '全部') {
+            reviewContextFilter = null;
+        } else {
+            reviewContextFilter = currentMathTag;
+        }
         reviewContextSubFilter = null;
     }
+    
+    // ========== 自动同步主界面的单元筛选 ==========
+    const filterUnit = document.getElementById('filterUnit')?.value || '全部';
+    if (filterUnit !== '全部') {
+        currentFilter = "unit";
+        customUnitKeyword = filterUnit;
+        // 更新单元按钮的显示
+        const selectUnitBtn = document.getElementById('selectUnitBtn');
+        if (selectUnitBtn) {
+            selectUnitBtn.innerHTML = filterUnit + ' <span class="filter-count">(计算中)</span>';
+            selectUnitBtn.classList.add('active');
+        }
+        const clearUnitBtn = document.getElementById('clearUnitBtn');
+        if (clearUnitBtn) {
+            clearUnitBtn.style.display = 'inline-block';
+        }
+    } else {
+        // 如果主界面没有选单元，重置复习的单元筛选
+        if (currentFilter === "unit") {
+            currentFilter = "all";
+            customUnitKeyword = "";
+            const selectUnitBtn = document.getElementById('selectUnitBtn');
+            if (selectUnitBtn) {
+                selectUnitBtn.classList.remove('active');
+            }
+            const clearUnitBtn = document.getElementById('clearUnitBtn');
+            if (clearUnitBtn) {
+                clearUnitBtn.style.display = 'none';
+            }
+        }
+    }
+    
     openReviewWithCurrentFilter();
 });
-    
-  if (closeReviewBtn) {
-    // 先移除旧的事件监听
-    const newCloseReviewBtn = closeReviewBtn.cloneNode(true);
-    if (closeReviewBtn.parentNode) {
-        closeReviewBtn.parentNode.replaceChild(newCloseReviewBtn, closeReviewBtn);
-    }
-    newCloseReviewBtn.addEventListener('click', (e) => {
+
+
+// ========== 关闭复习按钮 ==========
+if (closeReviewBtn) {
+    // 直接绑定事件，不执行 clone/replaceChild 操作
+    closeReviewBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         reviewModal.classList.remove('active');
     });
-
 }
 
 
@@ -9673,7 +9916,27 @@ function updateTextPlaceholderInModal() {
 
 }
 
+// ========== 图片查看器 ==========
+function openImageViewer(imageUrl) {
+    var viewer = document.getElementById('imageViewer');
+    var img = document.getElementById('viewerImage');
+    img.src = imageUrl;
+    viewer.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
 
+function closeImageViewer() {
+    var viewer = document.getElementById('imageViewer');
+    viewer.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// 键盘 ESC 键关闭
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImageViewer();
+    }
+});
 // ========== 把新函数放在这里 ==========
 function updateUnitOptionsInModal() {
     const unitSelect = document.getElementById('editUnit');
@@ -10346,8 +10609,31 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
 
 
 
+<!-- 图片裁剪弹窗 -->
+<div id="cropModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99999; display:none; align-items:center; justify-content:center; flex-direction:column; padding:20px;">
+    <div style="background:white; border-radius:16px; padding:20px; max-width:700px; width:100%; max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0; font-size:18px;">✂️ 裁剪图片</h3>
+            <button id="cropCloseBtn" style="background:transparent; border:none; font-size:24px; cursor:pointer; color:#8e8e93;">✕</button>
+        </div>
+        <div style="position:relative; width:100%; height:400px; background:#f0f0f0; border-radius:12px; overflow:hidden;">
+            <img id="cropImage" src="" style="max-width:100%; display:block;">
+        </div>
+        <div style="display:flex; gap:12px; margin-top:16px;">
+           <button id="cropCancelBtn" style="flex:1; padding:10px; border-radius:12px; border:none; background:#f2f2f6; color:#1c1c1e; font-size:15px; cursor:pointer;" onclick="closeCropModal()">取消</button>
+<button id="cropConfirmBtn" style="flex:2; padding:10px; border-radius:12px; border:none; background:#007aff; color:white; font-size:15px; cursor:pointer;" onclick="confirmCrop()">✅ 裁剪并上传</button>        </div>
+        <div style="margin-top:10px; font-size:12px; color:#8e8e93; text-align:center;">
+            💡 拖拽选择裁剪区域，仅保留所需部分
+        </div>
+    </div>
+</div>
 
-
+<!-- 图片查看器 -->
+<div id="imageViewer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; align-items:center; justify-content:center; cursor:pointer; padding:20px; box-sizing:border-box;" onclick="closeImageViewer()">
+    <img id="viewerImage" src="" alt="查看图片" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; box-shadow:0 10px 60px rgba(0,0,0,0.5);">
+    <div style="position:absolute; top:20px; right:30px; color:white; font-size:30px; cursor:pointer; font-family:sans-serif;" onclick="event.stopPropagation(); closeImageViewer();">✕</div>
+    <div style="position:absolute; bottom:30px; left:50%; transform:translateX(-50%); color:rgba(255,255,255,0.5); font-size:14px;">点击任意处关闭</div>
+</div>
 
 
 
