@@ -1735,6 +1735,11 @@ document.getElementById('calendarTrigger').textContent = "错题本";
         <select id="filterText" style="padding: 4px 10px; border-radius: 16px; border: 0.5px solid #c6c6c8; font-size: 12px; background: white;">
             <option value="全部">全部课文</option>
         </select>
+<select id="filterDateRange" style="padding: 4px 10px; border-radius: 16px; border: 0.5px solid #c6c6c8; font-size: 12px; background: white; cursor: pointer;">
+        <option value="">全部日期</option>
+        <option value="week">本周</option>
+        <option value="month">本月</option>
+    </select>
         <button id="clearFilterBtn" style="padding: 4px 12px; border-radius: 16px; border: none; background: #ff3b30; color: white; font-size: 11px; cursor: pointer; display: none;">清除筛选</button>
     </div>
 
@@ -2382,17 +2387,10 @@ async function uploadToGitHub(base64Data, fileName) {
 }
 
 let currentSubject = "chinese";
-    let currentChineseTag = "基础知识";
-
-
-
-
-
-
-
+    let currentChineseTag = "全部";
     let currentChineseSubTag = "全部";  
     let currentGradeFilter = "二上";
-    let currentMathTag = "计算";
+    let currentMathTag = "全部";
     let editingItem = { id: null, subject: null };
     let reviewContextFilter = null;
     let currentFilter = "all";
@@ -2683,31 +2681,60 @@ function closeHistoryModal() {
     return filtered;
 }
     // 头部年级下拉框联动
-    const headerGradeFilter = document.getElementById('headerGradeFilter');
-    if (headerGradeFilter) {
-        headerGradeFilter.value = currentGradeFilter;
-        headerGradeFilter.addEventListener('change', (e) => {
-            currentGradeFilter = e.target.value;
-            renderContent();
-            // 同步更新内容区的年级下拉框
-            const contentGradeFilter = document.getElementById('gradeFilter');
-            if (contentGradeFilter) contentGradeFilter.value = currentGradeFilter;
-        });
-    }
+const headerGradeFilter = document.getElementById('headerGradeFilter');
+if (headerGradeFilter) {
+    headerGradeFilter.value = currentGradeFilter;
+    headerGradeFilter.addEventListener('change', (e) => {
+        currentGradeFilter = e.target.value;
+        
+        // ========== 切换年级后，分类重置为"全部" ==========
+        if (currentSubject === "chinese") {
+            currentChineseTag = '全部';
+            currentChineseSubTag = '全部';
+        } else {
+            currentMathTag = '全部';
+        }
+        
+        renderContent();
+        renderSidebar();
+        
+        // 同步更新内容区的年级下拉框
+        const contentGradeFilter = document.getElementById('gradeFilter');
+        if (contentGradeFilter) contentGradeFilter.value = currentGradeFilter;
+        
+        updateUnitOptions();
+        updateTextOptions();
+        
+        localStorage.setItem('cuoti_grade', currentGradeFilter);
+        localStorage.setItem('cuoti_chineseTag', currentChineseTag);
+        localStorage.setItem('cuoti_subTag', currentChineseSubTag);
+        localStorage.setItem('cuoti_mathTag', currentMathTag);
+    });
+}
 
     function getCurrentDisplayList() { 
     if (currentSubject === "chinese") {
+        if (currentChineseTag === '全部') {
+            // 返回语文所有错题
+            let filtered = chineseErrors;
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(item => item.grade === currentGradeFilter);
+            }
+            return filtered;
+        }
         return getFilteredChinese();
     } else {
-        // 数学：按分类和年级筛选
-        let filtered = mathErrors.filter(item => item.tag === currentMathTag);
-        if (currentGradeFilter !== '全部') {
-            filtered = filtered.filter(item => item.grade === currentGradeFilter);  // ✅ 添加年级筛选
+        if (currentMathTag === '全部') {
+            // 返回数学所有错题
+            let filtered = mathErrors;
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(item => item.grade === currentGradeFilter);
+            }
+            return filtered;
         }
-        return filtered;
+        return mathErrors.filter(item => item.tag === currentMathTag);
     }
 }
-
 
 function recordReview(itemId, subject, result) {
     const list = subject === "chinese" ? chineseErrors : mathErrors;
@@ -2987,28 +3014,64 @@ function renderSidebar() {
     
     // ========== 获取当前选中的单元 ==========
     const filterUnit = document.getElementById('filterUnit')?.value || '全部';
+    const filterText = document.getElementById('filterText')?.value || '全部';
+    
+    // ========== 获取日期筛选 ==========
+    const dateStart = window._dateFilterStart || '';
+    const dateEnd = window._dateFilterEnd || '';
+    
+    // ========== 通用日期筛选函数 ==========
+    function filterByDate(items) {
+        if (!dateStart && !dateEnd) return items;
+        return items.filter(function(item) {
+            const itemDate = item.date || '';
+            if (!itemDate) return false;
+            if (dateStart && itemDate < dateStart) return false;
+            if (dateEnd && itemDate > dateEnd) return false;
+            return true;
+        });
+    }
     
     if (currentSubject === "chinese") {
-        const categories = ["基础知识", "阅读理解", "作文表达", "文学常识", "其他"];
+        const categories = ["全部", "基础知识", "阅读理解", "作文表达", "文学常识", "其他"];
         
-        // 统计每个分类的数量（包含年级和单元筛选）
-        const getCount = (tag) => {
-            let filtered = chineseErrors.filter(item => item.tag === tag);
-            // 年级筛选
+        // 统计每个分类的数量（包含年级、单元、课文、日期筛选）
+        const getCount = function(tag) {
+            let filtered = chineseErrors.filter(function(item) { return item.tag === tag; });
             if (currentGradeFilter !== '全部') {
-                filtered = filtered.filter(item => item.grade === currentGradeFilter);
+                filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
             }
-            // ========== 单元筛选 ==========
             if (filterUnit !== '全部') {
-                filtered = filtered.filter(item => item.unit === filterUnit);
+                filtered = filtered.filter(function(item) { return item.unit === filterUnit; });
             }
+            if (filterText !== '全部') {
+                filtered = filtered.filter(function(item) { return item.text === filterText; });
+            }
+            // ========== 添加日期筛选 ==========
+            filtered = filterByDate(filtered);
+            return filtered.length;
+        };
+        
+        // 获取全部总数
+        const getAllCount = function() {
+            let filtered = chineseErrors;
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
+            }
+            if (filterUnit !== '全部') {
+                filtered = filtered.filter(function(item) { return item.unit === filterUnit; });
+            }
+            if (filterText !== '全部') {
+                filtered = filtered.filter(function(item) { return item.text === filterText; });
+            }
+            filtered = filterByDate(filtered);
             return filtered.length;
         };
         
         let html = `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
-        categories.forEach(cat => {
+        categories.forEach(function(cat) {
             const activeClass = (currentChineseTag === cat) ? "active" : "";
-            const count = getCount(cat);
+            const count = cat === '全部' ? getAllCount() : getCount(cat);
             html += `
                 <div class="category-tab ${activeClass}" data-tag="${cat}" style="display: flex; align-items: center; gap: 4px;">
                     ${cat}
@@ -3020,12 +3083,17 @@ function renderSidebar() {
         categoryTabs.innerHTML = html;
         
         // 绑定点击事件
-        document.querySelectorAll('.category-tab').forEach(el => {
-            el.addEventListener('click', (e) => {
+        document.querySelectorAll('.category-tab').forEach(function(el) {
+            el.addEventListener('click', function(e) {
                 const tag = e.target.getAttribute('data-tag');
                 if (tag) {
-                    currentChineseTag = tag;
-                    currentChineseSubTag = "全部";
+                    if (tag === '全部') {
+                        currentChineseTag = '全部';
+                        currentChineseSubTag = '全部';
+                    } else {
+                        currentChineseTag = tag;
+                        currentChineseSubTag = '全部';
+                    }
                     resetPrintColumnsByCategory();
                     renderSidebar();
                     renderContent();
@@ -3033,44 +3101,47 @@ function renderSidebar() {
                     localStorage.setItem('cuoti_chineseTag', currentChineseTag);
                     localStorage.setItem('cuoti_subTag', currentChineseSubTag);
                     localStorage.setItem('cuoti_subject', currentSubject);
-                    
-                    const modal = document.getElementById('printSettingsModal');
-                    if (modal && modal.classList.contains('active')) {
-                        const detailDiv = document.getElementById('printCategoryDetail');
-                        if (detailDiv) {
-                            let subjectName = currentSubject === "chinese" ? "语文" : "数学";
-                            let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
-                            if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-                                categoryName += " · " + currentChineseSubTag;
-                            }
-                            detailDiv.innerHTML = `当前：${subjectName} · ${categoryName}`;
-                        }
-                        resetPrintColumnsByCategory();
-                    }
                 }
             });
         });
     } else {
         // 数学科目
-        const categories = ["计算", "应用题","长度单位", "图形", "概念"];
+        const categories = ["全部", "计算", "应用题", "长度单位", "图形", "概念"];
         
-         const getCount = (tag) => {
-        let filtered = mathErrors.filter(item => item.tag === tag);
-        // ✅ 添加年级筛选
-        if (currentGradeFilter !== '全部') {
-            filtered = filtered.filter(item => item.grade === currentGradeFilter);
-        }
-        // ✅ 添加单元筛选
-        const filterUnit = document.getElementById('filterUnit')?.value || '全部';
-        if (filterUnit !== '全部') {
-            filtered = filtered.filter(item => item.unit === filterUnit);
-        }
-        return filtered.length;
-    };
+        const getCount = function(tag) {
+            let filtered = mathErrors.filter(function(item) { return item.tag === tag; });
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
+            }
+            if (filterUnit !== '全部') {
+                filtered = filtered.filter(function(item) { return item.unit === filterUnit; });
+            }
+            if (filterText !== '全部') {
+                filtered = filtered.filter(function(item) { return item.text === filterText; });
+            }
+            filtered = filterByDate(filtered);
+            return filtered.length;
+        };
+        
+        const getAllCount = function() {
+            let filtered = mathErrors;
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
+            }
+            if (filterUnit !== '全部') {
+                filtered = filtered.filter(function(item) { return item.unit === filterUnit; });
+            }
+            if (filterText !== '全部') {
+                filtered = filtered.filter(function(item) { return item.text === filterText; });
+            }
+            filtered = filterByDate(filtered);
+            return filtered.length;
+        };
+        
         let html = `<div style="display: flex; gap: 8px; flex-wrap: wrap;">`;
-        categories.forEach(cat => {
+        categories.forEach(function(cat) {
             const activeClass = (currentMathTag === cat) ? "active" : "";
-            const count = getCount(cat);
+            const count = cat === '全部' ? getAllCount() : getCount(cat);
             html += `
                 <div class="category-tab ${activeClass}" data-tag="${cat}" style="display: flex; align-items: center; gap: 4px;">
                     ${cat}
@@ -3081,11 +3152,15 @@ function renderSidebar() {
         html += `</div>`;
         categoryTabs.innerHTML = html;
         
-        document.querySelectorAll('.category-tab').forEach(el => {
-            el.addEventListener('click', (e) => {
+        document.querySelectorAll('.category-tab').forEach(function(el) {
+            el.addEventListener('click', function(e) {
                 const tag = e.currentTarget.getAttribute('data-tag');
                 if (tag) {
-                    currentMathTag = tag;
+                    if (tag === '全部') {
+                        currentMathTag = '全部';
+                    } else {
+                        currentMathTag = tag;
+                    }
                     renderSidebar();
                     renderContent();
                     updateBatchAddButtonVisibility();
@@ -3096,8 +3171,6 @@ function renderSidebar() {
         });
     }
 }
-
-
 function renderContent() {
     // ========== 筛选逻辑 ==========
     const filterUnit = document.getElementById('filterUnit')?.value || '全部';
@@ -3111,14 +3184,30 @@ function renderContent() {
     if (filterText !== '全部') {
         list = list.filter(item => item.text === filterText);
     }
+
+
+     // ========== 添加日期筛选（本周/本月） ==========
+    const dateStart = window._dateFilterStart || '';
+    const dateEnd = window._dateFilterEnd || '';
+    if (dateStart && dateEnd) {
+        list = list.filter(item => {
+            const itemDate = item.date || '';
+            if (!itemDate) return false;
+            return itemDate >= dateStart && itemDate <= dateEnd;
+        });
+    }
     
     // 更新课文下拉框
     updateTextFilterOptions(list);
     updateTextOptions();
     // 显示/隐藏清除按钮
+     // 更新清除按钮的显示状态
     const clearBtn = document.getElementById('clearFilterBtn');
     if (clearBtn) {
-        clearBtn.style.display = (filterUnit !== '全部' || filterText !== '全部') ? 'inline-block' : 'none';
+        const unitVal = document.getElementById('filterUnit')?.value || '全部';
+        const textVal = document.getElementById('filterText')?.value || '全部';
+        const dateVal = document.getElementById('filterDateRange')?.value || '';
+        clearBtn.style.display = (unitVal !== '全部' || textVal !== '全部' || dateVal !== '') ? 'inline-block' : 'none';
     }
     // ========== 筛选逻辑结束 ==========
     
@@ -3149,24 +3238,42 @@ function renderContent() {
         return timeB - timeA;
     });
     
-    const questionCountDisplay = document.getElementById('questionCountDisplay');
-    if (questionCountDisplay) {
-        let totalCount = 0;
-        if (currentSubject === "chinese") {
-            if (currentGradeFilter === '全部') {
-                totalCount = chineseErrors.length;
-            } else {
-                totalCount = chineseErrors.filter(item => item.grade === currentGradeFilter).length;
-            }
-        } else {
-            if (currentGradeFilter === '全部') {
-                totalCount = mathErrors.length;
-            } else {
-                totalCount = mathErrors.filter(item => item.grade === currentGradeFilter).length;
-            }
-        }
-        questionCountDisplay.textContent = `${totalCount} 道题`;
+    // 在 renderContent() 函数中
+const questionCountDisplay = document.getElementById('questionCountDisplay');
+if (questionCountDisplay) {
+    // ========== 获取日期筛选 ==========
+    const dateStart = window._dateFilterStart || '';
+    const dateEnd = window._dateFilterEnd || '';
+    
+    function filterByDate(items) {
+        if (!dateStart && !dateEnd) return items;
+        return items.filter(function(item) {
+            const itemDate = item.date || '';
+            if (!itemDate) return false;
+            if (dateStart && itemDate < dateStart) return false;
+            if (dateEnd && itemDate > dateEnd) return false;
+            return true;
+        });
     }
+    
+    let totalCount = 0;
+    if (currentSubject === "chinese") {
+        let filtered = chineseErrors;
+        if (currentGradeFilter !== '全部') {
+            filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
+        }
+        filtered = filterByDate(filtered);
+        totalCount = filtered.length;
+    } else {
+        let filtered = mathErrors;
+        if (currentGradeFilter !== '全部') {
+            filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
+        }
+        filtered = filterByDate(filtered);
+        totalCount = filtered.length;
+    }
+    questionCountDisplay.textContent = totalCount + ' 道题';
+}
     
     let subTabsHtml = "";
     if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
@@ -3208,14 +3315,15 @@ function renderContent() {
             (filterUnit === '全部' || item.unit === filterUnit)
         ).length;
         
-        const subTags = [
-            { name: "拼音", count: pinyinCount },
-            { name: "生字", count: shengziCount },
-            { name: "笔顺", count: bishunCount },
-            { name: "标点", count: biaodianCount },
-            { name: "多音字", count: duoyinziCount },
-            { name: "其他", count: qitaCount }
-        ];
+  const subTags = [
+    { name: "全部", count: pinyinCount + shengziCount + bishunCount + biaodianCount + duoyinziCount + qitaCount },
+    { name: "拼音", count: pinyinCount },
+    { name: "生字", count: shengziCount },
+    { name: "笔顺", count: bishunCount },
+    { name: "标点", count: biaodianCount },
+    { name: "多音字", count: duoyinziCount },
+    { name: "其他", count: qitaCount }
+];
         
         subTabsHtml = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
@@ -3553,16 +3661,28 @@ function updateUnitOptions() {
 
 
 function handleGradeChange() {
-    renderContent();
-    renderSidebar();
-    localStorage.setItem('cuoti_grade', currentGradeFilter);
+    // ========== 切换年级后，分类重置为"全部" ==========
+    if (currentSubject === "chinese") {
+        currentChineseTag = '全部';
+        currentChineseSubTag = '全部';
+    } else {
+        currentMathTag = '全部';
+    }
     
-    // ✅ 添加这两行
+    localStorage.setItem('cuoti_grade', currentGradeFilter);
+    localStorage.setItem('cuoti_chineseTag', currentChineseTag);
+    localStorage.setItem('cuoti_subTag', currentChineseSubTag);
+    localStorage.setItem('cuoti_mathTag', currentMathTag);
+    
     updateUnitOptions();
     updateTextOptions();
-}
+    
+    renderContent();
+    renderSidebar();
+} 
 
-    function handleAddClick() {
+
+function handleAddClick() {
     openAddModal();
 }
 
@@ -3582,7 +3702,6 @@ function handleSubTabClick(e) {
     updateBatchAddButtonVisibility();
     localStorage.setItem('cuoti_subTag', currentChineseSubTag);
     
-    // ========== 直接修改打印弹窗中的分类显示 ==========
     const detailDiv = document.getElementById('printCategoryDetail');
     if (detailDiv) {
         let categoryName = "基础知识 · " + currentChineseSubTag;
@@ -3590,7 +3709,6 @@ function handleSubTabClick(e) {
         console.log('已更新分类显示为:', categoryName);
     }
 }
-
 
 function getFilteredQuestionsForReview() {
     let baseList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
@@ -5228,50 +5346,40 @@ function deleteQuestion(id, subject) {
 
   function switchSubject(subject) {
     currentSubject = subject;
+    
     if (subject === "chinese") {
-        currentChineseTag = "基础知识";
+        // 切换到语文：语文分类默认"全部"
+        currentChineseTag = "全部";
         currentChineseSubTag = "全部";
     } else {
-        // 切换到数学时，清除二级分类相关状态
-        currentChineseTag = "基础知识";
+        // 切换到数学：清除语文相关状态
+        currentChineseTag = "全部";
         currentChineseSubTag = "全部";
-        // 确保数学的分类正确
-        if (!currentMathTag) currentMathTag = "计算";
+        // 数学分类默认"全部"
+        if (!currentMathTag || currentMathTag === '') {
+            currentMathTag = "全部";
+        }
     }
+    
     resetPrintColumnsByCategory();
     reviewContextFilter = null;
     reviewContextSubFilter = null;
     
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.getAttribute('data-subject') === subject) btn.classList.add('active');
-        else btn.classList.remove('active');
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        if (btn.getAttribute('data-subject') === subject) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     });
     
     renderSidebar();
     renderContent();
     updateBatchAddButtonVisibility();
     localStorage.setItem('cuoti_subject', currentSubject);
-     // ✅ 添加这两行
     updateUnitOptions();
     updateTextOptions();
-
-
-
-    const modal = document.getElementById('printSettingsModal');
-    if (modal && modal.classList.contains('active')) {
-        const detailDiv = document.getElementById('printCategoryDetail');
-        if (detailDiv) {
-            let subjectName = currentSubject === "chinese" ? "语文" : "数学";
-            let categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
-            if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-                categoryName += " · " + currentChineseSubTag;
-            }
-            detailDiv.innerHTML = `当前：${subjectName} · ${categoryName}`;
-        }
-        resetPrintColumnsByCategory();
-    }
 }
-
 
 
 
@@ -7293,14 +7401,15 @@ function executePrint() {
     }
     
     const options = {
-        question: document.getElementById('printQuestion')?.checked ?? true,
+        
         wrong: document.getElementById('printWrong')?.checked ?? false,
         correct: document.getElementById('printCorrect')?.checked ?? false,
         reason: document.getElementById('printReason')?.checked ?? false,
         unit: document.getElementById('printUnit')?.checked ?? true,
         text: document.getElementById('printText')?.checked ?? true,
         date: document.getElementById('printDate')?.checked ?? true,
-        source: document.getElementById('printSource')?.checked ?? true
+        source: document.getElementById('printSource')?.checked ?? true,
+        reviewCount: document.getElementById('printReviewCount')?.checked ?? true  // 👈
     };
     
     var pageOrientation = document.getElementById('printOrientation')?.value || 'portrait';
@@ -7332,21 +7441,26 @@ function executePrint() {
     }
     
     // ========== 生成 HTML ==========
-    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>打印</title><style>';
-    html += '*{margin:0;padding:0;box-sizing:border-box;}';
-    html += '@page{size:A4 ' + pageOrientation + ';margin:0.1cm 0.1cm 0.1cm 0.1cm !important;}';
-    html += 'body{padding:5px;background:#fff;font-family:sans-serif;}';
-    html += '.print-section{margin-bottom:20px;}';
-    html += '.print-section-title{font-size:14px;font-weight:bold;color:#007aff;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e9e9ef;}';
-    html += '.print-grid{display:grid;gap:8px;padding:2px;}';
-    html += '.print-card{border:none;box-shadow:none;background:transparent;page-break-inside:avoid;break-inside:avoid;padding:2px;}';
-    html += '.card-header{font-size:10px;color:#999;margin-bottom:8px;text-align:center;}';
+    // ========== 生成 HTML ==========
+var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>打印</title><style>';
+html += '*{margin:0;padding:0;box-sizing:border-box;}';
+html += '@page{size:A4 ' + pageOrientation + ';margin:0.1cm 0.1cm 0.1cm 0.1cm !important;}';
+html += 'body{padding:5px;background:#fff;font-family:sans-serif;}';
+html += '.print-section{margin-bottom:20px;}';
+html += '.print-section-title{font-size:14px;font-weight:bold;color:#007aff;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e9e9ef;}';
+html += '.print-grid{display:grid;gap:8px;padding:2px;}';
+html += '.print-card{border:none;box-shadow:none;background:transparent;padding:2px;page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;}';
+html += '.card-header{font-size:10px;color:#999;margin-bottom:8px;text-align:center;}';
+    
+    
+    
     html += '.four-line-grid{display:inline-block;width:60px;margin:2px 0;}';
     html += '.grid-line-1,.grid-line-4{border-top:1px solid #333;margin-bottom:10px;}';
     html += '.grid-line-2,.grid-line-3{border-top:1px dashed #ccc;margin-bottom:10px;}';
     html += '.pinyin-text{visibility:hidden;height:15px;}';
     html += '@media print{body{padding:0;margin:0;}}';
     html += '</style></head><body>';
+        
     
     var groupKeys = Object.keys(groups);
     for (var g = 0; g < groupKeys.length; g++) {
@@ -7359,72 +7473,101 @@ function executePrint() {
         html += '<div class="print-grid" style="grid-template-columns: repeat(' + gridColumns + ', 1fr);">';
         
         // ========== 拼音 ==========
-        if (groupName === '拼音') {
-            groupItems.forEach(function(item) {
-                if (!options.question) return;
-                
-                var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
-                var metaRowHeight = metaFontSize + 6;
-                
-                var questionText = item.question || '';
-                var mainHanzi = questionText;
-                var bracketIndex = questionText.indexOf('（');
-                if (bracketIndex > 0) {
-                    mainHanzi = questionText.substring(0, bracketIndex);
-                }
-                var englishBracketIndex = questionText.indexOf('(');
-                if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
-                    mainHanzi = questionText.substring(0, englishBracketIndex);
-                }
-                var chars = mainHanzi.split('');
-                var totalChars = 0;
-                chars.forEach(function(c) { if (c.trim() !== '') totalChars++; });
-                if (totalChars === 0) totalChars = 1;
-                
-                html += '<div style="grid-column: span ' + totalChars + '; display:flex; flex-direction:column; align-items:center; gap:0px;">';
-                
-                // ✅ 元信息固定4行（不管有没有内容）
-                // 单元
-                if (options.unit) {
-                    html += '<div style="font-size:' + metaFontSize + 'px;color:#aaa;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.unit ? escapeHtml(item.unit) : '') + '</div>';
-                }
-                // 课文
-                if (options.text) {
-                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.text ? escapeHtml(item.text) : '') + '</div>';
-                }
-                // 日期
-                if (options.date) {
-                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.date ? escapeHtml(item.date) : '') + '</div>';
-                }
-                // 来源
-                if (options.source) {
-                    html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.source ? escapeHtml(item.source) : '') + '</div>';
-                }
-                
-                // 题目
-                html += '<div style="display:flex; justify-content:center; gap:4px; flex-wrap:wrap; margin-top:2px;">';
-                chars.forEach(function(char) {
-                    if (char.trim() === '') return;
-                    html += '<div style="text-align:center;">';
-                    html += '<div class="four-line-grid" style="display:inline-block;width:50px;margin:0;">';
-                    html += '<div class="grid-line-1"></div>';
-                    html += '<div class="grid-line-2"></div>';
-                    html += '<div class="grid-line-3"></div>';
-                    html += '<div class="grid-line-4"></div>';
-                    html += '<div class="pinyin-text">&nbsp;</div>';
-                    html += '</div>';
-                    html += '<div style="font-size:20px;font-weight:500;margin-top:-18px;color:#1c1c1e;">' + escapeHtml(char) + '</div>';
-                    html += '</div>';
-                });
-                html += '</div>';
-                
-                html += '</div>';
-            });
+        // ========== 拼音 ==========
+// ========== 拼音 ==========
+if (groupName === '拼音') {
+    groupItems.forEach(function(item) {
+        var questionText = item.question || '';
+        var mainHanzi = questionText;
+        var noteText = '';
+        
+        // 处理英文括号 ()
+        var englishBracketIndex = questionText.indexOf('(');
+        if (englishBracketIndex > 0) {
+            mainHanzi = questionText.substring(0, englishBracketIndex);
+            var tempNote = questionText.substring(englishBracketIndex + 1);
+            if (tempNote.endsWith(')')) {
+                tempNote = tempNote.slice(0, -1);
+            }
+            noteText = tempNote;
         }
-        // ========== 生字 ==========
+        // 处理中文括号 （）
+        var bracketIndex = questionText.indexOf('（');
+        if (bracketIndex > 0 && !noteText) {
+            mainHanzi = questionText.substring(0, bracketIndex);
+            var tempNote = questionText.substring(bracketIndex + 1);
+            if (tempNote.endsWith('）')) {
+                tempNote = tempNote.slice(0, -1);
+            }
+            noteText = tempNote;
+        }
+        
+        var chars = mainHanzi.split('');
+        var noteChars = noteText ? noteText.split('') : [];
+        var totalChars = chars.filter(function(c) { return c.trim() !== ''; }).length + noteChars.filter(function(c) { return c.trim() !== ''; }).length;
+        if (totalChars === 0) totalChars = 1;
+        
+        var gridColumns = getColumnsForGroup(groupName);
+        var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
+        var metaRowHeight = metaFontSize + 6;
+        
+        // ========== 把 fontSize 定义在这里，两个 forEach 都能访问 ==========
+        var fontSize = gridColumns >= 10 ? 20 : (gridColumns >= 6 ? 20 : 20);
+        
+        html += '<div style="grid-column: span ' + totalChars + '; display:flex; flex-direction:column; align-items:center; gap:0px;">';
+        
+        // 元信息
+        if (options.unit) {
+            html += '<div style="font-size:' + metaFontSize + 'px;color:#aaa;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.unit ? escapeHtml(item.unit) : '') + '</div>';
+        }
+        if (options.text) {
+            html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.text ? escapeHtml(item.text) : '') + '</div>';
+        }
+        if (options.date) {
+            html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.date ? escapeHtml(item.date) : '') + '</div>';
+        }
+        if (options.source) {
+            html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + (item.source ? escapeHtml(item.source) : '') + '</div>';
+        }
+        if (options.reviewCount) {
+            html += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">复习：' + (item.reviewCount || 0) + '次</div>';
+        }
+        
+        // 题目 - 主体汉字（带四线格）和注释文字在同一行，同一水平线
+        html += '<div style="display:flex; justify-content:center; align-items:flex-end; gap:4px; flex-wrap:wrap; margin-top:2px;">';
+        
+        // 主体汉字（带四线格）
+        chars.forEach(function(char) {
+            if (char.trim() === '') return;
+            html += '<div style="text-align:center;">';
+            html += '<div class="four-line-grid" style="display:inline-block;width:50px;margin:0;">';
+            html += '<div class="grid-line-1"></div>';
+            html += '<div class="grid-line-2"></div>';
+            html += '<div class="grid-line-3"></div>';
+            html += '<div class="grid-line-4"></div>';
+            html += '<div class="pinyin-text">&nbsp;</div>';
+            html += '</div>';
+            html += '<div style="font-size:' + fontSize + 'px;font-weight:500;margin-top:-18px;color:#1c1c1e;">' + escapeHtml(char) + '</div>';
+            html += '</div>';
+        });
+        
+        // 注释文字（括号内容，不带四线格，与主体汉字同一水平线）
+        noteChars.forEach(function(char) {
+            if (char.trim() === '') return;
+            html += '<div style="text-align:center;">';
+            // 不加占位空白，直接用 margin-top 对齐
+            html += '<div style="font-size:' + fontSize + 'px;font-weight:500;color:#1c1c1e;margin-top:-18px;">' + escapeHtml(char) + '</div>';
+            html += '</div>';
+        });
+        
+        html += '</div>';
+        html += '</div>';
+    });
+
+}// ========== 生字 ==========
         else if (groupName === '生字') {
             groupItems.forEach(function(item) {
-                if (!options.question) return;
+                
                 
                 var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
                 var metaRowHeight = metaFontSize + 6;
@@ -7488,7 +7631,7 @@ function executePrint() {
         // ========== 笔顺 ==========
         else if (groupName === '笔顺') {
             groupItems.forEach(function(item) {
-                if (!options.question) return;
+                
                 
                 var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
                 var metaRowHeight = metaFontSize + 6;
@@ -7538,18 +7681,39 @@ function executePrint() {
         html += '</div></div>';
     }
     
-    html += '</body></html>';
+html += '</div></body></html>';
     
-    var printWindow = window.open('', '_blank');
-    printWindow.document.write(html);
-    printWindow.document.close();
+// ========== 使用隐藏 iframe 打印（主页面不冻结，保留打印设置窗口） ==========
+var iframe = document.createElement('iframe');
+iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:none;z-index:-9999;';
+document.body.appendChild(iframe);
+
+var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+iframeDoc.open();
+iframeDoc.write(html);
+iframeDoc.close();
+
+// 等待 iframe 加载完成后触发打印
+setTimeout(function() {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
     
-    printWindow.onload = function() {
-        printWindow.print();
-        printWindow.onafterprint = function() {
-            closePrintSettings();
-        };
-    };
+    // 打印完成后只移除 iframe，不关闭打印设置窗口
+    setTimeout(function() {
+        // 移除 iframe
+        if (iframe.parentNode) {
+            document.body.removeChild(iframe);
+        }
+        // ========== 不关闭打印设置弹窗 ==========
+        // 只确保所有交互恢复
+        document.body.style.pointerEvents = 'auto';
+        document.querySelectorAll('select, input, textarea, button').forEach(function(el) {
+            el.style.pointerEvents = 'auto';
+            el.disabled = false;
+        });
+        console.log('✅ 打印完成，打印设置窗口保留');
+    }, 500);
+}, 500);
 }
 
 
@@ -7562,15 +7726,25 @@ function getPrintFilteredList() {
     // 1. 根据分类筛选
     if (currentPrintFilter === "current") {
         if (currentSubject === "chinese") {
-            list = chineseErrors.filter(item => item.tag === currentChineseTag);
-            if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-                list = list.filter(item => item.subTag === currentChineseSubTag);
+            // ========== 修复：当 currentChineseTag === '全部' 时，不过滤 tag ==========
+            if (currentChineseTag === '全部') {
+                list = chineseErrors;
+            } else {
+                list = chineseErrors.filter(item => item.tag === currentChineseTag);
+                if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                    list = list.filter(item => item.subTag === currentChineseSubTag);
+                }
             }
             if (currentGradeFilter !== '全部') {
                 list = list.filter(item => item.grade === currentGradeFilter);
             }
         } else {
-            list = mathErrors.filter(item => item.tag === currentMathTag);
+            // ========== 修复：当 currentMathTag === '全部' 时，不过滤 tag ==========
+            if (currentMathTag === '全部') {
+                list = mathErrors;
+            } else {
+                list = mathErrors.filter(item => item.tag === currentMathTag);
+            }
             if (currentGradeFilter !== '全部') {
                 list = list.filter(item => item.grade === currentGradeFilter);
             }
@@ -7635,7 +7809,6 @@ function getPrintFilteredList() {
     
     return list;
 }
-
 function updatePrintFilterTextOptions() {
     const textSelect = document.getElementById('printFilterText');
     if (!textSelect) return;
@@ -7708,7 +7881,6 @@ function updatePrintCategoryDetail() {
 }
 
 function openPrintSettings() {
-    // ========== 在函数开头立即保存主界面的值 ==========
     const savedUnit = document.getElementById('filterUnit')?.value || '全部';
     const savedText = document.getElementById('filterText')?.value || '全部';
     
@@ -7752,76 +7924,79 @@ function openPrintSettings() {
     }, 10);
     
     requestAnimationFrame(function() {
-    var count = 0;
+        var count = 0;
+        var mainUnit = document.getElementById('filterUnit')?.value || '全部';
+        
+        if (currentSubject === "chinese") {
+            var filtered = [];
+            if (currentChineseTag === '全部') {
+                filtered = chineseErrors;
+            } else {
+                filtered = chineseErrors.filter(function(item) { 
+                    return item.tag === currentChineseTag; 
+                });
+                if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                    filtered = filtered.filter(function(item) { 
+                        return item.subTag === currentChineseSubTag; 
+                    });
+                }
+            }
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(function(item) { 
+                    return item.grade === currentGradeFilter; 
+                });
+            }
+            if (mainUnit !== '全部') {
+                filtered = filtered.filter(function(item) { 
+                    return item.unit === mainUnit; 
+                });
+            }
+            count = filtered.length;
+        } else {
+            var filtered = [];
+            if (currentMathTag === '全部') {
+                filtered = mathErrors;
+            } else {
+                filtered = mathErrors.filter(function(item) { 
+                    return item.tag === currentMathTag; 
+                });
+            }
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(function(item) { 
+                    return item.grade === currentGradeFilter; 
+                });
+            }
+            if (mainUnit !== '全部') {
+                filtered = filtered.filter(function(item) { 
+                    return item.unit === mainUnit; 
+                });
+            }
+            count = filtered.length;
+        }
+        
+        var countSpan = document.getElementById('printCount');
+        if (countSpan) {
+            countSpan.innerText = count;
+        }
+        
+        var detailDiv = document.getElementById('printCategoryDetail');
+        if (detailDiv) {
+            var subjectName = currentSubject === "chinese" ? "语文" : "数学";
+            var categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
+            if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                categoryName += " · " + currentChineseSubTag;
+            }
+            var gradeText = currentGradeFilter !== '全部' ? ' · ' + currentGradeFilter : '';
+            var unitText = (mainUnit !== '全部') ? ' · ' + mainUnit : '';
+            detailDiv.innerHTML = '当前：' + subjectName + ' · ' + categoryName + gradeText + unitText + '（' + count + '道）';
+        }
+    });
     
-    // ========== 获取主界面选中的单元 ==========
-    var mainUnit = document.getElementById('filterUnit')?.value || '全部';
-    
-    if (currentSubject === "chinese") {
-        var filtered = chineseErrors.filter(function(item) { 
-            return item.tag === currentChineseTag; 
-        });
-        if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-            filtered = filtered.filter(function(item) { 
-                return item.subTag === currentChineseSubTag; 
-            });
-        }
-        if (currentGradeFilter !== '全部') {
-            filtered = filtered.filter(function(item) { 
-                return item.grade === currentGradeFilter; 
-            });
-        }
-        // ========== 添加单元筛选 ==========
-        if (mainUnit !== '全部') {
-            filtered = filtered.filter(function(item) { 
-                return item.unit === mainUnit; 
-            });
-        }
-        count = filtered.length;
-    } else {
-        var filtered = mathErrors.filter(function(item) { 
-            return item.tag === currentMathTag; 
-        });
-        if (currentGradeFilter !== '全部') {
-            filtered = filtered.filter(function(item) { 
-                return item.grade === currentGradeFilter; 
-            });
-        }
-        // ========== 添加单元筛选 ==========
-        if (mainUnit !== '全部') {
-            filtered = filtered.filter(function(item) { 
-                return item.unit === mainUnit; 
-            });
-        }
-        count = filtered.length;
-    }
-    
-    var countSpan = document.getElementById('printCount');
-    if (countSpan) {
-        countSpan.innerText = count;
-    }
-    
-    var detailDiv = document.getElementById('printCategoryDetail');
-    if (detailDiv) {
-        var subjectName = currentSubject === "chinese" ? "语文" : "数学";
-        var categoryName = currentSubject === "chinese" ? currentChineseTag : currentMathTag;
-        if (currentSubject === "chinese" && currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-            categoryName += " · " + currentChineseSubTag;
-        }
-        var gradeText = currentGradeFilter !== '全部' ? ' · ' + currentGradeFilter : '';
-        // ========== 添加单元显示 ==========
-        var unitText = (mainUnit !== '全部') ? ' · ' + mainUnit : '';
-        detailDiv.innerHTML = '当前：' + subjectName + ' · ' + categoryName + gradeText + unitText + '（' + count + '道）';
-    }
-});
     bindPrintModalButtonsForce();
     
-    // ========== 核心修复：使用 DOM 直接设置下拉框的值 ==========
-    // 在弹窗完全显示后，直接操作 DOM 设置下拉框
     setTimeout(function() {
         var unitSelect = document.getElementById('printFilterUnit');
         if (unitSelect) {
-            // 遍历选项，找到匹配的并选中
             for (var i = 0; i < unitSelect.options.length; i++) {
                 if (unitSelect.options[i].value === savedUnit) {
                     unitSelect.selectedIndex = i;
@@ -7842,7 +8017,6 @@ function openPrintSettings() {
             }
         }
         
-        // 触发 change 事件更新统计
         if (unitSelect) {
             var evt = document.createEvent('HTMLEvents');
             evt.initEvent('change', true, true);
@@ -7850,7 +8024,6 @@ function openPrintSettings() {
         }
     }, 200);
 }
-
 function closePrintSettings() {
     const modal = document.getElementById('printSettingsModal');
     if (modal) {
@@ -7863,48 +8036,119 @@ function closePrintSettings() {
         modal.style.display = 'none';
     }
 }// ========== generatePrintCard 函数（供其他分类使用） ==========
+
+
 function generatePrintCard(item, idx, options, gridColumns) {
     const isMath = item.id && item.id.startsWith('math');
     
     // ========== 拼音特殊处理：每个字占一列 ==========
-    if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
-        // 去除括号内容
-        var questionText = item.question;
-        questionText = questionText.replace(/（[^）]*）/g, '');
-        questionText = questionText.replace(/\([^)]*\)/g, '');
-        questionText = questionText.trim();
-        
-        var chars = questionText.split('');
-        // 根据列数调整尺寸
-        var gridSize = gridColumns >= 10 ? 50 : (gridColumns >= 6 ? 60 : 80);
-        var fontSize = gridColumns >= 10 ? 24 : (gridColumns >= 6 ? 30 : 40);
-        var marginSize = gridColumns >= 10 ? 2 : (gridColumns >= 6 ? 6 : 10);
-        var lineMargin = gridColumns >= 10 ? 4 : (gridColumns >= 6 ? 6 : 8);
-        var pinyinHeight = gridColumns >= 10 ? 10 : (gridColumns >= 6 ? 12 : 20);
-        var marginTop = gridColumns >= 10 ? -16 : (gridColumns >= 6 ? -20 : -30);
-        
-        var result = '';
-        chars.forEach(function(char) {
-            if (char.trim() === '') return;
-            result += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin: 0; display: inline-block; width: 100%;">';
-            result += '<div style="text-align: center; padding: 4px 0;">';
-            result += '<div class="four-line-grid" style="display: inline-block; width: ' + gridSize + 'px; margin: ' + marginSize + 'px 0;">';
-            result += '<div class="grid-line-1" style="border-top: 1px solid #333; margin-bottom: ' + lineMargin + 'px;"></div>';
-            result += '<div class="grid-line-2" style="border-top: 1px solid #999; margin-bottom: ' + lineMargin + 'px;"></div>';
-            result += '<div class="grid-line-3" style="border-top: 1px solid #999; margin-bottom: ' + lineMargin + 'px;"></div>';
-            result += '<div class="grid-line-4" style="border-top: 1px solid #333; margin-bottom: ' + lineMargin + 'px;"></div>';
-            result += '<div class="pinyin-text" style="visibility: hidden; height: ' + pinyinHeight + 'px;">&nbsp;</div>';
-            result += '</div>';
-            result += '<div style="font-size: ' + fontSize + 'px; font-weight: 500; margin-top: ' + marginTop + 'px; color: #1c1c1e;">' + escapeHtml(char) + '</div>';
-            result += '</div>';
-            result += '</div>';
-        });
-        return result;
+   // ========== 拼音特殊处理：每个字占一列 ==========
+if (item.tag === "基础知识" && item.subTag === "拼音" && item.question) {
+    var questionText = item.question;
+    
+    // 提取括号前的内容（主体汉字）
+    var mainHanzi = questionText;
+    var noteText = '';
+    
+    // 处理中文括号 （）
+    var bracketIndex = questionText.indexOf('（');
+    if (bracketIndex > 0) {
+        mainHanzi = questionText.substring(0, bracketIndex);
+        var tempNote = questionText.substring(bracketIndex + 1);
+        if (tempNote.endsWith('）')) {
+            tempNote = tempNote.slice(0, -1);
+        }
+        noteText = tempNote;
+    }
+    // 处理英文括号 ()
+    var englishBracketIndex = questionText.indexOf('(');
+    if (englishBracketIndex > 0 && (bracketIndex === -1 || englishBracketIndex < bracketIndex)) {
+        mainHanzi = questionText.substring(0, englishBracketIndex);
+        var tempNote = questionText.substring(englishBracketIndex + 1);
+        if (tempNote.endsWith(')')) {
+            tempNote = tempNote.slice(0, -1);
+        }
+        noteText = tempNote;
     }
     
+    // 如果 mainHanzi 为空，尝试从括号中提取
+    if (!mainHanzi || mainHanzi.trim() === '') {
+        mainHanzi = questionText.replace(/[（(][^）)]*[）)]/g, '').trim();
+        if (!mainHanzi) mainHanzi = questionText;
+    }
+    
+    // 主体汉字（要显示四线格）
+    var mainChars = mainHanzi.split('');
+    // 注释文字（只显示汉字，不带四线格）
+    var noteChars = noteText ? noteText.split('') : [];
+    
+    // 如果没有主体汉字但有注释文字，把注释当作主体
+    if (mainChars.length === 0 && noteChars.length > 0) {
+        mainChars = noteChars;
+        noteChars = [];
+    }
+    
+    var gridSize = gridColumns >= 10 ? 50 : (gridColumns >= 6 ? 60 : 80);
+    var fontSize = gridColumns >= 10 ? 24 : (gridColumns >= 6 ? 30 : 40);
+    var marginSize = gridColumns >= 10 ? 2 : (gridColumns >= 6 ? 6 : 10);
+    var lineMargin = gridColumns >= 10 ? 4 : (gridColumns >= 6 ? 6 : 8);
+    var pinyinHeight = gridColumns >= 10 ? 10 : (gridColumns >= 6 ? 12 : 20);
+    var marginTop = gridColumns >= 10 ? -16 : (gridColumns >= 6 ? -20 : -30);
+    var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
+    var metaRowHeight = metaFontSize + 6;
+    
+    var result = '';
+    
+    // 元信息
+    if (options.unit && item.unit) {
+        result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + escapeHtml(item.unit) + '</div>';
+    }
+    if (options.text && item.text) {
+        result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + escapeHtml(item.text) + '</div>';
+    }
+    if (options.date && item.date) {
+        result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + escapeHtml(item.date) + '</div>';
+    }
+    if (options.source && item.source) {
+        result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + escapeHtml(item.source) + '</div>';
+    }
+    if (options.reviewCount) {
+        result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">复习：' + (item.reviewCount || 0) + '次</div>';
+    }
+    
+    // ========== 主体汉字：带四线格 ==========
+    mainChars.forEach(function(char) {
+        if (char.trim() === '') return;
+        result += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin: 0; display: inline-block; width: 100%;">';
+        result += '<div style="text-align: center; padding: 4px 0;">';
+        result += '<div class="four-line-grid" style="display: inline-block; width: ' + gridSize + 'px; margin: ' + marginSize + 'px 0;">';
+        result += '<div class="grid-line-1" style="border-top: 1px solid #333; margin-bottom: ' + lineMargin + 'px;"></div>';
+        result += '<div class="grid-line-2" style="border-top: 1px solid #999; margin-bottom: ' + lineMargin + 'px;"></div>';
+        result += '<div class="grid-line-3" style="border-top: 1px solid #999; margin-bottom: ' + lineMargin + 'px;"></div>';
+        result += '<div class="grid-line-4" style="border-top: 1px solid #333; margin-bottom: ' + lineMargin + 'px;"></div>';
+        result += '<div class="pinyin-text" style="visibility: hidden; height: ' + pinyinHeight + 'px;">&nbsp;</div>';
+        result += '</div>';
+        result += '<div style="font-size: ' + fontSize + 'px; font-weight: 500; margin-top: ' + marginTop + 'px; color: #1c1c1e;">' + escapeHtml(char) + '</div>';
+        result += '</div>';
+        result += '</div>';
+    });
+    
+    // ========== 注释文字（括号内容）：只显示汉字，不显示四线格 ==========
+    noteChars.forEach(function(char) {
+        if (char.trim() === '') return;
+        result += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin: 0; display: inline-block; width: 100%;">';
+        result += '<div style="text-align: center; padding: 4px 0;">';
+        // 占位空白（保持高度一致）
+        result += '<div style="height: ' + (gridSize + 10) + 'px;"></div>';
+        result += '<div style="font-size: ' + fontSize + 'px; font-weight: 500; color: #1c1c1e;">' + escapeHtml(char) + '</div>';
+        result += '</div>';
+        result += '</div>';
+    });
+    
+    return result;
+}
     // ========== 生字特殊处理：每个拼音+田字格占一列 ==========
     if (item.tag === "基础知识" && item.subTag === "生字" && item.question) {
-        // 去除括号内容
         var questionText = item.question;
         questionText = questionText.replace(/（[^）]*）/g, '');
         questionText = questionText.replace(/\([^)]*\)/g, '');
@@ -7921,12 +8165,31 @@ function generatePrintCard(item, idx, options, gridColumns) {
             }
         }
         
-        // 根据列数调整尺寸
         var gridSize = gridColumns >= 10 ? 35 : (gridColumns >= 6 ? 45 : 60);
         var hanziSize = gridColumns >= 10 ? 20 : (gridColumns >= 6 ? 28 : 40);
         var pinyinSize = gridColumns >= 10 ? 9 : (gridColumns >= 6 ? 11 : 14);
+        var metaFontSize = gridColumns >= 10 ? 7 : (gridColumns >= 6 ? 8 : 9);
+        var metaRowHeight = metaFontSize + 6;
         
         var result = '';
+        
+        // 元信息
+        if (options.unit && item.unit) {
+            result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + escapeHtml(item.unit) + '</div>';
+        }
+        if (options.text && item.text) {
+            result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + escapeHtml(item.text) + '</div>';
+        }
+        if (options.date && item.date) {
+            result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + escapeHtml(item.date) + '</div>';
+        }
+        if (options.source && item.source) {
+            result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">' + escapeHtml(item.source) + '</div>';
+        }
+        if (options.reviewCount) {
+            result += '<div style="font-size:' + metaFontSize + 'px;color:#888;text-align:center;width:100%;height:' + metaRowHeight + 'px;line-height:' + metaRowHeight + 'px;">复习：' + (item.reviewCount || 0) + '次</div>';
+        }
+        
         // 如果有汉字，先显示汉字（占一列）
         if (hanzi) {
             result += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin: 0; display: inline-block; width: 100%;">';
@@ -7941,7 +8204,6 @@ function generatePrintCard(item, idx, options, gridColumns) {
             result += '<div class="print-card" style="page-break-inside: avoid; break-inside: avoid; border: none; padding: 0; margin: 0; display: inline-block; width: 100%;">';
             result += '<div style="text-align: center; padding: 4px 0;">';
             result += '<div style="font-size: ' + pinyinSize + 'px; color: #007aff; margin-bottom: 4px;">' + escapeHtml(p) + '</div>';
-            // ========== 原版田字格（带十字虚线） ==========
             result += '<div class="tian-grid" style="display: inline-block; width: ' + gridSize + 'px; height: ' + gridSize + 'px; border: 1px solid #c6c6c8; position: relative; margin: 5px 0; background: #fff;">';
             result += '<div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #e9e9ef;"></div>';
             result += '<div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #e9e9ef;"></div>';
@@ -7960,35 +8222,30 @@ function generatePrintCard(item, idx, options, gridColumns) {
     if(item.source) html += ' | ' + escapeHtml(item.source);
     html += '</div>';
     
-    // 原题
-    if (options.question) {
-        // 笔顺特殊显示
-        if (item.tag === "基础知识" && item.subTag === "笔顺" && item.question) {
-            html += '<div style="font-size: 32px; font-weight: 600; text-align: center; letter-spacing: 8px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
-        }
-        // 数学题目：居中放大
-        else if (isMath && item.question) {
-            html += '<div style="font-size: 28px; font-weight: 600; text-align: center; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
-        }
-        // 多音字特殊显示
-        else if (item.subTag === "多音字" && item.question) {
-            html += '<div style="font-size: 28px; font-weight: 600; text-align: center; letter-spacing: 4px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
-        }
-        else if (item.question) {
-            html += '<div style="font-size: 14px; line-height: 1.5; margin: 12px 0;">' + escapeHtml(item.question) + '</div>';
-        }
-        
-        if (item.questionImages && item.questionImages.length > 0) {
-            for (var i = 0; i < item.questionImages.length; i++) {
-                html += '<img src="' + item.questionImages[i] + '" style="max-width:100%; max-height:150px;">';
-            }
+    // 原题（始终显示）
+    if (item.tag === "基础知识" && item.subTag === "笔顺" && item.question) {
+        html += '<div style="font-size: 32px; font-weight: 600; text-align: center; letter-spacing: 8px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
+    }
+    else if (isMath && item.question) {
+        html += '<div style="font-size: 28px; font-weight: 600; text-align: center; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
+    }
+    else if (item.subTag === "多音字" && item.question) {
+        html += '<div style="font-size: 28px; font-weight: 600; text-align: center; letter-spacing: 4px; padding: 20px; background: #f8f9fc; border-radius: 12px;">' + escapeHtml(item.question) + '</div>';
+    }
+    else if (item.question) {
+        html += '<div style="font-size: 14px; line-height: 1.5; margin: 12px 0;">' + escapeHtml(item.question) + '</div>';
+    }
+    
+    if (item.questionImages && item.questionImages.length > 0) {
+        for (var i = 0; i < item.questionImages.length; i++) {
+            html += '<img src="' + item.questionImages[i] + '" style="max-width:100%; max-height:150px;">';
         }
     }
     
     // 错误答案
     if (options.wrong && item.wrongAnswer) {
         html += '<div style="margin-top: 8px; padding: 8px; background: #fff5f5; border-left: 3px solid #ff3b30; font-size: 12px;">';
-        html += '<strong style="color:#ff3b30;">❌ 错误：</strong> ' + escapeHtml(item.wrongAnswer);
+        html += '<strong style="color:#ff3b30;">错误：</strong> ' + escapeHtml(item.wrongAnswer);
         if (item.wrongImages && item.wrongImages.length > 0) {
             for (var i = 0; i < item.wrongImages.length; i++) {
                 html += '<img src="' + item.wrongImages[i] + '" style="max-width:100%; max-height:100px;">';
@@ -8001,7 +8258,7 @@ function generatePrintCard(item, idx, options, gridColumns) {
     var skipCorrect = (item.tag === "基础知识" && (item.subTag === "拼音" || item.subTag === "生字"));
     if (options.correct && !skipCorrect && item.correctAnswer) {
         html += '<div style="margin-top: 6px; padding: 8px; background: #f0fff0; border-left: 3px solid #34c759; font-size: 12px;">';
-        html += '<strong style="color:#34c759;">✅ 正确：</strong> ' + escapeHtml(item.correctAnswer);
+        html += '<strong style="color:#34c759;">正确：</strong> ' + escapeHtml(item.correctAnswer);
         if (item.correctImages && item.correctImages.length > 0) {
             for (var i = 0; i < item.correctImages.length; i++) {
                 html += '<img src="' + item.correctImages[i] + '" style="max-width:100%; max-height:100px;">';
@@ -8012,20 +8269,26 @@ function generatePrintCard(item, idx, options, gridColumns) {
     
     // 错误原因
     if (options.reason && item.reasons && item.reasons.length) {
-        html += '<div style="font-size: 10px; color: #888; margin-top: 6px;">📌 原因：' + escapeHtml(item.reasons.join('、')) + '</div>';
+        html += '<div style="font-size: 10px; color: #888; margin-top: 6px;">原因：' + escapeHtml(item.reasons.join('、')) + '</div>';
     }
     
-    // 元信息
-    if (options.meta) {
-        html += '<div style="font-size: 10px; color: #aaa; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #ddd;">';
-        if(item.unit) html += '单元：' + escapeHtml(item.unit);
-        if(item.reviewCount) html += ' | 复习：' + item.reviewCount + '次';
-        html += '</div>';
+    // 复习次数
+    if (options.reviewCount) {
+        html += '<div style="font-size: 10px; color: #666; margin-top: 4px;">复习次数：' + (item.reviewCount || 0) + ' 次</div>';
+    }
+    
+    // 单元和课文（在底部显示）
+    if (options.unit && item.unit) {
+        html += '<div style="font-size: 10px; color: #888; margin-top: 4px;">单元：' + escapeHtml(item.unit) + '</div>';
+    }
+    if (options.text && item.text) {
+        html += '<div style="font-size: 10px; color: #888; margin-top: 2px;">课文：' + escapeHtml(item.text) + '</div>';
     }
     
     html += '</div>';
     return html;
 }
+
 
 
 
@@ -8280,7 +8543,64 @@ if (target.classList && target.classList.contains('print-category-filter')) {
 
 async function init() {
 
- const token = await loadToken();
+    // ========== 日期下拉筛选 ==========
+document.getElementById('filterDateRange')?.addEventListener('change', function() {
+    const value = this.value;
+    
+    if (value === 'week') {
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const diffToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - diffToMonday);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        
+        window._dateFilterStart = monday.toISOString().slice(0, 10);
+        window._dateFilterEnd = sunday.toISOString().slice(0, 10);
+    } else if (value === 'month') {
+        const today = new Date();
+        const startDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const endDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+        
+        window._dateFilterStart = startDate;
+        window._dateFilterEnd = endDate;
+    } else {
+        // 选择"全部日期"
+        window._dateFilterStart = '';
+        window._dateFilterEnd = '';
+    }
+    
+    // 显示/隐藏清除按钮
+    const clearBtn = document.getElementById('clearFilterBtn');
+    if (clearBtn) {
+        clearBtn.style.display = (value !== '' || document.getElementById('filterUnit').value !== '全部' || document.getElementById('filterText').value !== '全部') ? 'inline-block' : 'none';
+    }
+    
+    renderContent();
+    renderSidebar();
+});
+
+// ========== 清除筛选按钮 ==========
+document.getElementById('clearFilterBtn')?.addEventListener('click', function() {
+    document.getElementById('filterUnit').value = '全部';
+    document.getElementById('filterText').value = '全部';
+    document.getElementById('filterDateRange').value = '';
+    
+    window._dateFilterStart = '';
+    window._dateFilterEnd = '';
+    
+    this.style.display = 'none';
+    
+    renderContent();
+    renderSidebar();
+});
+
+
+
+
+const token = await loadToken();
     if (token) {
         console.log('✅ GitHub Token 已加载');
     } else {
@@ -8619,7 +8939,7 @@ if (batchConfirmBtn) {
                 wrongAnswer: '',
                 correctAnswer: word,
                 reasons: [],
-                source: '批量添加',
+                source: '', 
                  createdAt: Date.now(),  
                 date: todayStr,
                 reviewCount: 0,
@@ -9101,11 +9421,21 @@ if (editModal) {
     });
     
     document.getElementById('clearFilterBtn')?.addEventListener('click', function() {
-        document.getElementById('filterUnit').value = '全部';
-        document.getElementById('filterText').value = '全部';
-        renderContent();
-        renderSidebar(); 
+    document.getElementById('filterUnit').value = '全部';
+    document.getElementById('filterText').value = '全部';
+    
+    // ========== 清除日期筛选 ==========
+    window._dateFilterStart = '';
+    window._dateFilterEnd = '';
+    document.querySelectorAll('.filter-bar .filter-date-btn').forEach(function(b) {
+        b.classList.remove('active');
+        b.style.background = 'white';
+        b.style.color = '#3a3a3e';
     });
+    
+    renderContent();
+    renderSidebar();
+});
     // ========== 👆 筛选事件绑定结束 ==========
 
 
@@ -9781,9 +10111,7 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
 <div class="form-group">
     <label style="font-size: 13px; font-weight: 500; color: #3a3a3e; display: block; margin-bottom: 6px;">打印内容</label>
     <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-        <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
-            <input type="checkbox" id="printQuestion" checked style="margin: 0;"> 原题
-        </label>
+        
         <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
             <input type="checkbox" id="printWrong" style="margin: 0;"> 错误答案
         </label>
@@ -9792,6 +10120,9 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
         </label>
         <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
             <input type="checkbox" id="printReason" style="margin: 0;"> 错误原因
+        </label>
+         <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
+            <input type="checkbox" id="printReviewCount" checked style="margin: 0;"> 复习次数
         </label>
         <label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; white-space: nowrap; padding: 2px 4px;">
             <input type="checkbox" id="printUnit" checked style="margin: 0;"> 单元
@@ -9829,6 +10160,10 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
                 <select id="printFilterText" style="padding: 6px 12px; border-radius: 20px; border: 0.5px solid #c6c6c8; font-size: 12px; background: white;">
                     <option value="全部">全部课文</option>
                 </select>
+
+
+
+
             </div>
         </div>
         <!-- ========== 👆 快速筛选结束 ========== -->
@@ -9872,7 +10207,7 @@ function applyReviewFilters(labels, reasons, source, dateStart, dateEnd) {
         <!-- 统计 -->
         <div style="margin: 16px 0;">
             <div id="printStats" style="background: #f8f9fc; border-radius: 16px; padding: 12px; font-size: 13px; text-align: center;">
-                📊 将打印 <span id="printCount">计算中...</span> 道错题
+                将打印 <span id="printCount">计算中...</span> 道错题
             </div>
         </div>
         
