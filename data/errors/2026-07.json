@@ -4285,7 +4285,8 @@
       "reviewCount": 0,
       "reviewHistory": [],
       "questionImages": [
-        "https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/images/1785479814734_2v8pyp6f.jpeg"
+        "https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/images/1785480598260_mywd506v.png",
+        "https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/images/1785480610305_j420n7vr.png"
       ],
       "wrongImages": [],
       "correctImages": []
@@ -4316,7 +4317,7 @@
       "id": "math_1785479907542",
       "tag": "应用题",
       "grade": "二上",
-      "unit": "校园小导游",
+      "unit": "",
       "text": "",
       "question": "",
       "wrongAnswer": "",
@@ -4329,12 +4330,12 @@
       "reviewCount": 0,
       "reviewHistory": [],
       "questionImages": [
-        "https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/images/1785479896129_lh1hqsnl.jpeg"
+        "https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/images/1785482146023_ybk49e9e.jpg"
       ],
       "wrongImages": [],
       "correctImages": []
     }
   ],
-  "lastUpdate": "2026-07-31T06:38:55.994Z",
+  "lastUpdate": "2026-07-31T07:48:20.217Z",
   "version": "2.0"
 }
