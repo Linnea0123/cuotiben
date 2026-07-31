@@ -3704,95 +3704,78 @@ function handleSubTabClick(e) {
 function getFilteredQuestionsForReview() {
     let baseList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
     
-// ========== 添加年级筛选 ==========
-if (currentGradeFilter !== '全部') {
-    baseList = baseList.filter(q => q.grade === currentGradeFilter);
-}
-
-// ========== 分类筛选 ==========
-// 如果 reviewContextFilter 有值，用它筛选（复习时选了具体分类）
-if (reviewContextFilter) {
-    baseList = baseList.filter(q => q.tag === reviewContextFilter);
-    if (reviewContextFilter === "基础知识" && reviewContextSubFilter && reviewContextSubFilter !== "全部") {
-        baseList = baseList.filter(q => q.subTag === reviewContextSubFilter);
+    // ========== 添加年级筛选 ==========
+    if (currentGradeFilter !== '全部') {
+        baseList = baseList.filter(q => q.grade === currentGradeFilter);
     }
-} 
-// 如果 reviewContextFilter 为 null，但当前分类不是"全部"，用当前分类筛选
-else if (currentSubject === "chinese" && currentChineseTag !== '全部') {
-    baseList = baseList.filter(q => q.tag === currentChineseTag);
-    if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-        baseList = baseList.filter(q => q.subTag === currentChineseSubTag);
+    
+    // ========== 分类筛选 ==========
+    if (reviewContextFilter) {
+        // 有具体分类筛选
+        baseList = baseList.filter(q => q.tag === reviewContextFilter);
+        if (reviewContextFilter === "基础知识" && reviewContextSubFilter && reviewContextSubFilter !== "全部") {
+            baseList = baseList.filter(q => q.subTag === reviewContextSubFilter);
+        }
+    } else {
+        // reviewContextFilter 为 null，使用当前分类
+        if (currentSubject === "chinese") {
+            if (currentChineseTag !== '全部') {
+                baseList = baseList.filter(q => q.tag === currentChineseTag);
+                if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                    baseList = baseList.filter(q => q.subTag === currentChineseSubTag);
+                }
+            }
+            // 如果 currentChineseTag === '全部'，不过滤
+        } else {
+            // ========== 数学：如果 currentMathTag !== '全部'，按分类筛选 ==========
+            if (currentMathTag !== '全部') {
+                baseList = baseList.filter(q => q.tag === currentMathTag);
+            }
+            // 如果 currentMathTag === '全部'，不过滤，显示所有数学错题
+        }
     }
-} else if (currentSubject === "math" && currentMathTag !== '全部') {
-    baseList = baseList.filter(q => q.tag === currentMathTag);
-}
-
-
-// ========== 添加单元筛选（复习模式） ==========
+    
+    // ========== 添加单元筛选（复习模式） ==========
     if (currentFilter === "unit" && customUnitKeyword) {
         baseList = baseList.filter(q => q.unit && q.unit === customUnitKeyword);
     }
-
-// 如果 reviewContextFilter 为 null 且当前分类是"全部"，不过滤，显示全部
     
     // ========== 核心：做对隐藏，做错推到下周 ==========
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().slice(0, 10);
     
-// 【新增】下月筛选 - 显示下个月所有错题
-// 下月筛选 - 显示下个月需要复习的错题
-if (currentFilter === "nextMonth") {
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth() + 1;
-    let nextMonth = currentMonth + 1;
-    let nextYear = currentYear;
-    if (nextMonth > 12) {
-        nextMonth = 1;
-        nextYear++;
+    // 【新增】下月筛选 - 显示下个月所有错题
+    if (currentFilter === "nextMonth") {
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        let nextMonth = currentMonth + 1;
+        let nextYear = currentYear;
+        if (nextMonth > 12) {
+            nextMonth = 1;
+            nextYear++;
+        }
+        const nextMonthStr = String(nextMonth).padStart(2, '0');
+        
+        baseList = baseList.filter(q => {
+            let checkDate = q._nextReviewDate || q.date;
+            if (!checkDate) return false;
+            const [year, month] = checkDate.split('-');
+            return year === String(nextYear) && month === nextMonthStr;
+        });
+        baseList.sort((a, b) => (b._nextReviewDate || b.date || '').localeCompare(a._nextReviewDate || a.date || ''));
+        return baseList;
     }
-    const nextMonthStr = String(nextMonth).padStart(2, '0');
     
-    baseList = baseList.filter(q => {
-        // 优先使用 _nextReviewDate，如果没有则使用 date
-        let checkDate = q._nextReviewDate || q.date;
-        if (!checkDate) return false;
-        const [year, month] = checkDate.split('-');
-        return year === String(nextYear) && month === nextMonthStr;
-    });
-    baseList.sort((a, b) => (b._nextReviewDate || b.date || '').localeCompare(a._nextReviewDate || a.date || ''));
-    console.log(`下月筛选结果: ${baseList.length} 条`);
-    return baseList;
-}
-
-    // 调试：打印所有卡片的 _nextReviewDate
-    console.log('=== 所有卡片的复习状态 ===');
-    baseList.forEach(q => {
-        if (q._nextReviewDate) {
-            console.log(`📅 ${q.question.substring(0, 20)} - 下次复习: ${q._nextReviewDate} (今天: ${todayStr})`);
-        }
-        if (q._mastered) {
-            console.log(`✅ ${q.question.substring(0, 20)} - 已掌握`);
-        }
-    });
-    
-   // 第一步过滤：只过滤已掌握的
-
-// 第一步过滤：只过滤已掌握的（今日和本月筛选除外）
-// 第一步过滤：只过滤已掌握的（全部、今日、本月、下月筛选除外）
-if (currentFilter !== "all" && currentFilter !== "today" && currentFilter !== "month" && currentFilter !== "nextMonth") {
-    baseList = baseList.filter(q => {
-        if (q._mastered === true) {
-            console.log(`⏭️ 过滤(已掌握): ${q.question.substring(0, 20)}`);
-            return false;
-        }
-        return true;
-    });
-} else {
-    console.log(`当前筛选模式 ${currentFilter}，跳过已掌握过滤`);
-}
-// 今日和本月筛选不过滤已掌握的卡片
-
+    // 过滤已掌握的（今日和本月筛选除外）
+    if (currentFilter !== "all" && currentFilter !== "today" && currentFilter !== "month" && currentFilter !== "nextMonth") {
+        baseList = baseList.filter(q => {
+            if (q._mastered === true) {
+                return false;
+            }
+            return true;
+        });
+    }
     
     // 过滤掉会话内临时隐藏的卡片
     baseList = baseList.filter(q => !q._hiddenInCurrentSession);
@@ -3802,143 +3785,95 @@ if (currentFilter !== "all" && currentFilter !== "today" && currentFilter !== "m
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
     
-// 今日筛选 - 只显示今天需要复习的
-if (currentFilter === "today") {
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
-   
-    
-    baseList = baseList.filter(q => {
-        // 1. 如果有 _nextReviewDate 
-        if (q._nextReviewDate) {
-            // 只有 _nextReviewDate 等于今天才显示
-            // 如果 _nextReviewDate 是未来日期（如下个月），则不显示
-            return q._nextReviewDate === todayStr;
-        }
+    // 今日筛选
+    if (currentFilter === "today") {
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         
-        // 2. 没有 _nextReviewDate，使用原日期
-        return q.date === todayStr;
-    });
-    
-    baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    
-    return baseList;
-}
-
-// 本周筛选（周一到周日）
-// 本周筛选（周一到周日）
-if (currentFilter === "week") {
-    const dayOfWeek = today.getDay();
-    const diffToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - diffToMonday);
-    const mondayStr = getDateStr(monday);
-    
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    const sundayStr = getDateStr(sunday);
-    
-    
-    
-    baseList = baseList.filter(q => {
-        // 【修复】如果有 _nextReviewDate，就只用它判断
-        // 如果 _nextReviewDate 存在且大于今天（未来日期），则本周不显示
-        // 如果 _nextReviewDate 存在且在 <= 今天，则按它判断
-        // 如果没有 _nextReviewDate，才用原日期
-        let checkDate;
-        
-        if (q._nextReviewDate) {
-            // 有下次复习日期，使用它
-            checkDate = q._nextReviewDate;
-            // 如果下次复习日期在未来（> 今天），本周不显示
-            if (checkDate > todayStr) {
-                console.log(`⏭️ 跳过(未来日期): ${q.question.substring(0, 20)} (下次复习: ${checkDate})`);
-                return false;
+        baseList = baseList.filter(q => {
+            if (q._nextReviewDate) {
+                return q._nextReviewDate === todayStr;
             }
-        } else {
-            // 没有下次复习日期，使用原日期
-            checkDate = q.date;
-        }
+            return q.date === todayStr;
+        });
+        baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        return baseList;
+    }
+    
+    // 本周筛选
+    if (currentFilter === "week") {
+        const dayOfWeek = today.getDay();
+        const diffToMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - diffToMonday);
+        const mondayStr = getDateStr(monday);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        const sundayStr = getDateStr(sunday);
         
-        if (!checkDate) return false;
-        const inRange = checkDate >= mondayStr && checkDate <= sundayStr;
-        if (inRange) {
-            console.log(`✅ 本周显示: ${q.question.substring(0, 20)} (判断日期: ${checkDate})`);
-        }
-        return inRange;
-    });
-    baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        baseList = baseList.filter(q => {
+            let checkDate;
+            if (q._nextReviewDate) {
+                checkDate = q._nextReviewDate;
+                if (checkDate > todayStr) {
+                    return false;
+                }
+            } else {
+                checkDate = q.date;
+            }
+            if (!checkDate) return false;
+            return checkDate >= mondayStr && checkDate <= sundayStr;
+        });
+        baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        return baseList;
+    }
     
-    return baseList;
-}// 下周筛选
-if (currentFilter === "nextWeek") {
-    const dayOfWeek = today.getDay();
-    const diffToNextMonday = (dayOfWeek === 0 ? 1 : 8 - dayOfWeek);
-    const nextMonday = new Date(today);
-    nextMonday.setDate(today.getDate() + diffToNextMonday);
-    const nextMondayStr = getDateStr(nextMonday);
+    // 下周筛选
+    if (currentFilter === "nextWeek") {
+        const dayOfWeek = today.getDay();
+        const diffToNextMonday = (dayOfWeek === 0 ? 1 : 8 - dayOfWeek);
+        const nextMonday = new Date(today);
+        nextMonday.setDate(today.getDate() + diffToNextMonday);
+        const nextMondayStr = getDateStr(nextMonday);
+        const nextSunday = new Date(nextMonday);
+        nextSunday.setDate(nextMonday.getDate() + 6);
+        const nextSundayStr = getDateStr(nextSunday);
+        
+        baseList = baseList.filter(q => {
+            const checkDate = q._nextReviewDate || q.date;
+            if (!checkDate) return false;
+            return checkDate >= nextMondayStr && checkDate <= nextSundayStr;
+        });
+        baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        return baseList;
+    }
     
-    const nextSunday = new Date(nextMonday);
-    nextSunday.setDate(nextMonday.getDate() + 6);
-    const nextSundayStr = getDateStr(nextSunday);
+    // 本月筛选
+    if (currentFilter === "month") {
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        const currentMonthStr = String(currentMonth).padStart(2, '0');
+        
+        baseList = baseList.filter(q => {
+            let checkDate = q._nextReviewDate || q.date;
+            if (!checkDate) return false;
+            const [year, month] = checkDate.split('-');
+            return year === String(currentYear) && month === currentMonthStr;
+        });
+        baseList.sort((a, b) => (b._nextReviewDate || b.date || '').localeCompare(a._nextReviewDate || a.date || ''));
+        return baseList;
+    }
     
-    
-    
-    // 【关键修复】使用 _nextReviewDate 来判断是否在下周显示
-    baseList = baseList.filter(q => {
-        // 优先使用 _nextReviewDate，如果没有则用原日期
-        const checkDate = q._nextReviewDate || q.date;
-        if (!checkDate) return false;
-        const inRange = checkDate >= nextMondayStr && checkDate <= nextSundayStr;
-        if (inRange) {
-            console.log(`✅ 下周显示: ${q.question} (判断日期: ${checkDate})`);
-        }
-        return inRange;
-    });
-    baseList.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
-    return baseList;
-}
-
-
-
-// 本月筛选 - 按原始日期筛选，不过滤已掌握
-// 本月筛选 - 显示本月需要复习的错题
-if (currentFilter === "month") {
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth() + 1;
-    const currentMonthStr = String(currentMonth).padStart(2, '0');
-    
-    baseList = baseList.filter(q => {
-        // 优先使用 _nextReviewDate，如果没有则使用 date
-        let checkDate = q._nextReviewDate || q.date;
-        if (!checkDate) return false;
-        const [year, month] = checkDate.split('-');
-        return year === String(currentYear) && month === currentMonthStr;
-    });
-    baseList.sort((a, b) => (b._nextReviewDate || b.date || '').localeCompare(a._nextReviewDate || a.date || ''));
-    
-    return baseList;
-}
-
-
-    
-
     // 全部筛选 - 显示所有错题（包括已掌握的）
-if (currentFilter === "all") {
-    // 不过滤 _mastered，显示全部
-    // 按日期倒序排序
-    baseList.sort((a, b) => {
-        const dateA = a.date || '';
-        const dateB = b.date || '';
-        return dateB.localeCompare(dateA);
-    });
-    console.log(`全部筛选结果: ${baseList.length} 条`);
-    return baseList;
-}
-
-
+    if (currentFilter === "all") {
+        baseList.sort((a, b) => {
+            const dateA = a.date || '';
+            const dateB = b.date || '';
+            return dateB.localeCompare(dateA);
+        });
+        return baseList;
+    }
+    
     // 默认：按日期倒序
     baseList.sort((a, b) => {
         const dateA = a.date || '';
@@ -3949,31 +3884,41 @@ if (currentFilter === "all") {
     return baseList;
 }
 
-
-
 function getAllUnits() {
     let baseList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
     
-    // 按当前页面分类筛选
-    if (reviewContextFilter) {
-        baseList = baseList.filter(q => q.tag === reviewContextFilter);
-        if (reviewContextFilter === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-            baseList = baseList.filter(q => q.subTag === currentChineseSubTag);
-        }
-    } else {
-        if (currentSubject === "chinese") {
+    // ========== 添加年级筛选 ==========
+    if (currentGradeFilter !== '全部') {
+        baseList = baseList.filter(q => q.grade === currentGradeFilter);
+    }
+    
+    // ========== 分类筛选 ==========
+    if (currentSubject === "chinese") {
+        // 如果 reviewContextFilter 有值，用它筛选
+        if (reviewContextFilter) {
+            baseList = baseList.filter(q => q.tag === reviewContextFilter);
+            if (reviewContextFilter === "基础知识" && reviewContextSubFilter && reviewContextSubFilter !== "全部") {
+                baseList = baseList.filter(q => q.subTag === reviewContextSubFilter);
+            }
+        } else if (currentChineseTag !== '全部') {
+            // 如果当前分类不是"全部"，用当前分类筛选
             baseList = baseList.filter(q => q.tag === currentChineseTag);
             if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
                 baseList = baseList.filter(q => q.subTag === currentChineseSubTag);
             }
         }
+        // 如果 currentChineseTag === '全部'，不过滤分类
+    } else {
+        // 数学
+        if (reviewContextFilter) {
+            baseList = baseList.filter(q => q.tag === reviewContextFilter);
+        } else if (currentMathTag !== '全部') {
+            baseList = baseList.filter(q => q.tag === currentMathTag);
+        }
+        // 如果 currentMathTag === '全部'，不过滤分类
     }
-
-
-
-
     
-    // 提取所有有单元的项目
+    // ========== 提取所有有单元的项目 ==========
     const unitsSet = new Set();
     baseList.forEach(item => {
         if (item.unit && item.unit.trim()) {
@@ -3981,9 +3926,7 @@ function getAllUnits() {
         }
     });
     return Array.from(unitsSet).sort();
-}
-
-// 打开单元选择弹窗
+}// 打开单元选择弹窗
 function openUnitModal(btnElement) {
     const units = getAllUnits();
     const unitListDiv = document.getElementById('unitList');
@@ -4015,25 +3958,45 @@ function closeUnitModal() {
 
 // 选择单元并筛选
 // 选择单元并筛选
+// 选择单元并筛选
 function selectUnit(unit) {
     closeUnitModal();
     currentFilter = "unit";
     customUnitKeyword = unit;
     
-    // 获取该单元下的错题数量
+    // 获取该单元下的错题数量（考虑年级和分类筛选）
     const allList = currentSubject === "chinese" ? [...chineseErrors] : [...mathErrors];
     let count = 0;
     
-    // 根据当前分类筛选
-    if (currentSubject === "chinese") {
-        let filtered = allList.filter(item => item.tag === currentChineseTag);
-        if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
-            filtered = filtered.filter(item => item.subTag === currentChineseSubTag);
-        }
-        count = filtered.filter(item => item.unit === unit).length;
-    } else {
-        count = allList.filter(item => item.tag === currentMathTag && item.unit === unit).length;
+    // ========== 先按年级筛选 ==========
+    let filtered = allList;
+    if (currentGradeFilter !== '全部') {
+        filtered = filtered.filter(item => item.grade === currentGradeFilter);
     }
+    
+    // ========== 再按分类筛选 ==========
+    if (currentSubject === "chinese") {
+        if (reviewContextFilter) {
+            filtered = filtered.filter(item => item.tag === reviewContextFilter);
+            if (reviewContextFilter === "基础知识" && reviewContextSubFilter && reviewContextSubFilter !== "全部") {
+                filtered = filtered.filter(item => item.subTag === reviewContextSubFilter);
+            }
+        } else if (currentChineseTag !== '全部') {
+            filtered = filtered.filter(item => item.tag === currentChineseTag);
+            if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                filtered = filtered.filter(item => item.subTag === currentChineseSubTag);
+            }
+        }
+    } else {
+        if (reviewContextFilter) {
+            filtered = filtered.filter(item => item.tag === reviewContextFilter);
+        } else if (currentMathTag !== '全部') {
+            filtered = filtered.filter(item => item.tag === currentMathTag);
+        }
+    }
+    
+    // ========== 最后按单元筛选 ==========
+    count = filtered.filter(item => item.unit === unit).length;
     
     // 修改按钮文字为"单元名称 (数量)"
     if (window.currentUnitBtn) {
@@ -4052,7 +4015,6 @@ function selectUnit(unit) {
     
     openReviewWithCurrentFilter();
 }
-
 // 清除单元筛选
 function clearUnitFilter() {
     currentFilter = "all";
@@ -4113,55 +4075,91 @@ function updateFilterCounts() {
         return list;
     }
     
-    // 统计全部数量
+    // ========== 获取当前分类筛选 ==========
+    function applyCategoryFilter(list) {
+        if (currentSubject === "chinese") {
+            if (reviewContextFilter) {
+                list = list.filter(q => q.tag === reviewContextFilter);
+                if (reviewContextFilter === "基础知识" && reviewContextSubFilter && reviewContextSubFilter !== "全部") {
+                    list = list.filter(q => q.subTag === reviewContextSubFilter);
+                }
+            } else if (currentChineseTag !== '全部') {
+                list = list.filter(q => q.tag === currentChineseTag);
+                if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
+                    list = list.filter(q => q.subTag === currentChineseSubTag);
+                }
+            }
+        } else {
+            if (reviewContextFilter) {
+                list = list.filter(q => q.tag === reviewContextFilter);
+            } else if (currentMathTag !== '全部') {
+                list = list.filter(q => q.tag === currentMathTag);
+            }
+        }
+        return list;
+    }
+    
+    // ========== 统计全部数量（临时切换到 all） ==========
     currentFilter = "all";
     customUnitKeyword = "";
     let allList = getFilteredQuestionsForReview();
     allList = applyGradeFilter(allList);
+    allList = applyCategoryFilter(allList);
     const allCount = document.getElementById('allCount');
     if (allCount) allCount.textContent = `(${allList.length})`;
     
-    // 统计今日数量
+    // ========== 统计今日数量 ==========
     currentFilter = "today";
     customUnitKeyword = "";
     let todayList = getFilteredQuestionsForReview();
     todayList = applyGradeFilter(todayList);
+    todayList = applyCategoryFilter(todayList);
     const todayCount = document.getElementById('todayCount');
     if (todayCount) todayCount.textContent = `(${todayList.length})`;
     
-    // 统计本周数量
+    // ========== 统计本周数量 ==========
     currentFilter = "week";
+    customUnitKeyword = "";
     let weekList = getFilteredQuestionsForReview();
     weekList = applyGradeFilter(weekList);
+    weekList = applyCategoryFilter(weekList);
     const weekCount = document.getElementById('weekCount');
     if (weekCount) weekCount.textContent = `(${weekList.length})`;
     
-    // 统计下周数量
+    // ========== 统计下周数量 ==========
     currentFilter = "nextWeek";
+    customUnitKeyword = "";
     let nextWeekList = getFilteredQuestionsForReview();
     nextWeekList = applyGradeFilter(nextWeekList);
+    nextWeekList = applyCategoryFilter(nextWeekList);
     const nextWeekCount = document.getElementById('nextWeekCount');
     if (nextWeekCount) nextWeekCount.textContent = `(${nextWeekList.length})`;
     
-    // 统计本月数量
+    // ========== 统计本月数量 ==========
     currentFilter = "month";
+    customUnitKeyword = "";
     let monthList = getFilteredQuestionsForReview();
     monthList = applyGradeFilter(monthList);
+    monthList = applyCategoryFilter(monthList);
     const monthCount = document.getElementById('monthCount');
     if (monthCount) monthCount.textContent = `(${monthList.length})`;
     
-    // 统计下月数量
+    // ========== 统计下月数量 ==========
     currentFilter = "nextMonth";
+    customUnitKeyword = "";
     let nextMonthList = getFilteredQuestionsForReview();
     nextMonthList = applyGradeFilter(nextMonthList);
+    nextMonthList = applyCategoryFilter(nextMonthList);
     const nextMonthCount = document.getElementById('nextMonthCount');
     if (nextMonthCount) nextMonthCount.textContent = `(${nextMonthList.length})`;
     
-    // 统计单元数量
+    // ========== 统计单元数量 ==========
+    // 临时切换到 all 获取所有数据
     currentFilter = "all";
     customUnitKeyword = "";
     let allListForUnit = getFilteredQuestionsForReview();
     allListForUnit = applyGradeFilter(allListForUnit);
+    allListForUnit = applyCategoryFilter(allListForUnit);
     
     // 按单元分组统计
     const unitMap = new Map();
@@ -4175,8 +4173,9 @@ function updateFilterCounts() {
     // 更新单元数量显示
     const unitCountSpan = document.getElementById('unitCount');
     if (unitCountSpan) {
-        if (currentFilter === "unit" && customUnitKeyword) {
-            const specificCount = unitMap.get(customUnitKeyword) || 0;
+        // 如果当前选中了具体单元，显示该单元的数量
+        if (previousFilter === "unit" && previousUnit) {
+            const specificCount = unitMap.get(previousUnit) || 0;
             unitCountSpan.textContent = `(${specificCount})`;
         } else {
             const totalUnits = unitMap.size;
@@ -4184,7 +4183,7 @@ function updateFilterCounts() {
         }
     }
     
-    // 恢复原来的筛选状态
+    // ========== 恢复原来的筛选状态 ==========
     currentFilter = previousFilter;
     customUnitKeyword = previousUnit;
 }
@@ -9085,7 +9084,6 @@ console.log('本地数据加载完成，是否有数据:', hasLocalData);
 // 绑定复习模式按钮
 // 绑定复习模式按钮
 openReviewBtn.addEventListener('click', () => {
-    // 设置复习筛选的分类为当前选中的分类
     if (currentSubject === "chinese") {
         if (currentChineseTag === '全部') {
             reviewContextFilter = null;
@@ -9098,20 +9096,20 @@ openReviewBtn.addEventListener('click', () => {
             reviewContextSubFilter = null;
         }
     } else {
+        // ========== 数学 ==========
         if (currentMathTag === '全部') {
-            reviewContextFilter = null;
+            reviewContextFilter = null;  // 全部时设为 null
         } else {
             reviewContextFilter = currentMathTag;
         }
         reviewContextSubFilter = null;
     }
     
-    // ========== 自动同步主界面的单元筛选 ==========
+    // 自动同步主界面的单元筛选
     const filterUnit = document.getElementById('filterUnit')?.value || '全部';
     if (filterUnit !== '全部') {
         currentFilter = "unit";
         customUnitKeyword = filterUnit;
-        // 更新单元按钮的显示
         const selectUnitBtn = document.getElementById('selectUnitBtn');
         if (selectUnitBtn) {
             selectUnitBtn.innerHTML = filterUnit + ' <span class="filter-count">(计算中)</span>';
@@ -9122,7 +9120,6 @@ openReviewBtn.addEventListener('click', () => {
             clearUnitBtn.style.display = 'inline-block';
         }
     } else {
-        // 如果主界面没有选单元，重置复习的单元筛选
         if (currentFilter === "unit") {
             currentFilter = "all";
             customUnitKeyword = "";
@@ -9139,7 +9136,6 @@ openReviewBtn.addEventListener('click', () => {
     
     openReviewWithCurrentFilter();
 });
-
 
 // ========== 关闭复习按钮 ==========
 if (closeReviewBtn) {
