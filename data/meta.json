@@ -1,9 +1,9 @@
 {
-  "gradeFilter": "一下",
-  "subject": "chinese",
-  "chineseTag": "基础知识",
+  "gradeFilter": "二上",
+  "subject": "math",
+  "chineseTag": "全部",
   "chineseSubTag": "全部",
-  "mathTag": "计算",
-  "lastUpdate": "2026-07-31T04:17:15.413Z",
+  "mathTag": "全部",
+  "lastUpdate": "2026-07-31T06:38:59.621Z",
   "version": "2.0"
 }
