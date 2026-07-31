@@ -3701,7 +3701,7 @@
       "tag": "基础知识",
       "subTag": "拼音",
       "grade": "二上",
-      "unit": "第四单元·语文园地四",
+      "unit": "第四单元",
       "question": "订",
       "wrongAnswer": "",
       "correctAnswer": "",
@@ -3715,14 +3715,15 @@
       "questionImages": [],
       "wrongImages": [],
       "correctImages": [],
-      "_correctPinyinHtml": "未填写"
+      "_correctPinyinHtml": "未填写",
+      "text": "语文园地四"
     },
     {
       "id": "ch_1785420118873",
       "tag": "基础知识",
       "subTag": "拼音",
       "grade": "二上",
-      "unit": "第四单元·语文园地四",
+      "unit": "第四单元",
       "question": "付",
       "wrongAnswer": "",
       "correctAnswer": "",
@@ -3736,14 +3737,15 @@
       "questionImages": [],
       "wrongImages": [],
       "correctImages": [],
-      "_correctPinyinHtml": "未填写"
+      "_correctPinyinHtml": "未填写",
+      "text": "语文园地四"
     },
     {
       "id": "ch_1785420175103",
       "tag": "基础知识",
       "subTag": "拼音",
       "grade": "二上",
-      "unit": "第四单元·10 葡萄沟",
+      "unit": "第四单元",
       "question": "钉",
       "wrongAnswer": "",
       "correctAnswer": "",
@@ -3757,14 +3759,15 @@
       "questionImages": [],
       "wrongImages": [],
       "correctImages": [],
-      "_correctPinyinHtml": "未填写"
+      "_correctPinyinHtml": "未填写",
+      "text": "10 葡萄沟"
     },
     {
       "id": "ch_1785420271481",
       "tag": "基础知识",
       "subTag": "生字",
       "grade": "二上",
-      "unit": "第四单元·10 葡萄沟",
+      "unit": "第四单元",
       "question": "dìng 牢",
       "wrongAnswer": "",
       "correctAnswer": "",
@@ -3777,7 +3780,8 @@
       "reviewHistory": [],
       "questionImages": [],
       "wrongImages": [],
-      "correctImages": []
+      "correctImages": [],
+      "text": "10 葡萄沟"
     }
   ],
   "mathErrors": [
@@ -4242,6 +4246,6 @@
       "correctImages": []
     }
   ],
-  "lastUpdate": "2026-07-31T00:37:05.995Z",
+  "lastUpdate": "2026-07-31T00:43:01.306Z",
   "version": "2.0"
 }
