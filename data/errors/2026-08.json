@@ -3188,7 +3188,9 @@
       "question": "轻",
       "wrongAnswer": "车子旁笔顺",
       "correctAnswer": "",
-      "reasons": [],
+      "reasons": [
+        "车字旁"
+      ],
       "labels": [],
       "source": "预习过关",
       "date": "2026-07-07",
@@ -3197,7 +3199,8 @@
       "reviewHistory": [],
       "questionImages": [],
       "wrongImages": [],
-      "correctImages": []
+      "correctImages": [],
+      "text": ""
     },
     {
       "id": "ch_1783426753971",
@@ -4385,6 +4388,6 @@
       "correctImages": []
     }
   ],
-  "lastUpdate": "2026-08-13T14:44:56.508Z",
+  "lastUpdate": "2026-08-13T14:57:53.829Z",
   "version": "2.0"
 }
