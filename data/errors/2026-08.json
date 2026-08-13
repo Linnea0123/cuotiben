@@ -3204,7 +3204,7 @@
       "tag": "基础知识",
       "subTag": "笔顺",
       "grade": "二上",
-      "unit": "",
+      "unit": "第一单元",
       "question": "更",
       "wrongAnswer": "重复",
       "correctAnswer": "",
@@ -3217,27 +3217,8 @@
       "reviewHistory": [],
       "questionImages": [],
       "wrongImages": [],
-      "correctImages": []
-    },
-    {
-      "id": "ch_1783426787894",
-      "tag": "基础知识",
-      "subTag": "笔顺",
-      "grade": "二上",
-      "unit": "",
-      "question": "转",
-      "wrongAnswer": "车子旁笔顺",
-      "correctAnswer": "",
-      "reasons": [],
-      "labels": [],
-      "source": "第二单元",
-      "date": "2026-07-07",
-      "createdAt": 1783426787894,
-      "reviewCount": 0,
-      "reviewHistory": [],
-      "questionImages": [],
-      "wrongImages": [],
-      "correctImages": []
+      "correctImages": [],
+      "text": "3 植物妈妈有办法"
     },
     {
       "id": "ch_1783433061805",
@@ -3826,6 +3807,27 @@
       "wrongImages": [],
       "correctImages": [],
       "_correctPinyinHtml": "未填写"
+    },
+    {
+      "id": "ch_1786631118434",
+      "tag": "基础知识",
+      "subTag": "笔顺",
+      "grade": "二上",
+      "unit": "第一单元",
+      "text": "3 植物妈妈有办法",
+      "question": "转",
+      "wrongAnswer": "车字旁",
+      "correctAnswer": "",
+      "reasons": [],
+      "labels": [],
+      "source": "",
+      "date": "2026-08-13",
+      "createdAt": 1786631118434,
+      "reviewCount": 0,
+      "reviewHistory": [],
+      "questionImages": [],
+      "wrongImages": [],
+      "correctImages": []
     }
   ],
   "mathErrors": [
@@ -4380,6 +4382,6 @@
       "correctImages": []
     }
   ],
-  "lastUpdate": "2026-08-13T14:08:21.780Z",
+  "lastUpdate": "2026-08-13T14:31:53.529Z",
   "version": "2.0"
 }
