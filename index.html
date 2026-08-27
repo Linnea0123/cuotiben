@@ -5731,29 +5731,70 @@ async function handleImageUpload(event, target) {
 }
 
 // 渲染图片预览
+// 渲染图片 - 支持多 CDN 自动切换
 function renderImagesInCard(images, title = '', size = 'normal') {
     if (!images || images.length === 0) return '';
     
-    let html = `<div style="margin-top: 12px; width: 100%;">`;
+    if (typeof images === 'string') {
+        images = [images];
+    }
+    
+    // ========== 👇 生成多个 CDN 地址 ==========
+    function getCdnUrls(originalUrl) {
+        var fileName = originalUrl.split('/').pop();
+        // 提取路径中的 images/ 前缀
+        var pathMatch = originalUrl.match(/\/images\/(.+)/);
+        var filePath = pathMatch ? pathMatch[1] : fileName;
+        
+        return {
+            raw: originalUrl,
+            // 多个国内可用 CDN
+            cdnList: [
+                `https://mirror.ghproxy.com/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${filePath}`,
+                `https://ghproxy.net/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${filePath}`,
+                `https://gitmirror.com/raw/Linnea0123/cuotiben/main/images/${filePath}`,
+                `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${filePath}`
+            ],
+            best: `https://mirror.ghproxy.com/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${filePath}`
+        };
+    }
+    
+    var html = `<div style="margin-top: 12px; width: 100%;">`;
     if (title) {
         html += `<div style="font-size: 13px; color: #8e8e93; margin-bottom: 8px; font-weight: 500;">📷 ${title}：</div>`;
     }
     
     if (size === 'full') {
         images.forEach((img, idx) => {
+            var urls = getCdnUrls(img);
             html += `
-                <div style="width:100%;position:relative;background:#f8f9fc;border-radius:12px;overflow:hidden;margin-bottom:8px;border:0.5px solid #e9e9ef;cursor:pointer;" onclick="openImageViewer('${img}')">
+                <div style="width:100%;position:relative;background:#f8f9fc;border-radius:12px;overflow:hidden;margin-bottom:8px;border:0.5px solid #e9e9ef;cursor:pointer;min-height:120px;" onclick="openImageViewer('${img}')">
                     <div style="width:100%;padding-bottom:30%;"></div>
-                    <img src="${img}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:block;" alt="图片${idx+1}">
+                    <img src="${urls.best}" 
+                         style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:block;" 
+                         alt="图片${idx+1}"
+                         loading="lazy"
+                         data-original="${img}"
+                         data-cdn-index="0"
+                         data-cdn-list='${JSON.stringify(urls.cdnList)}'
+                         onerror="this.onerror=null;tryNextCdn(this)">
                 </div>
             `;
         });
     } else {
         html += `<div style="display:flex;gap:10px;flex-wrap:wrap;">`;
         images.forEach((img, idx) => {
+            var urls = getCdnUrls(img);
             html += `
-                <div style="width:100px;height:100px;flex-shrink:0;background:#f8f9fc;border-radius:8px;overflow:hidden;border:0.5px solid #e9e9ef;cursor:pointer;" onclick="openImageViewer('${img}')">
-                    <img src="${img}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="图片${idx+1}">
+                <div style="width:100px;height:100px;flex-shrink:0;background:#f8f9fc;border-radius:8px;overflow:hidden;border:0.5px solid #e9e9ef;cursor:pointer;min-height:100px;" onclick="openImageViewer('${img}')">
+                    <img src="${urls.best}" 
+                         style="width:100%;height:100%;object-fit:cover;display:block;" 
+                         alt="图片${idx+1}"
+                         loading="lazy"
+                         data-original="${img}"
+                         data-cdn-index="0"
+                         data-cdn-list='${JSON.stringify(urls.cdnList)}'
+                         onerror="this.onerror=null;tryNextCdn(this)">
                 </div>
             `;
         });
@@ -5764,7 +5805,38 @@ function renderImagesInCard(images, title = '', size = 'normal') {
     return html;
 }
 
-
+// ========== 👇 CDN 切换函数 ==========
+function tryNextCdn(imgElement) {
+    var cdnList = JSON.parse(imgElement.getAttribute('data-cdn-list') || '[]');
+    var currentIndex = parseInt(imgElement.getAttribute('data-cdn-index') || '0');
+    
+    // 如果还有下一个 CDN
+    if (currentIndex + 1 < cdnList.length) {
+        var nextIndex = currentIndex + 1;
+        imgElement.setAttribute('data-cdn-index', nextIndex);
+        imgElement.src = cdnList[nextIndex];
+        console.log(`🔄 切换到 CDN ${nextIndex + 1}/${cdnList.length}`);
+    } else {
+        // 所有 CDN 都失败了，显示占位图
+        imgElement.style.display = 'none';
+        var parent = imgElement.parentElement;
+        if (parent) {
+            // 避免重复添加
+            if (!parent.querySelector('.img-error-placeholder')) {
+                var placeholder = document.createElement('div');
+                placeholder.className = 'img-error-placeholder';
+                placeholder.style.cssText = `
+                    display:flex;align-items:center;justify-content:center;
+                    width:100%;height:100%;background:#f0f0f0;color:#999;
+                    font-size:12px;min-height:100px;border-radius:8px;
+                `;
+                placeholder.textContent = '📷 图片加载失败';
+                parent.appendChild(placeholder);
+            }
+        }
+        console.warn('❌ 所有 CDN 都加载失败');
+    }
+}
 // 显示已有的图片（编辑时）
 function displayExistingImages(target, imageUrls) {
     if (!tempImages[target]) tempImages[target] = [];
