@@ -8924,24 +8924,50 @@ function openCropModal(imageUrl, target, file) {
     modal.style.display = 'flex';
     
     const img = document.getElementById('cropImage');
-    
-    // 👈 先清空图片，避免缓存问题
     img.src = '';
     img.onload = null;
     img.onerror = null;
     
-    // 延迟加载图片，确保 DOM 更新
+    // 👇 添加一个加载状态提示
+    const container = img.parentElement;
+    const loadingHint = document.createElement('div');
+    loadingHint.id = 'cropLoadingHint';
+    loadingHint.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#999;font-size:14px;z-index:10;';
+    loadingHint.textContent = '⏳ 加载中...';
+    container.style.position = 'relative';
+    container.appendChild(loadingHint);
+    
     setTimeout(function() {
         img.src = imageUrl;
-        // 如果图片已经缓存，complete 可能为 true
-        if (img.complete && img.naturalWidth > 0) {
+        img.onload = function() {
+            // 移除加载提示
+            const hint = document.getElementById('cropLoadingHint');
+            if (hint) hint.remove();
+            
+            // 确保图片显示后初始化裁剪器
             setTimeout(function() {
                 initCropper(img);
+                // 🔥 额外延迟确保裁剪器完全激活
+                setTimeout(function() {
+                    if (cropper) {
+                        cropper.crop();
+                        var cropBox = document.querySelector('.cropper-crop-box');
+                        if (cropBox) {
+                            cropBox.style.outline = '2px solid #007aff';
+                            cropBox.style.outlineOffset = '-1px';
+                        }
+                        console.log('✅ 裁剪器已激活');
+                    }
+                }, 150);
             }, 100);
-        }
+        };
+        img.onerror = function() {
+            const hint = document.getElementById('cropLoadingHint');
+            if (hint) hint.textContent = '❌ 图片加载失败，请重试';
+            console.error('图片加载失败');
+        };
     }, 100);
 }
-
 
 // 打开裁剪弹窗（重新裁剪）
 // 打开裁剪弹窗（重新裁剪）
@@ -8976,7 +9002,7 @@ function initCropper(img) {
             cropper = new Cropper(img, {
                 aspectRatio: NaN,
                 viewMode: 0,
-                dragMode: 'crop',      // 🔥 裁剪模式
+                dragMode: 'crop',
                 autoCropArea: 1,
                 restore: false,
                 guides: true,
@@ -8990,6 +9016,7 @@ function initCropper(img) {
                         if (cropper) {
                             var imageData = cropper.getImageData();
                             if (imageData && imageData.naturalWidth > 0 && imageData.naturalHeight > 0) {
+                                // 裁剪框铺满图片
                                 cropper.setData({
                                     x: 0,
                                     y: 0,
@@ -8998,17 +9025,16 @@ function initCropper(img) {
                                 });
                                 console.log('✅ 裁剪框已设置');
                                 
-                                // 🔥🔥🔥 关键：自动进入裁剪模式
+                                // 🔥 关键：延迟一下再激活，确保 DOM 渲染完成
                                 setTimeout(function() {
-                                    cropper.crop();  // 激活裁剪框
-                                    // 高亮显示裁剪框
+                                    cropper.crop();
                                     var cropBox = document.querySelector('.cropper-crop-box');
                                     if (cropBox) {
                                         cropBox.style.outline = '2px solid #007aff';
                                         cropBox.style.outlineOffset = '-1px';
                                     }
-                                    console.log('✅ 已自动进入裁剪模式');
-                                }, 100);
+                                    console.log('✅ 裁剪模式已激活');
+                                }, 50);
                             }
                         }
                     } catch(e) {
@@ -9038,8 +9064,7 @@ function initCropper(img) {
             }
         }, 5000);
     }
-}
-// 关闭裁剪弹窗
+}// 关闭裁剪弹窗
 function closeCropModal() {
     document.getElementById('cropModal').style.display = 'none';
     if (cropper) {
