@@ -4314,9 +4314,9 @@
     },
     {
       "id": "math_1785479686556",
-      "tag": "应用题",
+      "tag": "方位",
       "grade": "二上",
-      "unit": "校园小导游",
+      "unit": "",
       "text": "",
       "question": "",
       "wrongAnswer": "",
@@ -4337,9 +4337,9 @@
     },
     {
       "id": "math_1785479823759",
-      "tag": "应用题",
+      "tag": "方位",
       "grade": "二上",
-      "unit": "校园小导游",
+      "unit": "",
       "text": "",
       "question": "",
       "wrongAnswer": "",
@@ -4711,6 +4711,6 @@
       "correctImages": []
     }
   ],
-  "lastUpdate": "2026-08-27T14:54:33.202Z",
+  "lastUpdate": "2026-08-27T15:00:17.578Z",
   "version": "2.0"
 }
