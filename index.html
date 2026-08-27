@@ -2539,7 +2539,6 @@ function showHistoryModal(itemId, subject, event) {
         recent.forEach((h, index) => {
             const resultClass = h.result === 'correct' ? 'popover-correct' : 'popover-wrong';
             const resultText = h.result === 'correct' ? '✅ 做对' : '❌ 做错';
-            // 记录在数组中的原始索引
             const originalIndex = item.reviewHistory.indexOf(h);
             html += `
                 <div class="popover-item" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
@@ -2556,9 +2555,36 @@ function showHistoryModal(itemId, subject, event) {
         html += `</div>`;
     }
     
+    // ========== 👇 新增：手动添加复习记录按钮 ==========
+    html += `
+        <div style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 0.5px solid #e9e9ef;">
+            <button class="manual-review-btn" data-id="${item.id}" data-subject="${subject}" data-result="correct" style="flex: 1; padding: 6px 0; border-radius: 20px; border: none; background: #34c759; color: white; font-size: 12px; font-weight: 500; cursor: pointer;">✅ 手动记录做对</button>
+            <button class="manual-review-btn" data-id="${item.id}" data-subject="${subject}" data-result="wrong" style="flex: 1; padding: 6px 0; border-radius: 20px; border: none; background: #ff3b30; color: white; font-size: 12px; font-weight: 500; cursor: pointer;">❌ 手动记录做错</button>
+        </div>
+    `;
+    
     html += `<button class="popover-close">关闭</button>`;
     popover.innerHTML = html;
     document.body.appendChild(popover);
+    
+    // ========== 👇 绑定手动添加按钮事件 ==========
+    popover.querySelectorAll('.manual-review-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const id = this.getAttribute('data-id');
+            const subject = this.getAttribute('data-subject');
+            const result = this.getAttribute('data-result');
+            
+            // 调用 recordReview 函数
+            recordReview(id, subject, result);
+            
+            // 刷新浮层
+            setTimeout(() => {
+                const newEvent = { target: document.querySelector(`[data-id="${id}"]`) };
+                showHistoryModal(id, subject, newEvent);
+            }, 300);
+        });
+    });
     
     // 绑定撤销按钮事件
     popover.querySelectorAll('.popover-undo-btn').forEach(btn => {
@@ -2619,7 +2645,6 @@ function showHistoryModal(itemId, subject, event) {
         });
     }, 100);
 }
-
 // ========== 撤销复习记录函数 ==========
 function undoReviewRecord(itemId, subject, recordIndex, popover) {
     const list = subject === "chinese" ? chineseErrors : mathErrors;
@@ -4781,26 +4806,14 @@ if (editCorrectEl) {
     autoResizeTextarea(editCorrectEl);
 }
 // 获取所有历史来源列表
-const sourceHistory = getSourceHistory();
+
+// 来源输入框 - 使用手机端兼容的自动补全
 if (editSourceEl) {
     editSourceEl.value = "";
-    // 添加 datalist 支持
-    const datalistId = 'sourceHistoryList';
-    let datalist = document.getElementById(datalistId);
-    if (!datalist) {
-        datalist = document.createElement('datalist');
-        datalist.id = datalistId;
-        document.body.appendChild(datalist);
-    }
-    // 更新 datalist 选项
-    datalist.innerHTML = '';
-    sourceHistory.forEach(source => {
-        const option = document.createElement('option');
-        option.value = source;
-        datalist.appendChild(option);
-    });
-    editSourceEl.setAttribute('list', datalistId);
+    initSourceAutoComplete(editSourceEl);
 }
+
+
 if (editUnitEl) editUnitEl.value = "";
 if (editGradeEl) editGradeEl.value = currentGradeFilter || "一下";
 if (editDateEl) editDateEl.value = new Date().toISOString().slice(0, 10);
@@ -4992,6 +5005,7 @@ function openReviewEditModal(errorId, subject) {
 }
 
 // 渲染复习编辑弹窗的图片预览
+// 渲染复习编辑弹窗的图片预览
 function renderReviewImagePreview(target) {
     const container = document.getElementById(`review${capitalize(target)}ImgPreview`);
     if (!container) return;
@@ -5005,27 +5019,31 @@ function renderReviewImagePreview(target) {
     let html = '';
     images.forEach((img, idx) => {
         html += `
-            <div class="img-preview-item">
-                <img src="${img}" alt="预览图">
-                <div class="remove-img" data-target="${target}" data-index="${idx}">×</div>
+            <div class="img-preview-item" style="position:relative;">
+                <img src="${img}" alt="预览图" style="width:100%; height:100%; object-fit:cover;">
+                <div class="remove-img" data-target="${target}" data-index="${idx}" style="position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.6); color:white; border-radius:50%; width:20px; height:20px; font-size:14px; text-align:center; line-height:20px; cursor:pointer; z-index:10; font-family:sans-serif;">×</div>
             </div>
         `;
     });
     container.innerHTML = html;
     
-    container.querySelectorAll('.remove-img').forEach(el => {
-        el.onclick = (e) => {
+    // ========== 【关键修复】使用 addEventListener 绑定删除事件 ==========
+    container.querySelectorAll('.remove-img').forEach(function(el) {
+        el.removeEventListener('click', el._clickHandler);
+        el._clickHandler = function(e) {
             e.stopPropagation();
-            const t = el.getAttribute('data-target');
-            const idx = parseInt(el.getAttribute('data-index'));
-            if (reviewTempImages[t] && reviewTempImages[t][idx]) {
-                reviewTempImages[t].splice(idx, 1);
-                renderReviewImagePreview(t);
+            const target = this.getAttribute('data-target');
+            const idx = parseInt(this.getAttribute('data-index'));
+            console.log('🗑️ 删除复习图片, target:', target, 'index:', idx);
+            
+            if (reviewTempImages[target] && reviewTempImages[target][idx] !== undefined) {
+                reviewTempImages[target].splice(idx, 1);
+                renderReviewImagePreview(target);
             }
         };
+        el.addEventListener('click', el._clickHandler);
     });
 }
-
 
 function saveReviewEdit() {
     console.log('保存按钮被点击', reviewEditingItem);
@@ -5144,9 +5162,7 @@ async function handleReviewImageUpload(event, target) {
         event.target.value = '';
     }
 }
-
 function openEditModal(errorId, subject) {
-
     document.querySelector('#editModal .modal-container h4').innerText = "编辑错题";
     const errorList = subject === "chinese" ? chineseErrors : mathErrors;
     const editItem = errorList.find(err => err.id === errorId);
@@ -5169,24 +5185,32 @@ function openEditModal(errorId, subject) {
     const subTagGroup = document.getElementById('subTagGroup');
     const reasonTagsContainer = document.getElementById("reasonTagsContainer");
     
-   // 先填充表单字段（在刷新类别之前）
-if (editQuestionEl) {
-    editQuestionEl.value = editItem.question || "";
-    autoResizeTextarea(editQuestionEl);
-}
-if (editWrongEl) {
-    editWrongEl.value = editItem.wrongAnswer || "";
-    autoResizeTextarea(editWrongEl);
-}
-if (editCorrectEl) {
-    editCorrectEl.value = editItem.correctAnswer || "";
-    autoResizeTextarea(editCorrectEl);
-}
-if (editSourceEl) editSourceEl.value = editItem.source || "";
-if (editUnitEl) editUnitEl.value = editItem.unit || "";
-if (editDateEl) editDateEl.value = editItem.date || "";
-if (editTextEl) editTextEl.value = editItem.text || "";  
-if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
+    // 先填充表单字段（在刷新类别之前）
+    if (editQuestionEl) {
+        editQuestionEl.value = editItem.question || "";
+        autoResizeTextarea(editQuestionEl);
+    }
+    if (editWrongEl) {
+        editWrongEl.value = editItem.wrongAnswer || "";
+        autoResizeTextarea(editWrongEl);
+    }
+    if (editCorrectEl) {
+        editCorrectEl.value = editItem.correctAnswer || "";
+        autoResizeTextarea(editCorrectEl);
+    }
+    
+    // ========== 来源输入框 - 使用手机端兼容的自动补全 ==========
+    if (editSourceEl) {
+        editSourceEl.value = editItem.source || "";
+        setTimeout(function() {
+            initSourceAutoComplete(editSourceEl);
+        }, 50);
+    }
+    
+    if (editUnitEl) editUnitEl.value = editItem.unit || "";
+    if (editDateEl) editDateEl.value = editItem.date || "";
+    if (editTextEl) editTextEl.value = editItem.text || "";  
+    if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
     
     // 设置二级分类的值（在刷新类别之前）
     if (editSubTagEl) {
@@ -5197,9 +5221,8 @@ if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
         }
     }
     
-    
     // 动态生成类别选项（这会重新创建 select 的 option）
-   refreshCategorySelect(subject, editItem.tag || "基础知识", editItem.grade || currentGradeFilter);
+    refreshCategorySelect(subject, editItem.tag || "基础知识", editItem.grade || currentGradeFilter);
     
     // 重新获取 editTagEl（因为 refreshCategorySelect 可能改变了内容）
     const editTagEl = document.getElementById("editTag");
@@ -5214,20 +5237,19 @@ if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
     }
     
     // 设置错误原因选项
-    // 设置错误原因选项
-const opts = subject === "chinese" ? chineseReasonOptions : mathReasonOptions;
-const selectedReasons = editItem.reasons || [];
-let tagsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;  // 👈 修改
-opts.forEach(opt => {
-    tagsHtml += `<div class="reason-tag ${selectedReasons.includes(opt) ? 'selected' : ''}" data-reason="${opt}" style="margin: 0; padding: 4px 10px; font-size: 12px;">${opt}</div>`;
-});
-tagsHtml += `</div>`;
-reasonTagsContainer.innerHTML = tagsHtml;
-document.querySelectorAll('.reason-tag').forEach(tag => {
-    tag.addEventListener('click', (e) => {
-        e.currentTarget.classList.toggle('selected');
+    const opts = subject === "chinese" ? chineseReasonOptions : mathReasonOptions;
+    const selectedReasons = editItem.reasons || [];
+    let tagsHtml = `<div style="display: flex; flex-wrap: wrap; gap: 4px;">`;
+    opts.forEach(opt => {
+        tagsHtml += `<div class="reason-tag ${selectedReasons.includes(opt) ? 'selected' : ''}" data-reason="${opt}" style="margin: 0; padding: 4px 10px; font-size: 12px;">${opt}</div>`;
     });
-});
+    tagsHtml += `</div>`;
+    reasonTagsContainer.innerHTML = tagsHtml;
+    document.querySelectorAll('.reason-tag').forEach(tag => {
+        tag.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('selected');
+        });
+    });
     
     // 图片加载
     tempImages = {
@@ -5253,49 +5275,49 @@ document.querySelectorAll('.reason-tag').forEach(tag => {
         };
     }
     
-    
     // 编辑模式下显示删除按钮
-const deleteInModalBtn = document.getElementById('deleteInModalBtn');
-if (deleteInModalBtn) {
-    deleteInModalBtn.style.display = 'inline-block';
-    // 先移除所有可能的事件监听器
-    const newDeleteBtn = deleteInModalBtn.cloneNode(true);
-    deleteInModalBtn.parentNode.replaceChild(newDeleteBtn, deleteInModalBtn);
-    const freshDeleteBtn = document.getElementById('deleteInModalBtn');
+    const deleteInModalBtn = document.getElementById('deleteInModalBtn');
+    if (deleteInModalBtn) {
+        deleteInModalBtn.style.display = 'inline-block';
+        const newDeleteBtn = deleteInModalBtn.cloneNode(true);
+        deleteInModalBtn.parentNode.replaceChild(newDeleteBtn, deleteInModalBtn);
+        const freshDeleteBtn = document.getElementById('deleteInModalBtn');
+        freshDeleteBtn.addEventListener('click', function() {
+            if (confirm('确定要删除这道错题吗？删除后不可恢复！')) {
+                closeModal();
+                deleteQuestion(errorId, subject);
+            }
+        });
+    }
     
-    freshDeleteBtn.addEventListener('click', function() {
-        if (confirm('确定要删除这道错题吗？删除后不可恢复！')) {
-            closeModal();
-            deleteQuestion(errorId, subject);
-        }
-    });
-}
-    
- // 【新增】滚动到顶部（在显示弹窗之前）
+    // 滚动到顶部（在显示弹窗之前）
     const modalContainer = document.querySelector('#editModal .modal-container');
     if (modalContainer) {
         modalContainer.scrollTop = 0;
     }
 
-// 加载已有标签
-if (editItem.labels && editItem.labels.length > 0) {
-    setSelectedLabels(editItem.labels);
-} else {
-    document.querySelectorAll('.label-tag').forEach(tag => {
-        tag.classList.remove('selected');
-    });
-}
-initLabelTags();
+    // 加载已有标签
+    if (editItem.labels && editItem.labels.length > 0) {
+        setSelectedLabels(editItem.labels);
+    } else {
+        document.querySelectorAll('.label-tag').forEach(tag => {
+            tag.classList.remove('selected');
+        });
+    }
+    initLabelTags();
 
     updateUnitOptionsInModal();
-updateTextPlaceholderInModal();
+    updateTextPlaceholderInModal();
     editModal.classList.add('active');
     // 强制滚动到顶部
-const container = editModal.querySelector('.modal-container');
-if (container) {
-    container.scrollTop = 0;
+    const container = editModal.querySelector('.modal-container');
+    if (container) {
+        container.scrollTop = 0;
+    }
 }
-}
+
+
+
 
 // 获取所有历史来源（去重，按使用频率排序）
 function getSourceHistory() {
@@ -5314,6 +5336,9 @@ function getSourceHistory() {
         .sort((a, b) => b[1] - a[1])
         .map(entry => entry[0]);
 }
+
+
+
 function saveEdit() {
 
     const newText = document.getElementById("editText").value;
@@ -5748,6 +5773,7 @@ function displayExistingImages(target, imageUrls) {
 }
 
 // 替换原来的 renderImagesInCard 函数
+// 渲染图片预览
 function renderImagePreview(target) {
     const container = document.getElementById(`${target}ImgPreview`);
     if (!container) return;
@@ -5763,13 +5789,35 @@ function renderImagePreview(target) {
         html += `
             <div class="img-preview-item" style="position:relative; cursor:pointer;" onclick="reCropImage('${target}', ${idx})" title="点击重新裁剪">
                 <img src="${img}" alt="预览图" style="width:100%; height:100%; object-fit:cover;">
-                <div class="remove-img" data-target="${target}" data-index="${idx}" onclick="event.stopPropagation();">×</div>
+                <div class="remove-img" data-target="${target}" data-index="${idx}" style="position:absolute; top:2px; right:2px; background:rgba(0,0,0,0.6); color:white; border-radius:50%; width:20px; height:20px; font-size:14px; text-align:center; line-height:20px; cursor:pointer; z-index:10; font-family:sans-serif;">×</div>
                 <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.5); color:white; font-size:10px; text-align:center; padding:2px 0;">点击裁剪</div>
             </div>
         `;
     });
     container.innerHTML = html;
+    
+    // ========== 【关键修复】使用 addEventListener 绑定删除事件 ==========
+    container.querySelectorAll('.remove-img').forEach(function(el) {
+        // 移除旧事件避免重复绑定
+        el.removeEventListener('click', el._clickHandler);
+        // 创建新的事件处理函数
+        el._clickHandler = function(e) {
+            e.stopPropagation();
+            const target = this.getAttribute('data-target');
+            const idx = parseInt(this.getAttribute('data-index'));
+            console.log('🗑️ 删除图片, target:', target, 'index:', idx);
+            
+            if (tempImages[target] && tempImages[target][idx] !== undefined) {
+                tempImages[target].splice(idx, 1);
+                renderImagePreview(target);
+                console.log('✅ 已删除, 剩余:', tempImages[target].length);
+            }
+        };
+        el.addEventListener('click', el._clickHandler);
+    });
 }
+
+
 function getFallbackUrls(originalUrl) {
     const fileName = originalUrl.split('/').pop();
     // 只保留可用的 CDN
@@ -9083,8 +9131,9 @@ function reCropImage(target, index) {
 // 确认裁剪并上传
 // 确认裁剪并上传
 // 确认裁剪并上传
+// 确认裁剪并上传
 function confirmCrop() {
-    console.log('📤 confirmCrop 被调用, cropTarget:', cropTarget);  // 👈 调试日志
+    console.log('📤 confirmCrop 被调用, cropTarget:', cropTarget);
     
     (async function() {
         // 检查 cropTarget 是否有效
@@ -9094,16 +9143,67 @@ function confirmCrop() {
             return;
         }
         
-        // 检查 cropper 是否存在
-        if (!cropper) {
-            alert('裁剪器未初始化，请稍后重试');
+        // ========== 【关键修复】直接从 DOM 获取裁剪器实例 ==========
+        var img = document.getElementById('cropImage');
+        var cropperInstance = null;
+        
+        // 如果全局 cropper 存在，使用它
+        if (cropper) {
+            cropperInstance = cropper;
+        } else if (img && img.cropper) {
+            // 如果 Cropper 挂载在 img 元素上
+            cropperInstance = img.cropper;
+        }
+        
+        // 如果还是没有，尝试重新初始化
+        if (!cropperInstance) {
+            console.warn('⚠️ 裁剪器未初始化，尝试重新初始化...');
+            if (img && img.src && img.complete && img.naturalWidth > 0) {
+                initCropper(img);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                cropperInstance = cropper;
+            }
+        }
+        
+        if (!cropperInstance) {
+            // 最后一次尝试：直接用 Cropper 重新创建
+            try {
+                if (img && img.src) {
+                    console.log('🔄 强制重新创建裁剪器...');
+                    if (cropper) {
+                        cropper.destroy();
+                        cropper = null;
+                    }
+                    cropper = new Cropper(img, {
+                        aspectRatio: NaN,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 1,
+                        restore: false,
+                        guides: true,
+                        center: false,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false
+                    });
+                    cropperInstance = cropper;
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+            } catch(e) {
+                console.error('强制创建裁剪器失败:', e);
+            }
+        }
+        
+        if (!cropperInstance) {
+            alert('裁剪器未初始化，请关闭弹窗重新上传');
             return;
         }
         
         // 获取裁剪后的图片
         var croppedDataUrl = null;
         try {
-            var canvas = cropper.getCroppedCanvas({
+            var canvas = cropperInstance.getCroppedCanvas({
                 maxWidth: 1200,
                 maxHeight: 1200,
                 fillColor: '#fff',
@@ -9120,9 +9220,9 @@ function confirmCrop() {
         
         if (!croppedDataUrl) {
             // 如果裁剪失败，尝试直接用原图
-            var img = document.getElementById('cropImage');
-            if (img && img.src) {
-                croppedDataUrl = img.src;
+            var imgEl = document.getElementById('cropImage');
+            if (imgEl && imgEl.src) {
+                croppedDataUrl = imgEl.src;
                 console.log('⚠️ 裁剪失败，使用原图');
             } else {
                 alert('请先选择裁剪区域');
@@ -9132,7 +9232,6 @@ function confirmCrop() {
         
         closeCropModal();
         
-        // 👈 根据 cropTarget 找到对应的按钮
         var btn = document.querySelector(`.upload-img-btn[data-target="${cropTarget}"]`);
         var originalText = btn ? btn.textContent : '上传图片';
         if (btn) {
@@ -9144,7 +9243,6 @@ function confirmCrop() {
             var fileName = 'images/' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + '.jpg';
             var imageUrl = await uploadToGitHub(croppedDataUrl, fileName);
             
-            // 👈 确保 tempImages[cropTarget] 存在
             if (!tempImages[cropTarget]) {
                 tempImages[cropTarget] = [];
             }
@@ -9157,7 +9255,6 @@ function confirmCrop() {
                 console.log('✅ 添加图片, target:', cropTarget, 'url:', imageUrl);
             }
             
-            // 👈 刷新对应的预览区域
             renderImagePreview(cropTarget);
             
         } catch (err) {
@@ -9173,7 +9270,7 @@ function confirmCrop() {
         isReCrop = false;
         reCropIndex = -1;
     })();
-}// 绑定裁剪弹窗按钮事件（在 DOM 加载完成后执行）
+}
 (function() {
     var closeBtn = document.getElementById('cropCloseBtn');
     var cancelBtn = document.getElementById('cropCancelBtn');
@@ -9202,7 +9299,163 @@ function dataURLtoBlob(dataURL) {
     return new Blob([u8arr], { type: mime });
 }
 
-
+// ========== 来源输入框自动补全（手机端兼容） ==========
+function initSourceAutoComplete(inputElement) {
+    if (!inputElement) return;
+    
+    // 移除旧的事件监听（避免重复）
+    var newInput = inputElement.cloneNode(true);
+    inputElement.parentNode.replaceChild(newInput, inputElement);
+    inputElement = newInput;
+    
+    // 获取所有历史来源
+    function getSourceHistory() {
+        const allErrors = [...chineseErrors, ...mathErrors];
+        const sourceMap = new Map();
+        allErrors.forEach(item => {
+            if (item.source && item.source.trim()) {
+                const key = item.source.trim();
+                sourceMap.set(key, (sourceMap.get(key) || 0) + 1);
+            }
+        });
+        return Array.from(sourceMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(entry => entry[0]);
+    }
+    
+    // 创建下拉容器
+    var dropdown = document.createElement('div');
+    dropdown.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 0.5px solid #c6c6c8;
+        border-radius: 12px;
+        max-height: 150px;
+        overflow-y: auto;
+        display: none;
+        z-index: 999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-top: 4px;
+    `;
+    
+    // 设置父容器为相对定位
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position: relative; width: 100%;';
+    inputElement.parentNode.insertBefore(wrapper, inputElement);
+    wrapper.appendChild(inputElement);
+    wrapper.appendChild(dropdown);
+    
+    // 填充下拉选项
+    function updateDropdown(filterText) {
+        var sources = getSourceHistory();
+        var filtered = sources;
+        if (filterText && filterText.trim()) {
+            var lower = filterText.toLowerCase().trim();
+            filtered = sources.filter(function(s) {
+                return s.toLowerCase().includes(lower);
+            });
+        }
+        
+        if (filtered.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+        
+        var html = '';
+        filtered.forEach(function(source) {
+            html += `<div style="padding: 8px 14px; font-size: 14px; cursor: pointer; border-bottom: 0.5px solid #f0f0f4; color: #1c1c1e;" data-value="${source}">${escapeHtml(source)}</div>`;
+        });
+        dropdown.innerHTML = html;
+        dropdown.style.display = 'block';
+        
+        // 点击选项填充输入框
+        dropdown.querySelectorAll('div').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                inputElement.value = this.getAttribute('data-value');
+                dropdown.style.display = 'none';
+                // 触发 input 事件，让其他逻辑知道值变了
+                var evt = new Event('input', { bubbles: true });
+                inputElement.dispatchEvent(evt);
+            });
+        });
+    }
+    
+    // 输入事件
+    inputElement.addEventListener('input', function(e) {
+        var val = this.value;
+        if (val && val.trim()) {
+            updateDropdown(val);
+        } else {
+            // 显示所有历史来源
+            var allSources = getSourceHistory();
+            if (allSources.length > 0) {
+                updateDropdown('');
+            } else {
+                dropdown.style.display = 'none';
+            }
+        }
+    });
+    
+    // 聚焦时显示所有历史来源
+    inputElement.addEventListener('focus', function(e) {
+        var allSources = getSourceHistory();
+        if (allSources.length > 0 && !this.value) {
+            updateDropdown('');
+        } else if (this.value) {
+            updateDropdown(this.value);
+        }
+    });
+    
+    // 点击其他地方关闭下拉
+    document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    // 键盘上下键选择
+    inputElement.addEventListener('keydown', function(e) {
+        var items = dropdown.querySelectorAll('div');
+        if (items.length === 0) return;
+        
+        var currentIndex = -1;
+        items.forEach(function(item, idx) {
+            if (item.classList.contains('selected')) {
+                currentIndex = idx;
+            }
+        });
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            var nextIndex = Math.min(currentIndex + 1, items.length - 1);
+            items.forEach(function(item) { item.classList.remove('selected'); });
+            items[nextIndex].classList.add('selected');
+            items[nextIndex].style.background = '#f2f2f6';
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            var prevIndex = Math.max(currentIndex - 1, 0);
+            items.forEach(function(item) { item.classList.remove('selected'); });
+            items[prevIndex].classList.add('selected');
+            items[prevIndex].style.background = '#f2f2f6';
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            var selected = dropdown.querySelector('div.selected');
+            if (selected) {
+                inputElement.value = selected.getAttribute('data-value');
+                dropdown.style.display = 'none';
+                var evt = new Event('input', { bubbles: true });
+                inputElement.dispatchEvent(evt);
+            }
+        }
+    });
+    
+    // 返回 input 元素引用
+    return inputElement;
+}
 
 async function init() {
 // ========== 自定义错误原因 ==========
