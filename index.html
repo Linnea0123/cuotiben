@@ -8975,8 +8975,8 @@ function initCropper(img) {
         try {
             cropper = new Cropper(img, {
                 aspectRatio: NaN,
-                viewMode: 1,
-                dragMode: 'move',
+                viewMode: 0,        // 🔥 改 0，允许裁剪框自由移动
+                dragMode: 'crop',   // 🔥 改 'crop'，默认就是裁剪模式
                 autoCropArea: 1,
                 restore: false,
                 guides: true,
@@ -8990,6 +8990,7 @@ function initCropper(img) {
                         if (cropper) {
                             var imageData = cropper.getImageData();
                             if (imageData && imageData.naturalWidth > 0 && imageData.naturalHeight > 0) {
+                                // 🔥 设置裁剪框覆盖整个图片
                                 cropper.setData({
                                     x: 0,
                                     y: 0,
@@ -8997,18 +8998,17 @@ function initCropper(img) {
                                     height: imageData.naturalHeight
                                 });
                                 console.log('✅ 裁剪框已设置');
-                                // 👈 使用 requestAnimationFrame 确保在下一帧激活
-                                requestAnimationFrame(function() {
+                                
+                                // 🔥 强制激活裁剪框，显示边框
+                                setTimeout(function() {
+                                    var cropBox = document.querySelector('.cropper-crop-box');
+                                    if (cropBox) {
+                                        cropBox.style.outline = '2px solid #007aff';
+                                        cropBox.style.outlineOffset = '-1px';
+                                    }
+                                    // 触发裁剪事件，确保激活
                                     cropper.crop();
-                                    // 再次确保激活
-                                    setTimeout(function() {
-                                        var cropBox = document.querySelector('.cropper-crop-box');
-                                        if (cropBox) {
-                                            cropBox.style.outline = '2px solid #007aff';
-                                            cropBox.style.outlineOffset = '-1px';
-                                        }
-                                    }, 0);
-                                });
+                                }, 50);
                             }
                         }
                     } catch(e) {
@@ -9018,17 +9018,6 @@ function initCropper(img) {
             });
         } catch(e) {
             console.error('创建裁剪器失败:', e);
-            try {
-                cropper = new Cropper(img, {
-                    aspectRatio: NaN,
-                    viewMode: 1,
-                    dragMode: 'move',
-                    autoCropArea: 1,
-                    restore: false
-                });
-            } catch(e2) {
-                console.error('简化创建也失败:', e2);
-            }
         }
     }
     
@@ -9052,6 +9041,8 @@ function initCropper(img) {
         }, 5000);
     }
 }
+
+
 // 关闭裁剪弹窗
 function closeCropModal() {
     document.getElementById('cropModal').style.display = 'none';
