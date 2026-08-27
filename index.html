@@ -2402,7 +2402,6 @@ function getChineseCategoriesForEdit() {
 
 // 上传图片到 GitHub
 // ==================== 上传图片到 GitHub 仓库 ====================
-// 上传图片到 GitHub 后，返回多个可用的 CDN 地址
 async function uploadToGitHub(base64Data, fileName) {
     const token = localStorage.getItem(PAGE_ID + '_github_token');
     const owner = GITHUB_REPO_CONFIG.owner;
@@ -2416,7 +2415,7 @@ async function uploadToGitHub(base64Data, fileName) {
     const base64Content = base64Data.split(',')[1];
     const path = `images/${fileName}`;
     
-    // 检查文件是否存在
+    // 先检查文件是否存在
     let sha = null;
     try {
         const checkRes = await fetch(
@@ -2459,23 +2458,10 @@ async function uploadToGitHub(base64Data, fileName) {
         throw new Error(error.message || '上传失败');
     }
     
-    // ========== 返回 CDN 地址（包含多个镜像） ==========
-    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
-    const fileNameOnly = fileName;
-    
-    // 返回一个对象，包含多个 CDN 地址
-    return {
-        raw: rawUrl,
-        // 国内可用的 CDN 镜像
-        cdnList: [
-            `https://mirror.ghproxy.com/${rawUrl}`,
-            `https://ghproxy.net/${rawUrl}`,
-            `https://gitmirror.com/${rawUrl}`
-        ],
-        // 首选最快的
-        best: `https://mirror.ghproxy.com/${rawUrl}`
-    };
+    // 返回原始 GitHub 地址
+    return `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
 }
+
 let currentSubject = "chinese";
     let currentChineseTag = "全部";
     let currentChineseSubTag = "全部";  
