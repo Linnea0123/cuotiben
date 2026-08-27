@@ -2347,6 +2347,59 @@ const UNIT_CONFIG = {
         '三下': ['第一单元', '第二单元', '第三单元', '第四单元', '第五单元', '第六单元', '第七单元', '第八单元']
     }
 };
+
+// ========== 数学分类按年级配置 ==========
+function getMathCategories(grade) {
+    const map = {
+        '一上': ['全部', '计算', '应用题', '图形', '概念'],
+        '一下': ['全部', '计算', '应用题', '图形', '概念'],
+        '二上': ['全部', '计算', '应用题', '长度单位', '图形','方位', '概念'],
+        '二下': ['全部', '计算', '应用题', '长度单位', '图形', '概念'],
+        '三上': ['全部', '计算', '应用题', '测量', '图形', '概念'],
+        '三下': ['全部', '计算', '应用题', '测量', '图形', '概念'],
+    };
+    return map[grade] || map['二上']; // 默认返回二上
+}
+
+
+// ========== 自动从数据中提取数学分类（按年级） ==========
+// ========== 数学分类：预定义 + 自动提取 ==========
+// ========== 数学分类：按年级返回完整列表（用于编辑弹窗） ==========
+function getMathCategoriesForEdit(grade) {
+    const targetGrade = grade || currentGradeFilter || '二上';
+    
+    const map = {
+        '一上': ['计算', '应用题', '图形', '概念'],
+        '一下': ['计算', '应用题', '图形', '概念'],
+        '二上': ['计算', '应用题', '长度单位', '图形', '方位', '概念'],
+        '二下': ['计算', '应用题', '长度单位', '图形', '方位', '概念'],
+        '三上': ['计算', '应用题', '测量', '图形', '概念'],
+        '三下': ['计算', '应用题', '测量', '图形', '概念'],
+    };
+    return map[targetGrade] || map['二上'];
+}
+
+
+// ========== 自动从数据中提取语文分类 ==========
+// ========== 语文分类：预定义 + 自动提取 ==========
+function getChineseCategoriesForEdit() {
+    // 1. 先从数据中提取所有分类
+    const categoriesFromData = new Set();
+    chineseErrors.forEach(function(item) {
+        if (item.tag && item.tag !== '全部') {
+            categoriesFromData.add(item.tag);
+        }
+    });
+    
+    // 2. 如果有数据，返回提取的分类
+    if (categoriesFromData.size > 0) {
+        return Array.from(categoriesFromData).sort();
+    }
+    
+    // 3. 如果没有数据，返回默认分类
+    return ['基础知识', '阅读理解', '作文表达', '文学常识', '其他'];
+}
+
 // 上传图片到 GitHub
 // ==================== 上传图片到 GitHub 仓库 ====================
 async function uploadToGitHub(base64Data, fileName) {
@@ -3134,7 +3187,8 @@ function renderSidebar() {
         
     } else {
         // ========== 数学科目 - 修复年级筛选 ==========
-        const categories = ["全部", "计算", "应用题", "长度单位", "图形", "概念"];
+        // 数学科目 - 按年级加载不同分类
+const categories = getMathCategories(currentGradeFilter);
         
         const getCount = function(tag) {
             let filtered = mathErrors.filter(function(item) { return item.tag === tag; });
@@ -4565,39 +4619,39 @@ function toggleSubTagGroup() {
 }
 
 // 根据科目获取类别选项
-function getCategoryOptions(subject, currentTag) {
+// 根据科目和年级获取类别选项
+function getCategoryOptions(subject, currentTag, grade) {
     let optionsHtml = '';
     if (subject === 'chinese') {
-        optionsHtml = `
-    <optgroup label="📖 语文">
-        <option value="基础知识" ${currentTag === '基础知识' ? 'selected' : ''}>基础知识</option>
-        <option value="阅读理解" ${currentTag === '阅读理解' ? 'selected' : ''}>阅读理解</option>
-        <option value="作文表达" ${currentTag === '作文表达' ? 'selected' : ''}>作文表达</option>
-        <option value="文学常识" ${currentTag === '文学常识' ? 'selected' : ''}>文学常识</option>
-        <option value="其他" ${currentTag === '其他' ? 'selected' : ''}>其他</option>
-    </optgroup>
-`;
+        const categories = getChineseCategoriesForEdit();
+        optionsHtml = `<optgroup label="📖 语文">`;
+        categories.forEach(function(cat) {
+            const selected = (cat === currentTag) ? 'selected' : '';
+            optionsHtml += `<option value="${cat}" ${selected}>${cat}</option>`;
+        });
+        optionsHtml += `</optgroup>`;
     } else {
-        optionsHtml = `
-            <optgroup label="🔢 数学">
-                <option value="计算" ${currentTag === '计算' ? 'selected' : ''}>计算</option>
-                <option value="应用题" ${currentTag === '应用题' ? 'selected' : ''}>应用题</option>
-                <option value="图形" ${currentTag === '图形' ? 'selected' : ''}>图形 / 几何</option>
-                <option value="概念" ${currentTag === '概念' ? 'selected' : ''}>概念 / 填空</option>
-            </optgroup>
-        `;
+        // ✅ 数学：使用预定义列表
+        const categories = getMathCategoriesForEdit(grade || currentGradeFilter);
+        optionsHtml = `<optgroup label="🔢 数学">`;
+        categories.forEach(function(cat) {
+            const selected = (cat === currentTag) ? 'selected' : '';
+            optionsHtml += `<option value="${cat}" ${selected}>${cat}</option>`;
+        });
+        optionsHtml += `</optgroup>`;
     }
     return optionsHtml;
 }
 
+
 // 刷新类别下拉框
-function refreshCategorySelect(subject, currentTag) {
+// 刷新类别下拉框
+function refreshCategorySelect(subject, currentTag, grade) {
     const tagSelect = document.getElementById('editTag');
     if (tagSelect) {
-        tagSelect.innerHTML = getCategoryOptions(subject, currentTag);
+        tagSelect.innerHTML = getCategoryOptions(subject, currentTag, grade);
     }
 }
-
 
 function openAddModal() {
     document.querySelector('#editModal .modal-container h4').innerText = "新增错题";
@@ -4695,7 +4749,7 @@ if (currentSubject === "chinese") {
     // 数学：使用当前选中的分类
     defaultTag = currentMathTag;
 }
-refreshCategorySelect(currentSubject, defaultTag);
+refreshCategorySelect(currentSubject, defaultTag, currentGradeFilter);
     
 
  // 【新增】设置二级分类的默认值为当前选中的二级分类
@@ -5072,7 +5126,7 @@ if (editGradeEl) editGradeEl.value = editItem.grade || "一下";
     
     
     // 动态生成类别选项（这会重新创建 select 的 option）
-    refreshCategorySelect(subject, editItem.tag || "基础知识");
+   refreshCategorySelect(subject, editItem.tag || "基础知识", editItem.grade || currentGradeFilter);
     
     // 重新获取 editTagEl（因为 refreshCategorySelect 可能改变了内容）
     const editTagEl = document.getElementById("editTag");
