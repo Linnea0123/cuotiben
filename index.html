@@ -8975,8 +8975,8 @@ function initCropper(img) {
         try {
             cropper = new Cropper(img, {
                 aspectRatio: NaN,
-                viewMode: 0,        // 🔥 改 0，允许裁剪框自由移动
-                dragMode: 'crop',   // 🔥 改 'crop'，默认就是裁剪模式
+                viewMode: 0,
+                dragMode: 'crop',      // 🔥 裁剪模式
                 autoCropArea: 1,
                 restore: false,
                 guides: true,
@@ -8990,7 +8990,6 @@ function initCropper(img) {
                         if (cropper) {
                             var imageData = cropper.getImageData();
                             if (imageData && imageData.naturalWidth > 0 && imageData.naturalHeight > 0) {
-                                // 🔥 设置裁剪框覆盖整个图片
                                 cropper.setData({
                                     x: 0,
                                     y: 0,
@@ -8999,16 +8998,17 @@ function initCropper(img) {
                                 });
                                 console.log('✅ 裁剪框已设置');
                                 
-                                // 🔥 强制激活裁剪框，显示边框
+                                // 🔥🔥🔥 关键：自动进入裁剪模式
                                 setTimeout(function() {
+                                    cropper.crop();  // 激活裁剪框
+                                    // 高亮显示裁剪框
                                     var cropBox = document.querySelector('.cropper-crop-box');
                                     if (cropBox) {
                                         cropBox.style.outline = '2px solid #007aff';
                                         cropBox.style.outlineOffset = '-1px';
                                     }
-                                    // 触发裁剪事件，确保激活
-                                    cropper.crop();
-                                }, 50);
+                                    console.log('✅ 已自动进入裁剪模式');
+                                }, 100);
                             }
                         }
                     } catch(e) {
@@ -9021,7 +9021,6 @@ function initCropper(img) {
         }
     }
     
-    // 确保图片加载完成后再初始化
     if (img.complete && img.naturalWidth > 0) {
         createCropper();
     } else {
@@ -9032,7 +9031,6 @@ function initCropper(img) {
             console.warn('图片加载失败，尝试初始化');
             createCropper();
         };
-        // 如果 5 秒后还没加载完成，强制初始化
         setTimeout(function() {
             if (!cropper) {
                 console.warn('图片加载超时，强制初始化');
@@ -9041,8 +9039,6 @@ function initCropper(img) {
         }, 5000);
     }
 }
-
-
 // 关闭裁剪弹窗
 function closeCropModal() {
     document.getElementById('cropModal').style.display = 'none';
