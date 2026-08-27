@@ -3339,7 +3339,6 @@ function renderContent() {
         let totalCount = 0;
         if (currentSubject === "chinese") {
             let filtered = chineseErrors;
-            // ✅ 添加年级筛选
             if (currentGradeFilter !== '全部') {
                 filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
             }
@@ -3347,7 +3346,6 @@ function renderContent() {
             totalCount = filtered.length;
         } else {
             let filtered = mathErrors;
-            // ✅ 添加年级筛选
             if (currentGradeFilter !== '全部') {
                 filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
             }
@@ -3360,7 +3358,6 @@ function renderContent() {
     // ========== 二级分类统计（添加年级筛选） ==========
     let subTabsHtml = "";
     if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
-        // ✅ 所有二级分类统计都加上年级筛选
         const pinyinCount = chineseErrors.filter(item => 
             item.tag === "基础知识" && 
             item.subTag === "拼音" &&
@@ -3578,6 +3575,14 @@ function renderContent() {
             specialContent = "";
         }
         
+        // 判断是否有错误答案或正确答案需要显示
+        const hasWrong = item.wrongAnswer && item.wrongAnswer.trim();
+        const hasCorrect = item.correctAnswer && item.correctAnswer.trim();
+        const hasWrongImages = item.wrongImages && item.wrongImages.length > 0;
+        const hasCorrectImages = item.correctImages && item.correctImages.length > 0;
+        const hasAnswerContent = hasWrong || hasCorrect || hasWrongImages || hasCorrectImages;
+        const detailId = `detail_${item.id}`;
+        
         cardsHtml += `
             <div class="card">
                 <div class="card-header">
@@ -3604,6 +3609,45 @@ function renderContent() {
                         ${specialContent}
                         ${renderImagesInCard(item.questionImages, '', 'full')}
                     </div>
+                    
+                    ${hasAnswerContent ? `
+                    <div style="margin-top: 12px; text-align: center;">
+                        <button class="toggle-answer-btn" data-target="${detailId}" style="
+                            background: #f2f2f6;
+                            border: none;
+                            padding: 4px 16px;
+                            border-radius: 20px;
+                            font-size: 12px;
+                            color: #007aff;
+                            cursor: pointer;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 6px;
+                            transition: all 0.2s;
+                        ">
+                            <span class="toggle-icon">▶</span> 查看答案与解析
+                        </button>
+                    </div>
+                    ` : ''}
+                    
+                    <div id="${detailId}" class="answer-details" style="display: none; margin-top: 10px;">
+                        ${hasWrong || hasWrongImages ? `
+                        <div style="padding: 10px 14px; background: #fff5f5; border-left: 3px solid #ff3b30; border-radius: 8px; margin-bottom: 8px;">
+                            <div style="font-size: 12px; font-weight: 600; color: #ff3b30; margin-bottom: 4px;">❌ 错误答案 / 过程：</div>
+                            ${hasWrong ? `<div style="font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(item.wrongAnswer)}</div>` : ''}
+                            ${renderImagesInCard(item.wrongImages, '', 'full')}
+                        </div>
+                        ` : ''}
+                        
+                        ${hasCorrect || hasCorrectImages ? `
+                        <div style="padding: 10px 14px; background: #f0fff0; border-left: 3px solid #34c759; border-radius: 8px;">
+                            <div style="font-size: 12px; font-weight: 600; color: #34c759; margin-bottom: 4px;">✅ 正确答案 / 解析：</div>
+                            ${hasCorrect ? `<div style="font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(item.correctAnswer)}</div>` : ''}
+                            ${renderImagesInCard(item.correctImages, '', 'full')}
+                        </div>
+                        ` : ''}
+                    </div>
+                    
                     <div class="meta-info" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #8e8e93; margin-top: 16px; padding-top: 12px; border-top: 0.5px solid #f0f0f4;">
                         <span>${escapeHtml(item.source || '未知来源')}</span>
                         <span>${escapeHtml(item.unit || '所属单元')}</span>
@@ -3618,6 +3662,35 @@ function renderContent() {
     cardsHtml += `</div>`;
     contentAreaDiv.innerHTML = subTabsHtml + cardsHtml;
     
+    // ========== 绑定展开/收起按钮事件 ==========
+    document.querySelectorAll('.toggle-answer-btn').forEach(function(btn) {
+        btn.removeEventListener('click', btn._handler);
+        btn._handler = function(e) {
+            e.stopPropagation();
+            const targetId = this.getAttribute('data-target');
+            const detailsDiv = document.getElementById(targetId);
+            const icon = this.querySelector('.toggle-icon');
+            
+            if (detailsDiv) {
+                if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
+                    detailsDiv.style.display = 'block';
+                    this.innerHTML = '<span class="toggle-icon">▼</span> 收起答案';
+                    // 重新渲染图片（如果有图片懒加载）
+                    detailsDiv.querySelectorAll('img').forEach(function(img) {
+                        if (img.dataset.src) {
+                            img.src = img.dataset.src;
+                        }
+                    });
+                } else {
+                    detailsDiv.style.display = 'none';
+                    this.innerHTML = '<span class="toggle-icon">▶</span> 查看答案与解析';
+                }
+            }
+        };
+        btn.addEventListener('click', btn._handler);
+    });
+    
+    // ========== 绑定编辑按钮事件 ==========
     document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => {
         const errId = btn.getAttribute('data-id');
         if (errId) openEditModal(errId, currentSubject);
@@ -3638,7 +3711,6 @@ function renderContent() {
         gradeFilter.addEventListener('change', handleGradeChange);
     }
 }
-
 
 function updateTextFilterOptions(list) {
     const textSelect = document.getElementById('filterText');
@@ -5599,7 +5671,10 @@ function dataURItoBlob(dataURI) {
 
 // 处理图片上传 - 压缩后上传到 GitHub
 // ========== 处理图片上传（包含裁剪） ==========
+// 处理图片上传
 async function handleImageUpload(event, target) {
+    console.log('📤 handleImageUpload 被调用, target:', target);  // 👈 调试日志
+    
     const file = event.target.files[0];
     if (!file) return;
     
@@ -5614,9 +5689,8 @@ async function handleImageUpload(event, target) {
     btn.disabled = true;
     
     try {
-        // 先压缩图片
         compressImageTo200KB(file, async (compressedBase64) => {
-            // 打开裁剪弹窗，让用户裁剪
+            // 👈 关键：确保 target 正确传递到裁剪弹窗
             openCropModal(compressedBase64, target, file);
             btn.textContent = originalText;
             btn.disabled = false;
@@ -5630,7 +5704,6 @@ async function handleImageUpload(event, target) {
         event.target.value = '';
     }
 }
-
 
 // 渲染图片预览
 function renderImagesInCard(images, title = '', size = 'normal') {
@@ -5861,7 +5934,7 @@ async function tryLoadFallback(imgElement, originalUrl) {
 
 
 async function saveToCloud() {
-    console.log('📤 [saveToCloud] 开始执行 - 上传所有月份');
+    console.log('📤 [saveToCloud] 开始执行 - 智能同步（仅上传有变化的月份）');
     
     const token = localStorage.getItem(PAGE_ID + '_github_token');
     const owner = GITHUB_REPO_CONFIG.owner;
@@ -5898,7 +5971,7 @@ async function saveToCloud() {
     
     allErrors.forEach(item => {
         const date = item.date || new Date().toISOString().slice(0, 10);
-        const month = date.substring(0, 7);  // "2026-08"
+        const month = date.substring(0, 7);
         if (!monthsData[month]) {
             monthsData[month] = { chineseErrors: [], mathErrors: [] };
         }
@@ -5917,8 +5990,9 @@ async function saveToCloud() {
     
     console.log(`📂 发现 ${Object.keys(monthsData).length} 个月份有数据:`, Object.keys(monthsData));
     
-    // ========== 4. 遍历所有月份，分别上传 ==========
+    // ========== 4. 遍历所有月份，检查变化 ==========
     let successCount = 0;
+    let skipCount = 0;
     let failCount = 0;
     
     for (const [month, data] of Object.entries(monthsData)) {
@@ -5929,19 +6003,13 @@ async function saveToCloud() {
         }
         
         const path = `data/errors/${month}.json`;
-        const content = JSON.stringify(data, null, 2);
-        const base64Content = btoa(unescape(encodeURIComponent(content)));
+        const localContent = JSON.stringify(data, null, 2);
+        const localBase64 = btoa(unescape(encodeURIComponent(localContent)));
         
-        // 打印该月份的数据摘要
-        console.log(`📤 准备上传 ${month}: 语文 ${data.chineseErrors.length} 条，数学 ${data.mathErrors.length} 条`);
-        if (data.mathErrors.length > 0) {
-            data.mathErrors.forEach(item => {
-                console.log(`  数学: ID=${item.id}, 分类=${item.tag}, 日期=${item.date}`);
-            });
-        }
-        
-        // 检查文件是否存在，获取 sha
+        // ========== 检查云端文件是否存在，并对比内容 ==========
+        let needUpload = false;
         let sha = null;
+        
         try {
             const checkRes = await fetch(
                 `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
@@ -5952,20 +6020,46 @@ async function saveToCloud() {
                     }
                 }
             );
+            
             if (checkRes.ok) {
                 const fileData = await checkRes.json();
                 sha = fileData.sha;
-                console.log(`📂 ${path} 已存在，将覆盖`);
+                
+                // 解码云端内容
+                const cloudContent = decodeURIComponent(escape(atob(fileData.content)));
+                
+                // 对比本地和云端内容
+                if (cloudContent === localContent) {
+                    console.log(`⏭️ ${month} 内容一致，无需上传`);
+                    skipCount++;
+                    continue;
+                } else {
+                    console.log(`📂 ${month} 内容有变化，将覆盖`);
+                    needUpload = true;
+                }
             } else if (checkRes.status === 404) {
                 console.log(`📂 ${path} 不存在，将创建`);
+                needUpload = true;
+            } else {
+                console.log(`📂 检查 ${path} 状态码: ${checkRes.status}`);
+                needUpload = true;
             }
         } catch (e) {
-            console.log(`📂 检查 ${path} 失败:`, e);
+            console.log(`📂 检查 ${path} 失败: ${e.message}，将尝试创建`);
+            needUpload = true;
         }
+        
+        // ========== 没有变化，跳过上传 ==========
+        if (!needUpload) {
+            continue;
+        }
+        
+        // ========== 有变化，执行上传 ==========
+        console.log(`📤 准备上传 ${month}: 语文 ${data.chineseErrors.length} 条，数学 ${data.mathErrors.length} 条`);
         
         const body = {
             message: `更新 ${month} 错题数据 - ${new Date().toLocaleString()}`,
-            content: base64Content,
+            content: localBase64,
             branch: GITHUB_REPO_CONFIG.branch
         };
         if (sha) body.sha = sha;
@@ -5998,14 +6092,65 @@ async function saveToCloud() {
         }
     }
     
-    // ========== 5. 上传 meta.json ==========
-    await saveMetaToGitHub(token, owner, repo);
+    // ========== 5. 检查 meta.json 是否需要更新 ==========
+    let metaNeedUpload = false;
+    const metaPath = 'data/meta.json';
+    const metaData = {
+        gradeFilter: currentGradeFilter,
+        subject: currentSubject,
+        chineseTag: currentChineseTag,
+        chineseSubTag: currentChineseSubTag,
+        mathTag: currentMathTag,
+        lastUpdate: new Date().toISOString(),
+        version: '2.0'
+    };
+    const metaContent = JSON.stringify(metaData, null, 2);
+    const metaBase64 = btoa(unescape(encodeURIComponent(metaContent)));
+    
+    try {
+        const checkRes = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/contents/${metaPath}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            }
+        );
+        if (checkRes.ok) {
+            const fileData = await checkRes.json();
+            const cloudContent = decodeURIComponent(escape(atob(fileData.content)));
+            if (cloudContent !== metaContent) {
+                metaNeedUpload = true;
+            }
+        } else if (checkRes.status === 404) {
+            metaNeedUpload = true;
+        }
+    } catch (e) {
+        metaNeedUpload = true;
+    }
+    
+    if (metaNeedUpload) {
+        await saveMetaToGitHub(token, owner, repo);
+        console.log('✅ meta.json 已同步');
+    } else {
+        console.log('⏭️ meta.json 内容一致，无需上传');
+    }
     
     // ========== 6. 打印结果 ==========
-    console.log(`📊 上传完成: 成功 ${successCount} 个月份，失败 ${failCount} 个月份`);
+    console.log(`📊 上传完成: 成功 ${successCount} 个月份，跳过 ${skipCount} 个月份（无变化），失败 ${failCount} 个月份`);
     
     if (failCount === 0 && successCount > 0) {
-        alert(`✅ 上传成功！共 ${successCount} 个月份的数据已同步到云端`);
+        alert(`✅ 上传成功！${successCount} 个月份的数据已同步到云端`);
+        return true;
+    } else if (successCount > 0 && skipCount > 0) {
+        alert(`✅ 上传完成！${successCount} 个月份已更新，${skipCount} 个月份无变化已跳过`);
+        return true;
+    } else if (successCount === 0 && skipCount > 0 && failCount === 0) {
+        alert(`⏭️ 所有数据已是最新，无需上传`);
+        return true;
+    } else if (failCount === 0 && successCount === 0 && skipCount === 0) {
+        alert(`ℹ️ 没有可上传的数据`);
         return true;
     } else if (successCount > 0) {
         alert(`⚠️ 部分上传成功：${successCount} 个月份成功，${failCount} 个月份失败`);
@@ -6015,8 +6160,6 @@ async function saveToCloud() {
         return false;
     }
 }
-
-
 // ==================== 上传所有月份的数据 ====================
 async function uploadAllMonths() {
     const token = localStorage.getItem(PAGE_ID + '_github_token');
@@ -8719,7 +8862,11 @@ let isReCrop = false;
 let reCropIndex = -1;
 
 // 打开裁剪弹窗（新上传）
+// 打开裁剪弹窗（新上传）
+// 打开裁剪弹窗（新上传）
 function openCropModal(imageUrl, target, file) {
+    console.log('📤 openCropModal 被调用, target:', target);
+    
     cropTarget = target;
     cropFile = file;
     isReCrop = false;
@@ -8729,14 +8876,31 @@ function openCropModal(imageUrl, target, file) {
     modal.style.display = 'flex';
     
     const img = document.getElementById('cropImage');
-    img.src = imageUrl;
     
-    initCropper(img);
+    // 👈 先清空图片，避免缓存问题
+    img.src = '';
+    img.onload = null;
+    img.onerror = null;
+    
+    // 延迟加载图片，确保 DOM 更新
+    setTimeout(function() {
+        img.src = imageUrl;
+        // 如果图片已经缓存，complete 可能为 true
+        if (img.complete && img.naturalWidth > 0) {
+            setTimeout(function() {
+                initCropper(img);
+            }, 100);
+        }
+    }, 100);
 }
 
+
+// 打开裁剪弹窗（重新裁剪）
 // 打开裁剪弹窗（重新裁剪）
 function openCropModalForReCrop(imageUrl, target, index) {
-    cropTarget = target;
+    console.log('📤 openCropModalForReCrop 被调用, target:', target, 'index:', index);  // 👈 调试日志
+    
+    cropTarget = target;  // 确保在函数开头就赋值
     cropFile = null;
     isReCrop = true;
     reCropIndex = index;
@@ -8749,7 +8913,7 @@ function openCropModalForReCrop(imageUrl, target, index) {
     
     initCropper(img);
 }
-
+// 初始化裁剪器
 // 初始化裁剪器
 // 初始化裁剪器
 function initCropper(img) {
@@ -8759,43 +8923,88 @@ function initCropper(img) {
     }
     
     function createCropper() {
-        cropper = new Cropper(img, {
-            aspectRatio: NaN,
-            viewMode: 1,
-            dragMode: 'move',
-            autoCropArea: 1,  // 👈 改为 1，让裁剪框默认填满整个图片
-            restore: false,
-            guides: true,
-            center: false,
-            highlight: false,
-            cropBoxMovable: true,
-            cropBoxResizable: true,
-            toggleDragModeOnDblclick: false,
-            ready: function() {
-                // 👈 在裁剪器准备好后，设置裁剪框为图片大小
-                var data = cropper.getData();
-                // 获取图片的实际显示尺寸
-                var containerData = cropper.getContainerData();
-                var imageData = cropper.getImageData();
-                // 设置裁剪框为图片大小
-                cropper.setData({
-                    x: 0,
-                    y: 0,
-                    width: imageData.naturalWidth,
-                    height: imageData.naturalHeight
+        try {
+            cropper = new Cropper(img, {
+                aspectRatio: NaN,
+                viewMode: 1,
+                dragMode: 'move',
+                autoCropArea: 1,
+                restore: false,
+                guides: true,
+                center: false,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+                ready: function() {
+                    // 👈 增加安全检查
+                    try {
+                        if (cropper) {
+                            var imageData = cropper.getImageData();
+                            if (imageData && imageData.naturalWidth > 0 && imageData.naturalHeight > 0) {
+                                cropper.setData({
+                                    x: 0,
+                                    y: 0,
+                                    width: imageData.naturalWidth,
+                                    height: imageData.naturalHeight
+                                });
+                                console.log('✅ 裁剪框已设置');
+                            }
+                        }
+                    } catch(e) {
+                        console.warn('设置裁剪框失败，使用默认裁剪区域:', e);
+                        // 如果设置失败，尝试用 autoCropArea 的默认值
+                        try {
+                            cropper.setData({
+                                x: 0,
+                                y: 0,
+                                width: 200,
+                                height: 200
+                            });
+                        } catch(e2) {
+                            console.warn('设置默认裁剪区域也失败:', e2);
+                        }
+                    }
+                }
+            });
+        } catch(e) {
+            console.error('创建裁剪器失败:', e);
+            // 如果创建失败，用简单方式
+            try {
+                cropper = new Cropper(img, {
+                    aspectRatio: NaN,
+                    viewMode: 1,
+                    dragMode: 'move',
+                    autoCropArea: 1,
+                    restore: false
                 });
+            } catch(e2) {
+                console.error('简单创建也失败:', e2);
             }
-        });
+        }
     }
     
+    // 确保图片加载完成后再初始化
     if (img.complete && img.naturalWidth > 0) {
-        setTimeout(createCropper, 100);
+        setTimeout(createCropper, 300);  // 增加延迟
     } else {
         img.onload = function() {
-            setTimeout(createCropper, 100);
+            setTimeout(createCropper, 300);
         };
+        img.onerror = function() {
+            console.warn('图片加载失败，尝试初始化');
+            setTimeout(createCropper, 300);
+        };
+        // 如果 5 秒后还没加载完成，强制初始化
+        setTimeout(function() {
+            if (!cropper) {
+                console.warn('图片加载超时，强制初始化');
+                createCropper();
+            }
+        }, 5000);
     }
 }
+
 // 关闭裁剪弹窗
 function closeCropModal() {
     document.getElementById('cropModal').style.display = 'none';
@@ -8873,17 +9082,58 @@ function reCropImage(target, index) {
 
 // 确认裁剪并上传
 // 确认裁剪并上传
+// 确认裁剪并上传
 function confirmCrop() {
+    console.log('📤 confirmCrop 被调用, cropTarget:', cropTarget);  // 👈 调试日志
+    
     (async function() {
-        var croppedDataUrl = await getCroppedImage();
-        if (!croppedDataUrl) {
-            alert('请先选择裁剪区域');
+        // 检查 cropTarget 是否有效
+        if (!cropTarget || cropTarget === '') {
+            console.error('❌ cropTarget 无效:', cropTarget);
+            alert('上传目标错误，请重新尝试');
             return;
+        }
+        
+        // 检查 cropper 是否存在
+        if (!cropper) {
+            alert('裁剪器未初始化，请稍后重试');
+            return;
+        }
+        
+        // 获取裁剪后的图片
+        var croppedDataUrl = null;
+        try {
+            var canvas = cropper.getCroppedCanvas({
+                maxWidth: 1200,
+                maxHeight: 1200,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+            
+            if (canvas) {
+                croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            }
+        } catch(e) {
+            console.error('裁剪失败:', e);
+        }
+        
+        if (!croppedDataUrl) {
+            // 如果裁剪失败，尝试直接用原图
+            var img = document.getElementById('cropImage');
+            if (img && img.src) {
+                croppedDataUrl = img.src;
+                console.log('⚠️ 裁剪失败，使用原图');
+            } else {
+                alert('请先选择裁剪区域');
+                return;
+            }
         }
         
         closeCropModal();
         
-        var btn = document.querySelector('.upload-img-btn[data-target="' + cropTarget + '"]');
+        // 👈 根据 cropTarget 找到对应的按钮
+        var btn = document.querySelector(`.upload-img-btn[data-target="${cropTarget}"]`);
         var originalText = btn ? btn.textContent : '上传图片';
         if (btn) {
             btn.textContent = '⏳ 上传中...';
@@ -8894,19 +9144,22 @@ function confirmCrop() {
             var fileName = 'images/' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + '.jpg';
             var imageUrl = await uploadToGitHub(croppedDataUrl, fileName);
             
-            if (!tempImages[cropTarget]) tempImages[cropTarget] = [];
+            // 👈 确保 tempImages[cropTarget] 存在
+            if (!tempImages[cropTarget]) {
+                tempImages[cropTarget] = [];
+            }
             
             if (isReCrop && reCropIndex >= 0 && reCropIndex < tempImages[cropTarget].length) {
                 tempImages[cropTarget][reCropIndex] = imageUrl;
-                // ❌ 移除 alert
-                // alert('✅ 图片已裁剪并替换！');
+                console.log('✅ 替换图片, target:', cropTarget, 'index:', reCropIndex);
             } else {
                 tempImages[cropTarget].push(imageUrl);
-                // ❌ 移除 alert
-                // alert('✅ 图片已裁剪并上传！');
+                console.log('✅ 添加图片, target:', cropTarget, 'url:', imageUrl);
             }
             
+            // 👈 刷新对应的预览区域
             renderImagePreview(cropTarget);
+            
         } catch (err) {
             console.error('上传错误:', err);
             alert('❌ 上传失败：' + err.message);
@@ -8920,8 +9173,7 @@ function confirmCrop() {
         isReCrop = false;
         reCropIndex = -1;
     })();
-}
-// 绑定裁剪弹窗按钮事件（在 DOM 加载完成后执行）
+}// 绑定裁剪弹窗按钮事件（在 DOM 加载完成后执行）
 (function() {
     var closeBtn = document.getElementById('cropCloseBtn');
     var cancelBtn = document.getElementById('cropCancelBtn');
