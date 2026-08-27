@@ -2693,7 +2693,7 @@ function closeHistoryModal() {
     window.showHistoryModal = showHistoryModal;
     window.closeHistoryModal = closeHistoryModal;
 
-   function getFilteredChinese() {
+ function getFilteredChinese() {
     let filtered = chineseErrors.filter(item => item.tag === currentChineseTag);
     if (currentChineseTag === "基础知识" && currentChineseSubTag && currentChineseSubTag !== "全部") {
         filtered = filtered.filter(item => item.subTag === currentChineseSubTag);
@@ -2703,7 +2703,9 @@ function closeHistoryModal() {
     }
     return filtered;
 }
-    // 头部年级下拉框联动
+
+
+// 头部年级下拉框联动
 const headerGradeFilter = document.getElementById('headerGradeFilter');
 if (headerGradeFilter) {
     headerGradeFilter.value = currentGradeFilter;
@@ -2741,7 +2743,7 @@ if (headerGradeFilter) {
     });
 }
 
-    function getCurrentDisplayList() { 
+function getCurrentDisplayList() { 
     if (currentSubject === "chinese") {
         if (currentChineseTag === '全部') {
             // 返回语文所有错题
@@ -2753,17 +2755,24 @@ if (headerGradeFilter) {
         }
         return getFilteredChinese();
     } else {
-        if (currentMathTag === '全部') {
-            // 返回数学所有错题
-            let filtered = mathErrors;
-            if (currentGradeFilter !== '全部') {
-                filtered = filtered.filter(item => item.grade === currentGradeFilter);
-            }
-            return filtered;
+        // ========== 数学：无论是否选择分类，都要做年级筛选 ==========
+        let filtered = mathErrors;
+        
+        // 1. 先按分类筛选
+        if (currentMathTag !== '全部') {
+            filtered = filtered.filter(item => item.tag === currentMathTag);
         }
-        return mathErrors.filter(item => item.tag === currentMathTag);
+        
+        // 2. 再按年级筛选
+        if (currentGradeFilter !== '全部') {
+            filtered = filtered.filter(item => item.grade === currentGradeFilter);
+        }
+        
+        return filtered;
     }
 }
+
+
 
 function recordReview(itemId, subject, result) {
     const list = subject === "chinese" ? chineseErrors : mathErrors;
@@ -3067,7 +3076,6 @@ function renderSidebar() {
             if (filterText !== '全部') {
                 filtered = filtered.filter(function(item) { return item.text === filterText; });
             }
-            // ========== 添加日期筛选 ==========
             filtered = filterByDate(filtered);
             return filtered.length;
         };
@@ -3103,14 +3111,34 @@ function renderSidebar() {
         categoryTabs.innerHTML = html;
         
         // 绑定点击事件
-       
-    
+        document.querySelectorAll('.category-tab').forEach(function(el) {
+            el.addEventListener('click', function(e) {
+                const tag = e.currentTarget.getAttribute('data-tag');
+                if (tag) {
+                    if (tag === '全部') {
+                        currentChineseTag = '全部';
+                        currentChineseSubTag = '全部';
+                    } else {
+                        currentChineseTag = tag;
+                        currentChineseSubTag = '全部';
+                    }
+                    renderSidebar();
+                    renderContent();
+                    updateBatchAddButtonVisibility();
+                    localStorage.setItem('cuoti_chineseTag', currentChineseTag);
+                    localStorage.setItem('cuoti_subTag', currentChineseSubTag);
+                    localStorage.setItem('cuoti_subject', currentSubject);
+                }
+            });
+        });
+        
     } else {
-        // 数学科目
+        // ========== 数学科目 - 修复年级筛选 ==========
         const categories = ["全部", "计算", "应用题", "长度单位", "图形", "概念"];
         
         const getCount = function(tag) {
             let filtered = mathErrors.filter(function(item) { return item.tag === tag; });
+            // ✅ 添加年级筛选
             if (currentGradeFilter !== '全部') {
                 filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
             }
@@ -3126,6 +3154,7 @@ function renderSidebar() {
         
         const getAllCount = function() {
             let filtered = mathErrors;
+            // ✅ 添加年级筛选
             if (currentGradeFilter !== '全部') {
                 filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
             }
@@ -3172,6 +3201,9 @@ function renderSidebar() {
         });
     }
 }
+
+
+
 function renderContent() {
     // ========== 筛选逻辑 ==========
     const filterUnit = document.getElementById('filterUnit')?.value || '全部';
@@ -3186,8 +3218,7 @@ function renderContent() {
         list = list.filter(item => item.text === filterText);
     }
 
-
-     // ========== 添加日期筛选（本周/本月） ==========
+    // ========== 添加日期筛选（本周/本月） ==========
     const dateStart = window._dateFilterStart || '';
     const dateEnd = window._dateFilterEnd || '';
     if (dateStart && dateEnd) {
@@ -3201,8 +3232,8 @@ function renderContent() {
     // 更新课文下拉框
     updateTextFilterOptions(list);
     updateTextOptions();
+    
     // 显示/隐藏清除按钮
-     // 更新清除按钮的显示状态
     const clearBtn = document.getElementById('clearFilterBtn');
     if (clearBtn) {
         const unitVal = document.getElementById('filterUnit')?.value || '全部';
@@ -3210,7 +3241,6 @@ function renderContent() {
         const dateVal = document.getElementById('filterDateRange')?.value || '';
         clearBtn.style.display = (unitVal !== '全部' || textVal !== '全部' || dateVal !== '') ? 'inline-block' : 'none';
     }
-    // ========== 筛选逻辑结束 ==========
     
     // ========== 错误原因颜色映射 ==========
     const reasonColorMap = {
@@ -3231,7 +3261,6 @@ function renderContent() {
         if (firstReason === '未分类') return '#8e8e93';
         return reasonColorMap[firstReason] || '#8e8e93';
     }
-    // ========== 颜色映射结束 ==========
     
     list.sort((a, b) => {
         const timeA = a.createdAt || 0;
@@ -3239,76 +3268,80 @@ function renderContent() {
         return timeB - timeA;
     });
     
-    // 在 renderContent() 函数中
-const questionCountDisplay = document.getElementById('questionCountDisplay');
-if (questionCountDisplay) {
-    // ========== 获取日期筛选 ==========
-    const dateStart = window._dateFilterStart || '';
-    const dateEnd = window._dateFilterEnd || '';
-    
-    function filterByDate(items) {
-        if (!dateStart && !dateEnd) return items;
-        return items.filter(function(item) {
-            const itemDate = item.date || '';
-            if (!itemDate) return false;
-            if (dateStart && itemDate < dateStart) return false;
-            if (dateEnd && itemDate > dateEnd) return false;
-            return true;
-        });
+    // ========== 更新题目数量统计（添加年级筛选） ==========
+    const questionCountDisplay = document.getElementById('questionCountDisplay');
+    if (questionCountDisplay) {
+        function filterByDateForCount(items) {
+            if (!dateStart && !dateEnd) return items;
+            return items.filter(function(item) {
+                const itemDate = item.date || '';
+                if (!itemDate) return false;
+                if (dateStart && itemDate < dateStart) return false;
+                if (dateEnd && itemDate > dateEnd) return false;
+                return true;
+            });
+        }
+        
+        let totalCount = 0;
+        if (currentSubject === "chinese") {
+            let filtered = chineseErrors;
+            // ✅ 添加年级筛选
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
+            }
+            filtered = filterByDateForCount(filtered);
+            totalCount = filtered.length;
+        } else {
+            let filtered = mathErrors;
+            // ✅ 添加年级筛选
+            if (currentGradeFilter !== '全部') {
+                filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
+            }
+            filtered = filterByDateForCount(filtered);
+            totalCount = filtered.length;
+        }
+        questionCountDisplay.textContent = totalCount + ' 道题';
     }
     
-    let totalCount = 0;
-    if (currentSubject === "chinese") {
-        let filtered = chineseErrors;
-        if (currentGradeFilter !== '全部') {
-            filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
-        }
-        filtered = filterByDate(filtered);
-        totalCount = filtered.length;
-    } else {
-        let filtered = mathErrors;
-        if (currentGradeFilter !== '全部') {
-            filtered = filtered.filter(function(item) { return item.grade === currentGradeFilter; });
-        }
-        filtered = filterByDate(filtered);
-        totalCount = filtered.length;
-    }
-    questionCountDisplay.textContent = totalCount + ' 道题';
-}
-    
+    // ========== 二级分类统计（添加年级筛选） ==========
     let subTabsHtml = "";
     if (currentSubject === "chinese" && currentChineseTag === "基础知识") {
-        // ========== 二级分类统计（包含单元筛选） ==========
+        // ✅ 所有二级分类统计都加上年级筛选
         const pinyinCount = chineseErrors.filter(item => 
             item.tag === "基础知识" && 
             item.subTag === "拼音" &&
             (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
             (filterUnit === '全部' || item.unit === filterUnit)
         ).length;
+        
         const shengziCount = chineseErrors.filter(item => 
             item.tag === "基础知识" && 
             item.subTag === "生字" &&
             (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
             (filterUnit === '全部' || item.unit === filterUnit)
         ).length;
+        
         const bishunCount = chineseErrors.filter(item => 
             item.tag === "基础知识" && 
             item.subTag === "笔顺" &&
             (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
             (filterUnit === '全部' || item.unit === filterUnit)
         ).length;
+        
         const biaodianCount = chineseErrors.filter(item => 
             item.tag === "基础知识" && 
             item.subTag === "标点" &&
             (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
             (filterUnit === '全部' || item.unit === filterUnit)
         ).length;
+        
         const duoyinziCount = chineseErrors.filter(item => 
             item.tag === "基础知识" && 
             item.subTag === "多音字" &&
             (currentGradeFilter === '全部' || item.grade === currentGradeFilter) &&
             (filterUnit === '全部' || item.unit === filterUnit)
         ).length;
+        
         const qitaCount = chineseErrors.filter(item => 
             item.tag === "基础知识" && 
             item.subTag === "其他" &&
@@ -3316,28 +3349,28 @@ if (questionCountDisplay) {
             (filterUnit === '全部' || item.unit === filterUnit)
         ).length;
         
-  const subTags = [
-    { name: "全部", count: pinyinCount + shengziCount + bishunCount + biaodianCount + duoyinziCount + qitaCount },
-    { name: "拼音", count: pinyinCount },
-    { name: "生字", count: shengziCount },
-    { name: "笔顺", count: bishunCount },
-    { name: "标点", count: biaodianCount },
-    { name: "多音字", count: duoyinziCount },
-    { name: "其他", count: qitaCount }
-];
+        const subTags = [
+            { name: "全部", count: pinyinCount + shengziCount + bishunCount + biaodianCount + duoyinziCount + qitaCount },
+            { name: "拼音", count: pinyinCount },
+            { name: "生字", count: shengziCount },
+            { name: "笔顺", count: bishunCount },
+            { name: "标点", count: biaodianCount },
+            { name: "多音字", count: duoyinziCount },
+            { name: "其他", count: qitaCount }
+        ];
         
         subTabsHtml = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
-        <div class="category-tabs" style="display: flex; flex-wrap: wrap; gap: 8px;">
-            ${subTags.map(st => `
-    <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}" style="display: flex; align-items: center; gap: 4px;">
-        ${st.name}
-        <span style="font-size: 11px; color: #8e8e93; font-weight: 400;">${st.count}</span>
-    </div>
-`).join('')}
-        </div>
-    </div>
-`;
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: -8px; margin-left: -17px; padding-top: 0; flex-wrap: wrap;">
+                <div class="category-tabs" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${subTags.map(st => `
+                        <div class="category-tab ${currentChineseSubTag === st.name ? 'active' : ''}" data-subtag="${st.name}" style="display: flex; align-items: center; gap: 4px;">
+                            ${st.name}
+                            <span style="font-size: 11px; color: #8e8e93; font-weight: 400;">${st.count}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
     }
     
     if (list.length === 0) { 
@@ -3357,15 +3390,18 @@ if (questionCountDisplay) {
         return; 
     }
     
+    // ========== 生成卡片 ==========
     let cardsHtml = `<div class="questions-list">`;
     list.forEach(item => {
         const isMathItem = item.id && item.id.startsWith('math');
-const reasonText = item.reasons?.length ? item.reasons.join("、") : "";        const reasonColor = getReasonColor(item.reasons);
+        const reasonText = item.reasons?.length ? item.reasons.join("、") : "";
+        const reasonColor = getReasonColor(item.reasons);
         const subTagInfo = (item.tag === "基础知识" && item.subTag) ? ` · ${item.subTag}` : "";
         
         let specialContent = "";
         const hasTextContent = item.question && item.question.trim();
         
+        // 拼音特殊渲染
         if (item.tag === "基础知识" && item.subTag === "拼音" && hasTextContent) {
             let mainHanzi = item.question;
             let noteText = '';
@@ -3494,19 +3530,18 @@ const reasonText = item.reasons?.length ? item.reasons.join("、") : "";        
                     <div class="tag-group" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                         <span class="subject-badge">${currentSubject === "chinese" ? "语文" : "数学"} · ${item.tag}${subTagInfo}</span>
                         ${item.labels && item.labels.length > 0 ? item.labels.map(label => {
-    const colors = {
-        '重要': '#ff3b30',
-        '很难': '#ff9500',
-        '注意': '#007aff',
-        '易错': '#34c759'
-    };
-    const color = colors[label] || '#8e8e93';
-    return `<span style="background: ${color}; color: white; padding: 2px 10px; border-radius: 30px; font-size: 11px; font-weight: 500; flex-shrink: 0; display: inline-block;">${label}</span>`;
-}).join('') : ''}
-                        
-${reasonText ? `<span class="error-tag" style="margin-left: auto; background: ${reasonColor === '#8e8e93' ? '#f2f2f6' : reasonColor}; color: #ff3b30; padding: ${reasonColor === '#8e8e93' ? '4px 12px' : '2px 10px'}; border-radius: 30px; font-size: 11px; font-weight: 500;">
-    ${escapeHtml(reasonText)}
-</span>` : ''}
+                            const colors = {
+                                '重要': '#ff3b30',
+                                '很难': '#ff9500',
+                                '注意': '#007aff',
+                                '易错': '#34c759'
+                            };
+                            const color = colors[label] || '#8e8e93';
+                            return `<span style="background: ${color}; color: white; padding: 2px 10px; border-radius: 30px; font-size: 11px; font-weight: 500; flex-shrink: 0; display: inline-block;">${label}</span>`;
+                        }).join('') : ''}
+                        ${reasonText ? `<span class="error-tag" style="margin-left: auto; background: ${reasonColor === '#8e8e93' ? '#f2f2f6' : reasonColor}; color: #ff3b30; padding: ${reasonColor === '#8e8e93' ? '4px 12px' : '2px 10px'}; border-radius: 30px; font-size: 11px; font-weight: 500;">
+                            ${escapeHtml(reasonText)}
+                        </span>` : ''}
                     </div>
                     <button class="edit-btn" data-id="${item.id}">编辑</button>
                 </div>
@@ -3549,7 +3584,6 @@ ${reasonText ? `<span class="error-tag" style="margin-left: auto; background: ${
         gradeFilter.addEventListener('change', handleGradeChange);
     }
 }
-
 
 
 function updateTextFilterOptions(list) {
@@ -5708,11 +5742,11 @@ async function tryLoadFallback(imgElement, originalUrl) {
     const fileName = originalUrl.split('/').pop();
     
     // 2. 国内可用 CDN（按速度排序）
-    const cdnList = [
-        `https://ghproxy.com/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
-        `https://gitmirror.com/raw/Linnea0123/cuotiben/main/images/${fileName}`,
-        `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`
-    ];
+   const cdnList = [
+    `https://mirror.ghproxy.com/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
+    `https://ghproxy.net/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
+    `https://gitmirror.com/raw/Linnea0123/cuotiben/main/images/${fileName}`
+];
     
     let currentIndex = 0;
     let timeoutId = null;
