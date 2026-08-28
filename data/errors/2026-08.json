@@ -66,6 +66,28 @@
       "questionImages": [],
       "wrongImages": [],
       "correctImages": []
+    },
+    {
+      "id": "ch_1787922575707",
+      "tag": "基础知识",
+      "subTag": "拼音",
+      "grade": "二上",
+      "unit": "第五单元",
+      "text": "语文园地五",
+      "question": "货",
+      "wrongAnswer": "",
+      "correctAnswer": "",
+      "reasons": [],
+      "labels": [],
+      "source": "",
+      "date": "2026-08-28",
+      "createdAt": 1787922575707,
+      "reviewCount": 0,
+      "reviewHistory": [],
+      "questionImages": [],
+      "wrongImages": [],
+      "correctImages": [],
+      "_correctPinyinHtml": "未填写"
     }
   ],
   "mathErrors": [
