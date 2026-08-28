@@ -1,9 +1,9 @@
 {
-  "gradeFilter": "二上",
-  "subject": "math",
+  "gradeFilter": "一下",
+  "subject": "chinese",
   "chineseTag": "全部",
   "chineseSubTag": "全部",
-  "mathTag": "长度",
-  "lastUpdate": "2026-08-27T16:59:50.347Z",
+  "mathTag": "全部",
+  "lastUpdate": "2026-08-28T15:09:37.299Z",
   "version": "2.0"
 }
