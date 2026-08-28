@@ -5902,13 +5902,14 @@ class ImageCacheDB {
 const imageCacheDB = new ImageCacheDB();
 
 // 替换原来的 tryLoadFallback 函数
+
+
 async function tryLoadFallback(imgElement, originalUrl) {
     // 1. 先检查缓存
     const cached = await imageCacheDB.get(originalUrl);
     if (cached) {
         imgElement.src = cached;
         imgElement.onerror = null;
-        // 移除加载提示
         const loadingText = imgElement.parentElement?.querySelector('.loading-text');
         if (loadingText) loadingText.remove();
         console.log('✅ 使用缓存图片');
@@ -5917,22 +5918,48 @@ async function tryLoadFallback(imgElement, originalUrl) {
     
     const fileName = originalUrl.split('/').pop();
     
-    // 2. 国内可用 CDN（按速度排序）
-   const cdnList = [
-    `https://mirror.ghproxy.com/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
-    `https://ghproxy.net/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
-    `https://gitmirror.com/raw/Linnea0123/cuotiben/main/images/${fileName}`
-];
+    // 2. 所有可用的 CDN 地址（按推荐顺序排列）
+    const cdnList = [
+        // === jsDelivr 系列（官方推荐，全球加速） ===
+        `https://cdn.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/${fileName}`,
+        `https://gcore.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/${fileName}`,
+        `https://fastly.jsdelivr.net/gh/Linnea0123/cuotiben@main/images/${fileName}`,
+        `https://jsd.onmicrosoft.cn/gh/Linnea0123/cuotiben@main/images/${fileName}`,
+        `https://jsdelivr.b-cdn.net/gh/Linnea0123/cuotiben@main/images/${fileName}`,
+        
+        // === 国内代理镜像（ghproxy 系列） ===
+        `https://mirror.ghproxy.com/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://ghproxy.net/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://gh-proxy.com/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://ghproxy.org/https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://gitmirror.com/raw/Linnea0123/cuotiben/main/images/${fileName}`,
+        
+        // === 其他备用代理 ===
+        `https://raw.gitmirror.com/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://raw.githubusercontents.com/Linnea0123/cuotiben/main/images/${fileName}`,
+        `https://cdn.staticaly.com/gh/Linnea0123/cuotiben/main/images/${fileName}`,
+        
+        // === 终极备选：直接访问 GitHub 源站（可能被墙，作为最后尝试） ===
+        `https://raw.githubusercontent.com/Linnea0123/cuotiben/main/images/${fileName}`
+    ];
     
     let currentIndex = 0;
     let timeoutId = null;
+    let isLoaded = false;
     
     function tryNext() {
+        // 如果已经加载成功，不再继续
+        if (isLoaded) return;
+        
+        // 所有地址都尝试完了
         if (currentIndex >= cdnList.length) {
+            console.error('❌ 所有 CDN 地址均尝试失败，放弃加载');
             imgElement.src = '';
             imgElement.alt = '图片加载失败';
+            // 移除加载提示
             const loadingText = imgElement.parentElement?.querySelector('.loading-text');
             if (loadingText) loadingText.textContent = '📷 加载失败';
+            // 显示占位图
             imgElement.parentElement.innerHTML = `
                 <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f0f0f0;color:#999;font-size:12px;min-height:100px;">
                     📷 加载失败
@@ -5942,29 +5969,38 @@ async function tryLoadFallback(imgElement, originalUrl) {
         }
         
         const url = cdnList[currentIndex];
-        console.log(`🔄 尝试 CDN ${currentIndex + 1}/${cdnList.length}`);
+        console.log(`🔄 尝试 CDN ${currentIndex + 1}/${cdnList.length}: ${url.substring(0, 80)}...`);
         
+        // 设置超时（每个地址最多等 8 秒）
         if (timeoutId) clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
-            console.log(`⏰ CDN ${currentIndex + 1} 超时`);
-            currentIndex++;
-            tryNext();
+            if (!isLoaded) {
+                console.log(`⏰ CDN ${currentIndex + 1} 超时，切换到下一个`);
+                currentIndex++;
+                tryNext();
+            }
         }, 8000);
         
+        // 尝试加载图片
         imgElement.src = url;
         imgElement.onerror = function() {
+            if (isLoaded) return;
             clearTimeout(timeoutId);
-            console.log(`❌ CDN ${currentIndex + 1} 失败`);
+            console.log(`❌ CDN ${currentIndex + 1} 加载失败`);
             currentIndex++;
             tryNext();
         };
         imgElement.onload = function() {
+            if (isLoaded) return;
             clearTimeout(timeoutId);
-            console.log(`✅ 图片加载成功`);
+            isLoaded = true;
+            console.log(`✅ 图片加载成功 (使用 CDN ${currentIndex + 1})`);
+            
             // 移除加载提示
             const loadingText = imgElement.parentElement?.querySelector('.loading-text');
             if (loadingText) loadingText.remove();
-            // 缓存到 IndexedDB
+            
+            // 缓存到 IndexedDB（下次直接使用缓存）
             try {
                 const canvas = document.createElement('canvas');
                 canvas.width = imgElement.naturalWidth || 200;
@@ -5973,13 +6009,16 @@ async function tryLoadFallback(imgElement, originalUrl) {
                 ctx.drawImage(imgElement, 0, 0);
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 imageCacheDB.set(originalUrl, dataUrl);
-            } catch (e) {}
+                console.log('💾 图片已缓存到本地');
+            } catch (e) {
+                // 缓存失败不影响显示
+            }
         };
     }
     
+    // 开始尝试
     tryNext();
 }
-
 
 async function saveToCloud() {
     console.log('📤 [saveToCloud] 开始执行 - 智能同步（仅上传有变化的月份）');
