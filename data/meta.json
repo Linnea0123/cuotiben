@@ -1,9 +1,9 @@
 {
-  "gradeFilter": "一下",
-  "subject": "chinese",
+  "gradeFilter": "二上",
+  "subject": "math",
   "chineseTag": "全部",
   "chineseSubTag": "全部",
-  "mathTag": "全部",
-  "lastUpdate": "2026-08-28T15:09:37.299Z",
+  "mathTag": "除法",
+  "lastUpdate": "2026-08-28T15:28:22.321Z",
   "version": "2.0"
 }
